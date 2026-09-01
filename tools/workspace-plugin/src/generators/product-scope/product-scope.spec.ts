@@ -1,7 +1,7 @@
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import type { Tree } from '@nx/devkit';
 
-import productScopeGenerator from './product-scope';
+import productScopeGenerator from './product-scope.js';
 
 describe('product-scope generator', () => {
   let tree: Tree;

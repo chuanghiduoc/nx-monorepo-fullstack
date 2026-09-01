@@ -6,6 +6,12 @@ on:
       - main
   pull_request:
 
+# A new push supersedes the previous run for the same ref; two full pipelines
+# (each installing Playwright browsers) are pure waste.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   actions: read
   contents: read
@@ -40,10 +46,18 @@ jobs:
       - run: pnpm exec playwright install --with-deps
       - uses: nrwl/nx-set-shas@v5
 
-      - run: pnpm exec nx affected -t lint test build typecheck e2e
+      # The atomized `test-ci` / `e2e-ci` targets split suites per file, but Nx
+      # refuses to run them without Nx Cloud. Switch to them in the same commit
+      # that enables `nx connect` (see docs/upgrades.md).
+      - run: pnpm exec nx affected -t lint typecheck test build e2e
 
       # Dead code and unused dependencies are cheap to catch here and expensive later.
       - run: pnpm knip
+
+      # Cheapest possible dependency check, kept alongside OSV-Scanner on purpose:
+      # it runs without network setup and fails fast on known advisories.
+      - run: pnpm audit --audit-level=high
+        continue-on-error: true
 
       # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
       - run: pnpm exec nx fix-ci

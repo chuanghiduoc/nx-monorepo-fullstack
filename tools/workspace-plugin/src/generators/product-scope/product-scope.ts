@@ -1,6 +1,6 @@
 import { formatFiles, joinPathFragments, type Tree } from '@nx/devkit';
 
-import type { ProductScopeGeneratorSchema } from './schema';
+import type { ProductScopeGeneratorSchema } from './schema.js';
 
 /**
  * Adding a product scope means touching several places that must stay in sync:

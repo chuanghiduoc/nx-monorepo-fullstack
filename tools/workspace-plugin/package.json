@@ -1,8 +1,8 @@
 {
   "name": "@workspace/workspace-plugin",
   "version": "0.0.1",
+  "type": "module",
   "private": true,
-  "type": "commonjs",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -43,7 +43,12 @@
           ]
         }
       }
-    }
+    },
+    "tags": [
+      "scope:shared",
+      "platform:node",
+      "type:util"
+    ]
   },
   "dependencies": {
     "@nx/devkit": "23.1.1",

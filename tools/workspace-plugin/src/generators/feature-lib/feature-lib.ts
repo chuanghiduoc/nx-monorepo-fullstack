@@ -1,7 +1,7 @@
 import { formatFiles, type Tree } from '@nx/devkit';
 import { libraryGenerator } from '@nx/js';
 
-import type { FeatureLibGeneratorSchema } from './schema';
+import type { FeatureLibGeneratorSchema } from './schema.js';
 
 /**
  * Scaffolds a feature library that already obeys the workspace conventions:

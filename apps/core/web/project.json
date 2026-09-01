@@ -1,19 +1,27 @@
 {
   "name": "core-web",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "apps/core/web",
+  "sourceRoot": "apps/core/web/src",
   "projectType": "application",
-  "tags": ["scope:core", "platform:web", "type:app"],
+  "tags": [
+    "scope:core",
+    "platform:web",
+    "type:app"
+  ],
   "// targets": "to see all targets run: nx show project core-web --web",
   "targets": {
     "dev": {
       "options": {
-        "args": ["--port=4200"]
+        "args": [
+          "--port=4200"
+        ]
       }
     },
     "start": {
       "options": {
-        "args": ["--port=4200"]
+        "args": [
+          "--port=4200"
+        ]
       }
     }
   }

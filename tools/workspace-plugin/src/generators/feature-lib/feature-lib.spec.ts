@@ -1,8 +1,8 @@
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { readProjectConfiguration, type Tree } from '@nx/devkit';
 
-import featureLibGenerator from './feature-lib';
-import type { FeatureLibGeneratorSchema } from './schema';
+import featureLibGenerator from './feature-lib.js';
+import type { FeatureLibGeneratorSchema } from './schema.js';
 
 describe('feature-lib generator', () => {
   let tree: Tree;

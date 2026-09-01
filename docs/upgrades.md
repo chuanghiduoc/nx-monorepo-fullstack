@@ -45,8 +45,11 @@ Entries are grouped by what triggers them, not by technology.
 ### Nx Cloud
 
 - **Signal:** CI wall-clock is dominated by tasks that other machines already ran.
-- **Steps:** `nx connect`, then uncomment the distribution lines already present
-  in `.github/workflows/ci.yml`.
+- **Steps:** `nx connect`, uncomment the distribution lines already present in
+  `.github/workflows/ci.yml`, and switch the affected command from
+  `test`/`e2e` to `test-ci`/`e2e-ci`. Those atomized targets split suites per
+  file but Nx refuses to run them without Nx Cloud, which is why CI uses the
+  plain targets today.
 
 ---
 
@@ -147,6 +150,63 @@ Entries are grouped by what triggers them, not by technology.
 - **Signal:** each of these earns its place from a real incident or requirement,
   not from a checklist. Sentry for error grouping, k6 for load, a scanner behind
   the `StorageScanner` interface for uploads, ephemeral environments per PR.
+
+### Feature-flag provider (Unleash, Flagsmith, GrowthBook)
+
+- **Signal:** flags need targeting rules, gradual rollouts or an audit trail that
+  a database table plus a cache no longer serves.
+- **Steps:** the code talks to OpenFeature, so swap the provider registration.
+  Call sites do not change.
+
+### gRPC between internal services
+
+- **Signal:** two internal services exchange enough traffic that HTTP/JSON
+  overhead shows up in latency profiles, or they need streaming.
+- **Steps:** keep REST/OpenAPI as the public contract; add gRPC only for
+  service-to-service calls, with the protobuf definitions in a shared library.
+
+### A separate scheduler entry point
+
+- **Signal:** cron definitions must be deployed independently of worker code.
+- **Steps:** BullMQ keeps schedules in Redis, so this is only a second entry
+  point that calls `upsertJobScheduler` — split it out of the worker bootstrap
+  without touching the handlers.
+
+### Per-aggregate event ordering
+
+- **Signal:** a consumer genuinely depends on the order of events for one
+  aggregate. The outbox is at-least-once and unordered by design.
+- **Steps:** partition delivery by `aggregate_id` and have consumers reject
+  events whose `aggregate_version` is older than the one they last processed.
+
+---
+
+## Phase 1 simplifications
+
+These are deliberate and small, but they are simplifications and so belong here.
+
+### The API bundle is not minified
+
+- **Today:** `optimization: false` in `apps/core/api/webpack.config.js`.
+- **Signal:** image size or cold-start time matters (Phase 6 packaging).
+- **Steps:** enable optimization for the production configuration only and
+  re-run the bundle smoke test — decorator metadata is the thing to watch.
+
+### Unused Nest optional integrations are ignored at build time
+
+- **Today:** an `IgnorePlugin` entry keeps class-validator, microservices,
+  websockets and the Fastify static/view plugins out of the bundle.
+- **Signal:** a phase starts using one of them — realtime in Phase 5 needs
+  `@nestjs/websockets`.
+- **Steps:** install the package and remove it from the regex in the same
+  commit, otherwise the runtime failure looks exactly like a missing install.
+
+### Gitleaks is optional locally
+
+- **Today:** the pre-push hook skips the scan when the binary is absent; CI
+  always runs it.
+- **Signal:** a secret reaches a branch before CI catches it.
+- **Steps:** make the hook install-or-fail instead of skipping.
 
 ---
 

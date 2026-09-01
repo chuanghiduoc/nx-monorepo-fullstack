@@ -25,6 +25,16 @@ export default [
     },
   },
   {
+    files: ['**/*.json'],
+    languageOptions: { parser: await import('jsonc-eslint-parser') },
+    rules: {
+      '@nx/dependency-checks': [
+        'error',
+        { ignoredFiles: ['{projectRoot}/vite.config.{js,ts,mjs,mts}'] },
+      ],
+    },
+  },
+  {
     ignores: ['**/out-tsc'],
   },
 ];
