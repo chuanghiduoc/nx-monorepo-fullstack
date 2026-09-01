@@ -16,6 +16,11 @@
     }
   },
   "dependencies": {
+    "@tanstack/react-query": "catalog:",
     "tslib": "catalog:"
+  },
+  "devDependencies": {
+    "@hey-api/client-fetch": "catalog:",
+    "@hey-api/openapi-ts": "0.99.0"
   }
 }

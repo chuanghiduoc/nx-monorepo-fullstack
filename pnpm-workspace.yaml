@@ -64,6 +64,8 @@ catalog:
   '@nestjs/throttler': '^6.5.0'
   '@nest-lab/throttler-storage-redis': '^1.2.0'
   'ioredis': '^6.0.0'
+  '@tanstack/react-query': '^5.102.8'
+  '@hey-api/client-fetch': '^0.13.1'
 
 # @nestjs/platform-fastify pins fastify 5.11.x while @fastify/helmet requires
 # 5.12.x. Two copies means two sets of FastifyInstance types, and a plugin

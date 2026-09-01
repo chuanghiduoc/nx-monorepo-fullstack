@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
+    "@workspace/shared-api-client-core": "workspace:*",
     "@workspace/shared-ui": "workspace:*",
     "next": "catalog:",
     "react": "catalog:",

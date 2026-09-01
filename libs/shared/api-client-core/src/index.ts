@@ -1,1 +1,1 @@
-export * from './lib/shared-api-client-core.js';
+export * from './generated/index.js';

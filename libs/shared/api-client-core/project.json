@@ -3,7 +3,37 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/shared/api-client-core/src",
   "projectType": "library",
-  "tags": ["scope:shared", "platform:shared", "type:data-access"],
+  "tags": [
+    "scope:shared",
+    "platform:shared",
+    "type:data-access"
+  ],
   "// targets": "to see all targets run: nx show project shared-api-client-core --web",
-  "targets": {}
+  "targets": {
+    "generate": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "dependsOn": [
+        {
+          "projects": [
+            "core-api"
+          ],
+          "target": "openapi"
+        }
+      ],
+      "inputs": [
+        {
+          "dependentTasksOutputFiles": "**/openapi.json"
+        },
+        "{projectRoot}/openapi-ts.config.ts"
+      ],
+      "outputs": [
+        "{projectRoot}/src/generated"
+      ],
+      "options": {
+        "cwd": "libs/shared/api-client-core",
+        "command": "openapi-ts"
+      }
+    }
+  }
 }

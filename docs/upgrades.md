@@ -216,3 +216,21 @@ These are deliberate and small, but they are simplifications and so belong here.
 
 - **Signal:** local state genuinely outgrows React state and TanStack Query's
   server cache. Until then, adding one is cost without benefit.
+
+### The generated client is not linted
+
+- **Today:** `libs/shared/api-client-core/src/generated` is excluded from ESLint.
+  It is typechecked, and knip treats it as an entry point, so the properties we
+  actually depend on are still enforced.
+- **Signal:** never, unless we start hand-editing generated output — which would
+  be the real problem.
+- **Steps:** none. Linting it would mean carrying rule exceptions for a vendor's
+  code style in review.
+
+### `@hey-api/openapi-ts` is pinned to an exact version
+
+- **Today:** `0.99.0`, no caret. Generated output changes between minor
+  releases, and the CI drift check compares it byte for byte.
+- **Signal:** an upgrade is wanted, or Renovate opens the PR.
+- **Steps:** bump the pin, run `pnpm nx run shared-api-client-core:generate`, and
+  commit the regenerated output in the same commit — the diff is the review.
