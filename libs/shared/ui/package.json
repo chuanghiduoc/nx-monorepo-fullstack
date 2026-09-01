@@ -31,5 +31,9 @@
     "radix-ui": "catalog:",
     "tailwind-merge": "catalog:",
     "react": "catalog:"
+  },
+  "devDependencies": {
+    "@testing-library/react": "catalog:",
+    "jsdom": "catalog:"
   }
 }

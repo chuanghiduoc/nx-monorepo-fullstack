@@ -6,11 +6,11 @@ on:
       - main
   pull_request:
 
-# A new push supersedes the previous run for the same ref; two full pipelines
-# (each installing Playwright browsers) are pure waste.
+# A new push supersedes the previous run for the same ref. Runs on main are not
+# cancelled: main's history is what release and deploy decisions read.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   actions: read
@@ -55,9 +55,9 @@ jobs:
       - run: pnpm knip
 
       # Cheapest possible dependency check, kept alongside OSV-Scanner on purpose:
-      # it runs without network setup and fails fast on known advisories.
+      # it needs no setup and fails fast on known advisories. It gates the build —
+      # a scanner that cannot fail is decoration.
       - run: pnpm audit --audit-level=high
-        continue-on-error: true
 
       # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
       - run: pnpm exec nx fix-ci
@@ -65,11 +65,8 @@ jobs:
 
   # PR-stage security gate (spec §3). Image scanning, SBOM, SLSA provenance and
   # signing run in the release workflow instead, once images exist.
-  security:
+  secrets-scan:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -80,11 +77,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Dependency vulnerabilities
-        uses: google/osv-scanner-action/osv-scanner-action@v2
-        with:
-          scan-args: |-
-            --lockfile=pnpm-lock.yaml
+  static-analysis:
+    runs-on: ubuntu-latest
+    # semgrep/semgrep-action was archived in 2024; the maintained path is the
+    # official container image running `semgrep ci`.
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v7
+      - run: semgrep ci --config auto --error
 
-      - name: Static analysis
-        uses: semgrep/semgrep-action@v1
+  # Reusable workflow published by the OSV-Scanner project. The standalone
+  # action path used previously does not exist as a versioned reference.
+  dependency-scan:
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.0
+    with:
+      scan-args: |-
+        --lockfile=pnpm-lock.yaml

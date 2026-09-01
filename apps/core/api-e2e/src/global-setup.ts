@@ -39,7 +39,7 @@ export async function setup(): Promise<void> {
   api = spawn(process.execPath, ['main.js'], {
     cwd: distDir,
     stdio: 'inherit',
-    env: { ...process.env, PORT: '3000' },
+    env: { ...process.env, PORT: '3000', HOST: '127.0.0.1' },
   });
 
   await waitForApi();

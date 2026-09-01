@@ -10,6 +10,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "catalog:",
+    "@testing-library/react": "catalog:",
+    "jsdom": "catalog:",
     "postcss": "catalog:",
     "shadcn": "catalog:",
     "tailwindcss": "catalog:",

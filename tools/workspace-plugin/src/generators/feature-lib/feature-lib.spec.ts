@@ -35,6 +35,31 @@ describe('feature-lib generator', () => {
     expect(project.root).toBe('libs/core/web/feature-dashboard');
   });
 
+  it('points generated dependencies at the pnpm catalog', async () => {
+    tree.write(
+      'pnpm-workspace.yaml',
+      [
+        'packages:',
+        "  - 'libs/*/*'",
+        'catalog:',
+        "  'tslib': '^2.3.0'",
+        '',
+      ].join(String.fromCharCode(10)),
+    );
+
+    await featureLibGenerator(tree, {
+      name: 'invoices',
+      scope: 'core',
+      platform: 'node',
+    });
+
+    const packageJson = JSON.parse(
+      tree.read('libs/core/server/feature-invoices/package.json', 'utf-8') ?? '{}',
+    );
+
+    expect(packageJson.dependencies?.tslib).toBe('catalog:');
+  });
+
   it('tags every generated library on all three boundary axes', async () => {
     await featureLibGenerator(tree, {
       name: 'billing',

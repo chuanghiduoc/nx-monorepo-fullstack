@@ -27,9 +27,9 @@
         "./src/*"
       ]
     },
-    "outDir": "dist",
+    "outDir": "out-tsc/app",
     "rootDir": "src",
-    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
+    "tsBuildInfoFile": "out-tsc/app/tsconfig.tsbuildinfo",
     "types": [
       "vitest/globals",
       "vitest/importMeta",

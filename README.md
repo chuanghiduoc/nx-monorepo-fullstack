@@ -37,7 +37,7 @@ pnpm dev:obs   # Grafana on http://localhost:3001, OTLP on :4317/:4318
 
 | Command                      | What it does                                     |
 | ---------------------------- | ------------------------------------------------ |
-| `pnpm verify`                | lint + typecheck + test + build across the graph  |
+| `pnpm verify`                | lint + typecheck + test + build + e2e across the graph |
 | `pnpm nx affected -t test`   | only what the current change touches              |
 | `pnpm knip`                  | report unused files, dependencies and exports     |
 | `pnpm nx release --dry-run`  | preview the next version and changelog            |

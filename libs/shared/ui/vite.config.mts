@@ -19,6 +19,9 @@ export default defineConfig(() => ({
     dts({
       entryRoot: 'src',
       tsconfigPath: path.join(import.meta.dirname, 'tsconfig.lib.json'),
+      // Tests are typechecked with the library (one tsconfig owns the project),
+      // but their declarations have no business in the published output.
+      exclude: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.test.ts', '**/*.test.tsx'],
     }),
   ],
   // Uncomment this if you are using workers.

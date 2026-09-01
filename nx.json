@@ -14,7 +14,8 @@
       "{workspaceRoot}/.github/workflows/ci.yml",
       "{workspaceRoot}/tsconfig.base.json",
       "{workspaceRoot}/pnpm-workspace.yaml",
-      "{workspaceRoot}/eslint.config.mjs"
+      "{workspaceRoot}/eslint.config.mjs",
+      "{workspaceRoot}/eslint.boundaries.mjs"
     ]
   },
   "plugins": [
@@ -97,6 +98,15 @@
       "cache": true,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
+    },
+    "typecheck": {
+      "inputs": [
+        "default",
+        "^default",
+        {
+          "externalDependencies": ["typescript"]
+        }
+      ]
     }
   },
   "generators": {

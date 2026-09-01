@@ -1,6 +1,6 @@
 # Spec thiết kế — Nx Full-stack Boilerplate đa mảng (NestJS + Next.js, polyglot-ready)
 
-- **Ngày:** 2026-09-02 (v14 — vá review vòng 6: tenant context matrix + SQL policy mẫu, role model 5 role, runtime enforcement root client, routing contract, idempotency replay contract, outbox consumer dedup, MUST/SHOULD/SPIKE/UPGRADE, contract artifacts, failure matrix. Tên file giữ ngày khởi tạo 09-01)
+- **Ngày:** 2026-09-02 (v15 — đồng bộ với thực tế Phase 1 đã build; v14 — vá review vòng 6: tenant context matrix + SQL policy mẫu, role model 5 role, runtime enforcement root client, routing contract, idempotency replay contract, outbox consumer dedup, MUST/SHOULD/SPIKE/UPGRADE, contract artifacts, failure matrix. Tên file giữ ngày khởi tạo 09-01)
 - **Trạng thái:** Chờ đóng dấu chốt sau 6 vòng review — Phase 1 được phép bắt đầu (blockers không chạm Phase 1)
 - **Vị trí workspace:** `D:\nx-monorepo-fullstack\nx-monorepo-fullstack\`
 - **Ghi chú:** Spec move vào `<workspace>/docs/superpowers/specs/` và commit ở bước đầu Phase 1.
@@ -923,6 +923,27 @@ có consumer phụ thuộc thứ tự thật).
 
 nx-mcp, context7, prisma-local: đã cài. shadcn MCP + Next DevTools MCP:
 Phase 1.
+
+## 11-bis. Thực tế Phase 1 (đã build và verify)
+
+Những điểm spec dự đoán khác thực tế, ghi lại để các phase sau không lặp lại
+giả định sai:
+
+| Spec dự đoán | Thực tế khi build | Hệ quả |
+|---|---|---|
+| Scope `@nx-monorepo-fullstack/*` | Nx sinh `@org/*`; đã đổi thành **`@workspace/*`** | Mọi import, `customConditions`, `transpilePackages`, components.json dùng scope này |
+| `@nx/nest` sinh sẵn app + e2e | Generator **không** tạo e2e và chỉ hỗ trợ `unitTestRunner: jest\|none` | e2e API phải tạo riêng; Vitest thêm qua `@nx/vitest:configuration` |
+| Web dev trên 4200 | Next mặc định 3000 — **đụng core-api** | Port 4200 set trong `project.json` của core-web |
+| `pnpm add` lấy version khớp | Kéo `@nestjs/platform-fastify` v12 trong khi core là v11 (`/internal` không tồn tại) | Chỉ định dòng major khi generator đã cố định một dòng khác |
+| Postgres 18 mount `/var/lib/postgresql/data` | PG18 image yêu cầu mount **`/var/lib/postgresql`** | compose sửa theo, có evidence trong `docs/sources.md` |
+| shadcn CLI chạy được trong Nx | Cần `components.json` + tsconfig paths; alias sinh ra là self-reference package | Ngoại lệ boundary chỉ trong `shared-ui`; lib consume as source + `transpilePackages` |
+| `test-ci`/`e2e-ci` dùng được trong CI | Nx **từ chối** chạy nếu không có Nx Cloud | CI dùng `test`/`e2e`; đổi cùng lúc bật `nx connect` |
+| `externalDependencies: 'all'` phủ hết optional deps | Chỉ phủ dependency **đã khai báo**; optional lazy-require vẫn vỡ build | Cần `IgnorePlugin` tường minh (đã kiểm chứng: bỏ ra → 9 lỗi) |
+| pnpm cài được ngay | pnpm 11 chặn build script (`ERR_PNPM_IGNORED_BUILDS`), lỗi Nx đã biết | `pnpm approve-builds <pkg>` ghi `allowBuilds` vào workspace |
+
+**Bài học quy trình:** mỗi giả định về hành vi công cụ phải được một lệnh chứng
+minh trước khi phase sau dựa vào nó — bảng trên toàn là chỗ mà "đọc docs rồi
+suy ra" đã sai.
 
 ## 12. Nguồn đã verify (09/2026)
 

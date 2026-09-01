@@ -4,66 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-catalogs:
-  default:
-    '@nestjs/common':
-      specifier: ^11.0.0
-      version: 11.2.3
-    '@nestjs/core':
-      specifier: ^11.0.0
-      version: 11.2.3
-    '@nestjs/platform-fastify':
-      specifier: ^11.2.3
-      version: 11.2.3
-    '@nestjs/testing':
-      specifier: ^11.0.0
-      version: 11.2.3
-    '@tailwindcss/postcss':
-      specifier: ^4.3.3
-      version: 4.3.3
-    class-variance-authority:
-      specifier: ^0.7.1
-      version: 0.7.1
-    clsx:
-      specifier: ^2.1.1
-      version: 2.1.1
-    next:
-      specifier: ~16.1.6
-      version: 16.1.7
-    postcss:
-      specifier: ^8.5.26
-      version: 8.5.26
-    radix-ui:
-      specifier: ^1.6.7
-      version: 1.6.7
-    react:
-      specifier: ^19.0.0
-      version: 19.2.8
-    react-dom:
-      specifier: ^19.0.0
-      version: 19.2.8
-    reflect-metadata:
-      specifier: ^0.2.0
-      version: 0.2.2
-    rxjs:
-      specifier: ^7.8.0
-      version: 7.8.1
-    shadcn:
-      specifier: ^4.19.1
-      version: 4.19.1
-    tailwind-merge:
-      specifier: ^3.6.0
-      version: 3.6.0
-    tailwindcss:
-      specifier: ^4.3.3
-      version: 4.3.3
-    tslib:
-      specifier: ^2.3.0
-      version: 2.8.1
-    tw-animate-css:
-      specifier: ^1.4.0
-      version: 1.4.0
-
 importers:
 
   .:
@@ -147,12 +87,6 @@ importers:
       '@swc/helpers':
         specifier: 0.5.18
         version: 0.5.18
-      '@testing-library/dom':
-        specifier: 10.4.0
-        version: 10.4.0
-      '@testing-library/react':
-        specifier: 16.3.0
-        version: 16.3.0(@testing-library/dom@10.4.0)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.3
@@ -275,7 +209,7 @@ importers:
   apps/core/api-e2e:
     devDependencies:
       vitest:
-        specifier: ~4.1.0
+        specifier: 'catalog:'
         version: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(jsdom@27.4.0(supports-color@8.1.1))(vite@8.2.2(@types/node@24.13.3)(jiti@2.4.2)(less@4.5.1)(sass-embedded@1.103.1)(sass@1.103.1)(terser@5.51.2)(yaml@2.9.0))
 
   apps/core/web:
@@ -296,6 +230,12 @@ importers:
       '@tailwindcss/postcss':
         specifier: 'catalog:'
         version: 4.3.3
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.0(@testing-library/dom@10.4.0)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      jsdom:
+        specifier: 'catalog:'
+        version: 27.4.0(supports-color@8.1.1)
       postcss:
         specifier: 'catalog:'
         version: 8.5.26
@@ -340,6 +280,13 @@ importers:
       tailwind-merge:
         specifier: 'catalog:'
         version: 3.6.0
+    devDependencies:
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.0(@testing-library/dom@10.4.0)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      jsdom:
+        specifier: 'catalog:'
+        version: 27.4.0(supports-color@8.1.1)
 
   tools/workspace-plugin:
     dependencies:
@@ -350,7 +297,7 @@ importers:
         specifier: 23.1.1
         version: 23.1.1(@babel/traverse@7.29.8(supports-color@8.1.1))(@swc-node/register@1.11.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(@swc/types@0.1.28)(@typescript/typescript6@6.0.2)(supports-color@8.1.1))(@swc/cli@0.8.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(chokidar@5.0.0)(supports-color@8.1.1))(@swc/core@1.15.8(@swc/helpers@0.5.18))(nx@23.1.1(@swc-node/register@1.11.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(@swc/types@0.1.28)(@typescript/typescript6@6.0.2)(supports-color@8.1.1))(@swc/core@1.15.8(@swc/helpers@0.5.18)))(supports-color@8.1.1)
       tslib:
-        specifier: ^2.3.0
+        specifier: 'catalog:'
         version: 2.8.1
 
 packages:
@@ -18163,7 +18110,6 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   http-proxy-middleware@2.0.10(@types/express@4.17.25)(debug@4.4.3(supports-color@7.2.0)):
     dependencies:
@@ -18240,7 +18186,6 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   human-signals@2.1.0: {}
 
@@ -18932,7 +18877,6 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
-    optional: true
 
   jsesc@3.1.0: {}
 
