@@ -1,0 +1,27 @@
+# Lefthook 2.x configuration — https://lefthook.dev/configuration/
+# Hooks stay fast by relying on Nx affected instead of running the whole workspace.
+
+commit-msg:
+  jobs:
+    - name: commitlint
+      run: pnpm commitlint --edit {1}
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: lint-affected
+      run: pnpm nx affected -t lint --base=HEAD
+
+pre-push:
+  jobs:
+    - name: verify-affected
+      run: pnpm nx affected -t typecheck test build
+
+    - name: gitleaks
+      # Optional locally: CI always runs the full secret scan.
+      run: |
+        if command -v gitleaks >/dev/null 2>&1; then
+          gitleaks git --pre-push --staged
+        else
+          echo "gitleaks not installed locally — CI will run the secret scan"
+        fi

@@ -10,6 +10,7 @@ allowBuilds:
   less: true
   sharp: true
   esbuild: false
+  lefthook: true
 catalog:
   '@nestjs/common': '^11.0.0'
   '@nestjs/core': '^11.0.0'
