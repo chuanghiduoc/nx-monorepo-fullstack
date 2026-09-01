@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: app
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432'
     volumes:
       # postgres:18+ expects a single mount at /var/lib/postgresql and places the
       # cluster in a versioned subdirectory, so pg_upgrade --link can work later.
@@ -27,7 +27,7 @@ services:
     image: redis:8-alpine
     command: redis-server --maxmemory-policy noeviction --appendonly yes
     ports:
-      - '6379:6379'
+      - '127.0.0.1:6379:6379'
     volumes:
       - redisdata:/data
     healthcheck:
@@ -41,7 +41,7 @@ services:
     image: redis:8-alpine
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
-      - '6380:6379'
+      - '127.0.0.1:6380:6379'
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
@@ -49,10 +49,10 @@ services:
       retries: 10
 
   mailpit:
-    image: axllent/mailpit:latest
+    image: axllent/mailpit:v1.28
     ports:
-      - '1025:1025'
-      - '8025:8025'
+      - '127.0.0.1:1025:1025'
+      - '127.0.0.1:8025:8025'
     healthcheck:
       test: ['CMD', '/mailpit', 'readyz']
       interval: 5s
@@ -60,14 +60,14 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     command: server /data --console-address ':9001'
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio12345
     ports:
-      - '9000:9000'
-      - '9001:9001'
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
     volumes:
       - miniodata:/data
     healthcheck:
@@ -79,12 +79,12 @@ services:
   # Grafana + Loki + Tempo + Prometheus in one container, opt-in to keep the
   # default dev footprint small: docker compose --profile observability up -d
   otel-lgtm:
-    image: grafana/otel-lgtm:latest
+    image: grafana/otel-lgtm:0.11.14
     profiles: ['observability']
     ports:
-      - '3001:3000'
-      - '4317:4317'
-      - '4318:4318'
+      - '127.0.0.1:3001:3000'
+      - '127.0.0.1:4317:4317'
+      - '127.0.0.1:4318:4318'
 
 volumes:
   pgdata:

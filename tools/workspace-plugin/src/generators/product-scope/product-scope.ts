@@ -48,7 +48,8 @@ pnpm nx g @workspace/workspace-plugin:feature-lib --name=<feature> --scope=${nam
 
 ## 3. Boundary rule
 
-Add the scope to \`eslint.config.mjs\` so it can only reach itself and shared:
+Add the scope to \`eslint.boundaries.mjs\` (the single definition of the
+dependency matrix — the root config and every project config import it):
 
 \`\`\`js
 {
