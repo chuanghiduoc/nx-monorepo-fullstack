@@ -1,4 +1,4 @@
-import { Button } from '@org/shared-ui';
+import { Button } from '@workspace/shared-ui';
 
 export default function Index() {
   return (

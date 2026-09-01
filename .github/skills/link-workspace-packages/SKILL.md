@@ -1,6 +1,6 @@
 ---
 name: link-workspace-packages
-description: 'Link workspace packages in monorepos (npm, yarn, pnpm, bun). USE WHEN: (1) you just created or generated new packages and need to wire up their dependencies, (2) user imports from a sibling package and needs to add it as a dependency, (3) you get resolution errors for workspace packages (@org/*) like "cannot find module", "failed to resolve import", "TS2307", or "cannot resolve". DO NOT patch around with tsconfig paths or manual package.json edits - use the package manager''s workspace commands to fix actual linking.'
+description: 'Link workspace packages in monorepos (npm, yarn, pnpm, bun). USE WHEN: (1) you just created or generated new packages and need to wire up their dependencies, (2) user imports from a sibling package and needs to add it as a dependency, (3) you get resolution errors for workspace packages (@workspace/*) like "cannot find module", "failed to resolve import", "TS2307", or "cannot resolve". DO NOT patch around with tsconfig paths or manual package.json edits - use the package manager''s workspace commands to fix actual linking.'
 ---
 
 # Link Workspace Packages
@@ -33,16 +33,16 @@ Uses `workspace:` protocol - symlinks only created when explicitly declared.
 
 ```bash
 # From consumer directory
-pnpm add @org/ui --workspace
+pnpm add @workspace/ui --workspace
 
 # Or with --filter from anywhere
-pnpm add @org/ui --filter @org/app --workspace
+pnpm add @workspace/ui --filter @workspace/app --workspace
 ```
 
 Result in `package.json`:
 
 ```json
-{ "dependencies": { "@org/ui": "workspace:*" } }
+{ "dependencies": { "@workspace/ui": "workspace:*" } }
 ```
 
 ---
@@ -52,13 +52,13 @@ Result in `package.json`:
 Also uses `workspace:` protocol.
 
 ```bash
-yarn workspace @org/app add @org/ui
+yarn workspace @workspace/app add @workspace/ui
 ```
 
 Result in `package.json`:
 
 ```json
-{ "dependencies": { "@org/ui": "workspace:^" } }
+{ "dependencies": { "@workspace/ui": "workspace:^" } }
 ```
 
 ---
@@ -68,13 +68,13 @@ Result in `package.json`:
 No `workspace:` protocol. npm auto-symlinks workspace packages.
 
 ```bash
-npm install @org/ui --workspace @org/app
+npm install @workspace/ui --workspace @workspace/app
 ```
 
 Result in `package.json`:
 
 ```json
-{ "dependencies": { "@org/ui": "*" } }
+{ "dependencies": { "@workspace/ui": "*" } }
 ```
 
 npm resolves to local workspace automatically during install.
@@ -86,13 +86,13 @@ npm resolves to local workspace automatically during install.
 Supports `workspace:` protocol (pnpm-compatible).
 
 ```bash
-cd packages/app && bun add @org/ui
+cd packages/app && bun add @workspace/ui
 ```
 
 Result in `package.json`:
 
 ```json
-{ "dependencies": { "@org/ui": "workspace:*" } }
+{ "dependencies": { "@workspace/ui": "workspace:*" } }
 ```
 
 ---
@@ -102,13 +102,13 @@ Result in `package.json`:
 **Example 1: pnpm - link ui lib to app**
 
 ```bash
-pnpm add @org/ui --filter @org/app --workspace
+pnpm add @workspace/ui --filter @workspace/app --workspace
 ```
 
 **Example 2: npm - link multiple packages**
 
 ```bash
-npm install @org/data-access @org/ui --workspace @org/dashboard
+npm install @workspace/data-access @workspace/ui --workspace @workspace/dashboard
 ```
 
 **Example 3: Debug "Cannot find module"**
@@ -119,7 +119,7 @@ npm install @org/data-access @org/ui --workspace @org/dashboard
 
 ## Notes
 
-- Symlinks appear in `<consumer>/node_modules/@org/<package>`
+- Symlinks appear in `<consumer>/node_modules/@workspace/<package>`
 - **Hoisting differs by manager:**
   - npm/bun: hoist shared deps to root `node_modules`
   - pnpm: no hoisting (strict isolation, prevents phantom deps)

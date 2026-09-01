@@ -18,7 +18,7 @@ export default [
           enforceBuildableLibDependency: true,
           allow: [
             '^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$',
-            '^@org/shared-ui/.*$',
+            '^@workspace/shared-ui/.*$',
           ],
           depConstraints: [
             { sourceTag: 'scope:shared', onlyDependOnLibsWithTags: ['scope:shared'] },

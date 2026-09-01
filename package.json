@@ -1,9 +1,9 @@
 {
-  "name": "@org/source",
+  "name": "@workspace/source",
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "knip": "knip --exclude unresolved",
+    "knip": "knip",
     "verify": "nx run-many -t lint typecheck test build e2e",
     "dev": "docker compose up -d && nx run-many -t serve dev --projects=core-api,core-web",
     "dev:down": "docker compose down",
@@ -11,13 +11,9 @@
   },
   "private": true,
   "devDependencies": {
-    "@babel/core": "^7.14.5",
-    "@babel/preset-react": "^7.14.5",
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "@eslint/js": "^9.8.0",
-    "@nestjs/schematics": "^11.0.0",
-    "@nestjs/testing": "^11.0.0",
     "@next/eslint-plugin-next": "^16.1.6",
     "@nx/devkit": "23.1.1",
     "@nx/eslint": "23.1.1",
@@ -43,6 +39,7 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "~4.1.0",
     "@vitest/ui": "~4.1.0",
@@ -69,8 +66,7 @@
     "vitest": "~4.1.0",
     "webpack": "^5.101.3",
     "webpack-cli": "^7.0.0",
-    "webpack-dev-server": "^5.2.1",
-    "@typescript/native": "npm:typescript@^7.0.2"
+    "webpack-dev-server": "^5.2.1"
   },
   "dependencies": {
     "next": "~16.1.6",

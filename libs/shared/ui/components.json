@@ -13,11 +13,11 @@
   "iconLibrary": "lucide",
   "rtl": false,
   "aliases": {
-    "components": "@org/shared-ui/components",
-    "utils": "@org/shared-ui/lib/utils",
-    "ui": "@org/shared-ui/components/ui",
-    "lib": "@org/shared-ui/lib",
-    "hooks": "@org/shared-ui/hooks"
+    "components": "@workspace/shared-ui/components",
+    "utils": "@workspace/shared-ui/lib/utils",
+    "ui": "@workspace/shared-ui/components/ui",
+    "lib": "@workspace/shared-ui/lib",
+    "hooks": "@workspace/shared-ui/hooks"
   },
   "registries": {}
 }

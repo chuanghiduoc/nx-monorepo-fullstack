@@ -1,6 +1,6 @@
 import './global.css';
 import { Geist } from "next/font/google";
-import { cn } from "@org/shared-ui/lib/utils";
+import { cn } from "@workspace/shared-ui/lib/utils";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 

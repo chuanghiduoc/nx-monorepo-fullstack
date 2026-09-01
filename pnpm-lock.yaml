@@ -4,48 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-catalogs:
-  default:
-    '@nestjs/common':
-      specifier: ^11.0.0
-      version: 11.2.3
-    '@nestjs/core':
-      specifier: ^11.0.0
-      version: 11.2.3
-    '@nestjs/platform-fastify':
-      specifier: ^11.2.3
-      version: 11.2.3
-    '@nestjs/testing':
-      specifier: ^11.0.0
-      version: 11.2.3
-    '@tailwindcss/postcss':
-      specifier: ^4.3.3
-      version: 4.3.3
-    next:
-      specifier: ~16.1.6
-      version: 16.1.7
-    postcss:
-      specifier: ^8.5.26
-      version: 8.5.26
-    react:
-      specifier: ^19.0.0
-      version: 19.2.8
-    react-dom:
-      specifier: ^19.0.0
-      version: 19.2.8
-    reflect-metadata:
-      specifier: ^0.2.0
-      version: 0.2.2
-    rxjs:
-      specifier: ^7.8.0
-      version: 7.8.1
-    tailwindcss:
-      specifier: ^4.3.3
-      version: 4.3.3
-    tslib:
-      specifier: ^2.3.0
-      version: 2.8.1
-
 importers:
 
   .:
@@ -60,12 +18,6 @@ importers:
         specifier: ^19.0.0
         version: 19.2.8(react@19.2.8)
     devDependencies:
-      '@babel/core':
-        specifier: ^7.14.5
-        version: 7.29.7(supports-color@7.2.0)
-      '@babel/preset-react':
-        specifier: ^7.14.5
-        version: 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
       '@commitlint/cli':
         specifier: ^21.2.2
         version: 21.2.2(@types/node@24.13.3)(@typescript/typescript6@6.0.2)(conventional-commits-parser@7.1.2)
@@ -75,12 +27,6 @@ importers:
       '@eslint/js':
         specifier: ^9.8.0
         version: 9.39.5
-      '@nestjs/schematics':
-        specifier: ^11.0.0
-        version: 11.1.0(@typescript/typescript6@6.0.2)(chokidar@4.0.3)(prettier@3.9.6)
-      '@nestjs/testing':
-        specifier: ^11.0.0
-        version: 11.2.3(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@7.2.0))(@nestjs/core@11.2.3)(@nestjs/platform-express@11.2.3)
       '@next/eslint-plugin-next':
         specifier: ^16.1.6
         version: 16.3.3(eslint@9.39.5(jiti@2.4.2)(supports-color@7.2.0))
@@ -98,7 +44,7 @@ importers:
         version: 23.1.1(@babel/traverse@7.29.8(supports-color@7.2.0))(@swc-node/register@1.11.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(@swc/types@0.1.28)(@typescript/typescript6@6.0.2)(supports-color@7.2.0))(@swc/cli@0.8.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(supports-color@7.2.0))(@swc/core@1.15.8(@swc/helpers@0.5.18))(nx@23.1.1(@swc-node/register@1.11.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(@swc/types@0.1.28)(@typescript/typescript6@6.0.2)(supports-color@7.2.0))(@swc/core@1.15.8(@swc/helpers@0.5.18)))(supports-color@7.2.0)
       '@nx/nest':
         specifier: 23.1.1
-        version: 23.1.1(39f52f6c6283b82ccdbf4e17ac078253)
+        version: 23.1.1(613bc977eff8a8d46b5e7d5b369790f6)
       '@nx/next':
         specifier: 23.1.1
         version: 23.1.1(ade77bfeaff46664e04721b7166a2f5b)
@@ -274,7 +220,7 @@ importers:
 
   apps/core/web:
     dependencies:
-      '@org/shared-ui':
+      '@workspace/shared-ui':
         specifier: workspace:*
         version: link:../../../libs/shared/ui
       next:
@@ -12502,6 +12448,7 @@ snapshots:
       uid: 2.0.2
     transitivePeerDependencies:
       - supports-color
+    optional: true
 
   '@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1)':
     dependencies:
@@ -12527,6 +12474,7 @@ snapshots:
       uid: 2.0.2
     optionalDependencies:
       '@nestjs/platform-express': 11.2.3(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@7.2.0))(@nestjs/core@11.2.3)(supports-color@7.2.0)
+    optional: true
 
   '@nestjs/core@11.2.3(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1))(@nestjs/platform-express@11.2.3)(reflect-metadata@0.2.2)(rxjs@7.8.1)':
     dependencies:
@@ -12594,14 +12542,6 @@ snapshots:
       prettier: 3.9.6
     transitivePeerDependencies:
       - chokidar
-
-  '@nestjs/testing@11.2.3(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@7.2.0))(@nestjs/core@11.2.3)(@nestjs/platform-express@11.2.3)':
-    dependencies:
-      '@nestjs/common': 11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@7.2.0)
-      '@nestjs/core': 11.2.3(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@7.2.0))(@nestjs/platform-express@11.2.3)(reflect-metadata@0.2.2)(rxjs@7.8.1)
-      tslib: 2.8.1
-    optionalDependencies:
-      '@nestjs/platform-express': 11.2.3(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@7.2.0))(@nestjs/core@11.2.3)(supports-color@7.2.0)
 
   '@nestjs/testing@11.2.3(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1))(@nestjs/core@11.2.3)(@nestjs/platform-express@11.2.3)':
     dependencies:
@@ -12889,7 +12829,7 @@ snapshots:
       - verdaccio
       - webpack-cli
 
-  '@nx/nest@23.1.1(39f52f6c6283b82ccdbf4e17ac078253)':
+  '@nx/nest@23.1.1(613bc977eff8a8d46b5e7d5b369790f6)':
     dependencies:
       '@nestjs/schematics': 11.1.0(@typescript/typescript6@6.0.2)(chokidar@4.0.3)(prettier@3.9.6)
       '@nx/devkit': 23.1.1(nx@23.1.1(@swc-node/register@1.11.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(@swc/types@0.1.28)(@typescript/typescript6@6.0.2)(supports-color@7.2.0))(@swc/core@1.15.8(@swc/helpers@0.5.18)))

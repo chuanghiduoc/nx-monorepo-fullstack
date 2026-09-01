@@ -24,7 +24,7 @@ TypeScript build.
 
 ```bash
 # 1. Prepare the scope (writes an ordered checklist)
-pnpm nx g @org/workspace-plugin:product-scope --name=billing
+pnpm nx g @workspace/workspace-plugin:product-scope --name=billing
 
 # 2. Add the Nx plugin for the language, e.g.
 pnpm nx add @nxlv/python      # Python

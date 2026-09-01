@@ -12,7 +12,7 @@
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "paths": {
-      "@org/shared-ui/*": [
+      "@workspace/shared-ui/*": [
         "./src/*"
       ]
     }

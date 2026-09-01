@@ -134,7 +134,7 @@ Imported projects may lack `tags`. Add tags or update `@nx/enforce-module-bounda
 
 ### Project Name Collisions (Multi-Import)
 
-Same `name` in `package.json` across source and dest causes `MultipleProjectsWithSameNameError`. **Fix**: Rename conflicting names (e.g. `@org/api` → `@org/teama-api`), update all dep references and import statements, `pnpm install`. The root `package.json` of each imported repo also becomes a project — rename those too.
+Same `name` in `package.json` across source and dest causes `MultipleProjectsWithSameNameError`. **Fix**: Rename conflicting names (e.g. `@workspace/api` → `@workspace/teama-api`), update all dep references and import statements, `pnpm install`. The root `package.json` of each imported repo also becomes a project — rename those too.
 
 ### Workspace Dep Import Ordering
 

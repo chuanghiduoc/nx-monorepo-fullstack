@@ -1,5 +1,5 @@
 {
-  "name": "@org/shared-ui",
+  "name": "@workspace/shared-ui",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -9,18 +9,18 @@
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "@org/source": "./src/index.ts",
+      "@workspace/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./lib/*": {
-      "@org/source": "./src/lib/*.ts",
+      "@workspace/source": "./src/lib/*.ts",
       "types": "./src/lib/*.ts",
       "default": "./src/lib/*.ts"
     },
     "./components/*": {
-      "@org/source": "./src/components/*.tsx",
+      "@workspace/source": "./src/components/*.tsx",
       "types": "./src/components/*.tsx",
       "default": "./src/components/*.tsx"
     }

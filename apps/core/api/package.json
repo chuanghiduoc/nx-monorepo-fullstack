@@ -1,5 +1,5 @@
 {
-  "name": "@org/core-api",
+  "name": "@workspace/core-api",
   "version": "0.0.1",
   "private": true,
   "dependencies": {

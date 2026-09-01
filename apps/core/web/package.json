@@ -1,9 +1,9 @@
 {
-  "name": "@org/core-web",
+  "name": "@workspace/core-web",
   "version": "0.0.1",
   "private": true,
   "dependencies": {
-    "@org/shared-ui": "workspace:*",
+    "@workspace/shared-ui": "workspace:*",
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
