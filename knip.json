@@ -21,7 +21,8 @@
     "eslint-plugin-react",
     "eslint-plugin-react-hooks",
     "prettier",
-    "typescript-eslint"
+    "typescript-eslint",
+    "@nx/plugin"
   ],
   "webpack": false,
   "workspaces": {
@@ -33,6 +34,12 @@
       "project": [
         "src/**/*.ts"
       ]
+    },
+    "tools/workspace-plugin": {
+      "entry": [
+        "src/generators/*/*.ts"
+      ],
+      "ignoreExportsUsedInFile": true
     }
   }
 }

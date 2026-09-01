@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "FeatureLib",
+  "title": "Create a feature library that follows the workspace conventions",
+  "description": "Generates libs/<scope>/<server|web>/feature-<name> with the scope, platform and type tags the module-boundary rules expect.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Feature name without the 'feature-' prefix, e.g. 'users'.",
+      "$default": { "$source": "argv", "index": 0 },
+      "x-prompt": "Feature name (without the feature- prefix)?"
+    },
+    "scope": {
+      "type": "string",
+      "description": "Product scope the library belongs to, e.g. 'core'.",
+      "x-prompt": "Which scope does this feature belong to?"
+    },
+    "platform": {
+      "type": "string",
+      "description": "Runtime side: node libraries live under server/, web libraries under web/.",
+      "enum": ["node", "web"],
+      "x-prompt": "Which platform does this feature run on?"
+    }
+  },
+  "required": ["name", "scope", "platform"]
+}

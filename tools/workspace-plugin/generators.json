@@ -1,0 +1,14 @@
+{
+  "generators": {
+    "feature-lib": {
+      "factory": "./dist/generators/feature-lib/feature-lib",
+      "schema": "./dist/generators/feature-lib/schema.json",
+      "description": "feature-lib generator"
+    },
+    "product-scope": {
+      "factory": "./dist/generators/product-scope/product-scope",
+      "schema": "./dist/generators/product-scope/schema.json",
+      "description": "product-scope generator"
+    }
+  }
+}
