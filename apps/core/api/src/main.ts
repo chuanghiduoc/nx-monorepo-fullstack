@@ -6,7 +6,12 @@ import {
 } from '@nestjs/platform-fastify';
 
 import { Logger as PinoLogger } from 'nestjs-pino';
+import helmet from '@fastify/helmet';
+import cors from '@fastify/cors';
+
 import {
+  AppConfig,
+  OriginCheckGuard,
   ProblemDetailsFilter,
   REQUEST_ID_HEADER,
   requestIdOptions,
@@ -30,8 +35,25 @@ async function bootstrap() {
   app.useLogger(app.get(PinoLogger));
   app.setGlobalPrefix(GLOBAL_PREFIX);
 
+  const config = app.get(AppConfig);
+  const allowedOrigins = config.get('CORS_ORIGINS');
+
+  // Security headers first: they must apply to every response, including errors.
+  await app.register(helmet, {
+    // The API serves JSON, never HTML, so a restrictive CSP costs nothing.
+    contentSecurityPolicy: { directives: { defaultSrc: ["'none'"] } },
+  });
+
+  await app.register(cors, {
+    origin: allowedOrigins,
+    credentials: true,
+  });
+
   // One error shape for the whole service (RFC 9457).
   app.useGlobalFilters(new ProblemDetailsFilter());
+
+  // CSRF: SameSite cookies plus an origin check on state-changing requests.
+  app.useGlobalGuards(new OriginCheckGuard(allowedOrigins));
 
   // Echo the id so a caller can quote it when reporting a problem.
   app

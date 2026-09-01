@@ -10,3 +10,4 @@ export {
   type ProblemError,
 } from './lib/errors/problem-details.js';
 export { ProblemDetailsFilter } from './lib/errors/problem-details.filter.js';
+export { OriginCheckGuard } from './lib/security/origin-check.guard.js';
