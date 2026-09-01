@@ -17,8 +17,10 @@
   },
   "dependencies": {
     "@nestjs/common": "catalog:",
-    "@nestjs/config": "^12.0.0",
-    "tslib": "^2.3.0",
-    "zod": "^4.5.4"
+    "@nestjs/config": "catalog:",
+    "nestjs-pino": "catalog:",
+    "pino-pretty": "catalog:",
+    "tslib": "catalog:",
+    "zod": "catalog:"
   }
 }

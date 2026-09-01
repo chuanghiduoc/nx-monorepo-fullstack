@@ -9,6 +9,7 @@
     "@opentelemetry/api": "catalog:",
     "@workspace/core-server-core": "workspace:*",
     "better-auth": "catalog:",
+    "nestjs-pino": "^5.0.0",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "tslib": "catalog:"

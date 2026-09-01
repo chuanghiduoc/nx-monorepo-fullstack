@@ -5,6 +5,12 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 
+import { Logger as PinoLogger } from 'nestjs-pino';
+import {
+  REQUEST_ID_HEADER,
+  requestIdOptions,
+} from '@workspace/core-server-core';
+
 import { AppModule } from './app/app.module';
 import { mountBetterAuth } from './app/auth/auth.handler';
 
@@ -17,9 +23,20 @@ async function bootstrap() {
     // Behind the edge proxy (spec §6.18) the client address and protocol arrive
     // in X-Forwarded-* headers; without trustProxy, secure cookies and rate
     // limiting would see the proxy instead of the caller.
-    new FastifyAdapter({ trustProxy: true }),
+    new FastifyAdapter({ trustProxy: true, ...requestIdOptions }),
   );
+  // Framework logs go through pino too, so everything is one JSON stream.
+  app.useLogger(app.get(PinoLogger));
   app.setGlobalPrefix(GLOBAL_PREFIX);
+
+  // Echo the id so a caller can quote it when reporting a problem.
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook('onSend', (request, reply, _payload, done) => {
+      reply.header(REQUEST_ID_HEADER, request.id);
+      done();
+    });
 
   // better-auth owns /api/auth/* and is mounted on the Fastify instance itself,
   // outside Nest's router (ADR-0002).

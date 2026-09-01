@@ -13,8 +13,17 @@ describe('core-api', () => {
   it('returns a request id header so logs can be correlated', async () => {
     const response = await fetch(`${API_URL}/api`);
 
-    // Phase 2 adds the header; until then this documents the expectation.
-    expect(response.headers.get('content-type')).toContain('application/json');
+    expect(response.headers.get('x-request-id')).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+  });
+
+  it('continues a trace the caller already started', async () => {
+    const response = await fetch(`${API_URL}/api`, {
+      headers: { 'x-request-id': 'trace-from-the-edge' },
+    });
+
+    expect(response.headers.get('x-request-id')).toBe('trace-from-the-edge');
   });
 
   it('does not expose routes outside the /api prefix', async () => {
