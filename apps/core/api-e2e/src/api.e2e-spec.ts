@@ -121,3 +121,73 @@ describe('better-auth mount (ADR-0002)', () => {
     await expect(response.json()).resolves.toBeNull();
   });
 });
+
+describe('demo items (the reference feature)', () => {
+  const ALLOWED_ORIGIN = 'http://localhost:4200';
+
+  async function create(title: string, origin = ALLOWED_ORIGIN) {
+    return fetch(`${API_URL}/api/v1/demo-items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: origin },
+      body: JSON.stringify({ title }),
+    });
+  }
+
+  it('creates an item and points at it with Location', async () => {
+    const response = await create(`item-${Date.now()}`);
+
+    expect(response.status).toBe(201);
+    expect(response.headers.get('location')).toMatch(/^\/api\/v1\/demo-items\//);
+  });
+
+  it('lets the database mint a version 7 uuid', async () => {
+    const response = await create(`uuid-${Date.now()}`);
+    const item = (await response.json()) as { id: string };
+
+    // The 13th hex digit is the UUID version.
+    expect(item.id[14]).toBe('7');
+  });
+
+  it('returns a page shaped {items, nextCursor}', async () => {
+    const response = await fetch(`${API_URL}/api/v1/demo-items`);
+    const page = (await response.json()) as { items: unknown[]; nextCursor: unknown };
+
+    expect(Array.isArray(page.items)).toBe(true);
+    expect(page).toHaveProperty('nextCursor');
+  });
+
+  it('rejects an empty title with field-level errors', async () => {
+    const response = await create('');
+    const problem = (await response.json()) as ProblemResponse;
+
+    expect(response.status).toBe(400);
+    expect(problem.errors?.[0]).toMatchObject({ path: 'title' });
+  });
+
+  it('rejects a state-changing request from another origin', async () => {
+    const response = await create('csrf-attempt', 'https://evil.example.com');
+
+    expect(response.status).toBe(403);
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    );
+  });
+
+  it('rejects a state-changing request with no origin and no api key', async () => {
+    const response = await fetch(`${API_URL}/api/v1/demo-items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'no-origin' }),
+    });
+
+    expect(response.status).toBe(403);
+  });
+
+  it('never blocks a read, whatever the origin', async () => {
+    const response = await fetch(`${API_URL}/api/v1/demo-items`, {
+      headers: { Origin: 'https://evil.example.com' },
+    });
+
+    expect(response.status).toBe(200);
+  });
+});

@@ -8,8 +8,8 @@ const { join } = require('path');
 // This project deliberately does not use any of them (validation is Zod-based per
 // spec §3), so they are excluded from the bundle. When a phase introduces one of
 // these — e.g. @nestjs/websockets for realtime — install it and remove it here.
-const UNUSED_NEST_OPTIONAL_INTEGRATIONS =
-  /^(class-validator|class-transformer|cache-manager|@fastify\/(static|view)|@nestjs\/(websockets|microservices)(\/.*)?)$/;
+const UNUSED_OPTIONAL_INTEGRATIONS =
+  /^(class-validator|class-transformer\/storage|cache-manager|@fastify\/(static|view)|@nestjs\/(websockets|microservices)(\/.*)?|pg-native)$/;
 
 module.exports = {
   // Dependencies ship .js without the .ts they were built from; source-map-loader
@@ -23,7 +23,7 @@ module.exports = {
     }),
   },
   plugins: [
-    new IgnorePlugin({ resourceRegExp: UNUSED_NEST_OPTIONAL_INTEGRATIONS }),
+    new IgnorePlugin({ resourceRegExp: UNUSED_OPTIONAL_INTEGRATIONS }),
     new NxAppWebpackPlugin({
       target: 'node',
       compiler: 'tsc',

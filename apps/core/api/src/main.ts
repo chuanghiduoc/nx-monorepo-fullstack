@@ -6,6 +6,8 @@ import {
 } from '@nestjs/platform-fastify';
 
 import { Logger as PinoLogger } from 'nestjs-pino';
+import { ZodValidationPipe } from 'nestjs-zod';
+
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 
@@ -48,6 +50,10 @@ async function bootstrap() {
     origin: allowedOrigins,
     credentials: true,
   });
+
+  // Every DTO is a Zod schema; this is what makes them reject bad input rather
+  // than merely describe it.
+  app.useGlobalPipes(new ZodValidationPipe());
 
   // One error shape for the whole service (RFC 9457).
   app.useGlobalFilters(new ProblemDetailsFilter());

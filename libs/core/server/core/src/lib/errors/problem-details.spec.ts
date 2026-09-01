@@ -60,6 +60,27 @@ describe('toProblemDetails', () => {
     expect(problem.detail).toBe('Cursor does not match the current filters');
   });
 
+  it('unwraps a validation exception that carries a zod error', () => {
+    // nestjs-zod throws its own HttpException wrapping the ZodError. Without
+    // unwrapping, a validation failure would lose its field-level detail and
+    // arrive as a bare 400.
+    const schema = z.object({ title: z.string().min(1) });
+    const parsed = schema.safeParse({ title: '' });
+
+    class ZodValidationException extends BadRequestException {
+      getZodError() {
+        return parsed.error;
+      }
+    }
+
+    const problem = toProblemDetails(new ZodValidationException(), context);
+
+    expect(problem.status).toBe(400);
+    expect(problem.errors).toEqual([
+      expect.objectContaining({ path: 'title' }),
+    ]);
+  });
+
   it('uses the problem+json media type', () => {
     expect(PROBLEM_CONTENT_TYPE).toBe('application/problem+json');
   });

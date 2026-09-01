@@ -18,6 +18,7 @@
   "dependencies": {
     "@nestjs/common": "catalog:",
     "@nestjs/config": "catalog:",
+    "@nestjs/core": "catalog:",
     "fastify": "catalog:",
     "nestjs-pino": "catalog:",
     "pino-pretty": "catalog:",

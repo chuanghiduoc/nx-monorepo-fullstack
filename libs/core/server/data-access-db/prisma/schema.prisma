@@ -11,6 +11,10 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+  // The API is bundled by webpack for a Node runtime. The ESM client re-exports
+  // in a way webpack cannot resolve ("Cannot get final name for export
+  // '$Enums'"), so the client is generated as CommonJS instead.
+  moduleFormat = "cjs"
 }
 
 datasource db {

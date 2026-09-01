@@ -18,9 +18,10 @@ allowBuilds:
   cpu-features: true
   protobufjs: true
   ssh2: true
+  '@scarf/scarf': false
 catalog:
   '@nestjs/common': '^11.2.3'
-  '@nestjs/core': '^11.0.0'
+  '@nestjs/core': '^11.2.3'
   '@nestjs/platform-fastify': '^11.2.3'
   '@nestjs/testing': '^11.0.0'
   '@tailwindcss/postcss': '^4.3.3'
@@ -53,4 +54,17 @@ catalog:
   'nestjs-pino': '^5.0.0'
   'pino-pretty': '^13.1.3'
   'zod': '^4.5.4'
-  'fastify': '^5.11.3'
+  'fastify': '^5.12.1'
+  'class-transformer': '^0.5.1'
+  '@fastify/cors': '^11.3.0'
+  '@fastify/helmet': '^13.1.1'
+  '@nestjs/swagger': '^11.4.7'
+  'nestjs-zod': '^5.5.0'
+  'tsx': '^4.23.13'
+
+# @nestjs/platform-fastify pins fastify 5.11.x while @fastify/helmet requires
+# 5.12.x. Two copies means two sets of FastifyInstance types, and a plugin
+# registered against one does not typecheck against the other. The versions are
+# minor-compatible, so the workspace resolves a single one.
+overrides:
+  fastify: '^5.12.1'

@@ -53,6 +53,23 @@ function typeUrlFor(status: number): string {
   return `${TYPE_BASE_URL}/${slug}`;
 }
 
+interface CarriesZodError {
+  getZodError(): ZodError;
+}
+
+function unwrapZodError(exception: unknown): ZodError | undefined {
+  if (exception instanceof ZodError) return exception;
+
+  const candidate = exception as Partial<CarriesZodError>;
+
+  if (typeof candidate?.getZodError === 'function') {
+    const inner = candidate.getZodError();
+    if (inner instanceof ZodError) return inner;
+  }
+
+  return undefined;
+}
+
 function detailFrom(exception: HttpException): string {
   const response = exception.getResponse();
 
@@ -78,14 +95,19 @@ export function toProblemDetails(
   exception: unknown,
   context: ProblemContext,
 ): ProblemDetails {
-  if (exception instanceof ZodError) {
+  // Validation pipes wrap the ZodError in their own exception. Unwrapping by
+  // shape rather than by class keeps this library independent of which pipe the
+  // application chose, while still preserving field-level detail.
+  const zodError = unwrapZodError(exception);
+
+  if (zodError) {
     return {
       type: typeUrlFor(HttpStatus.BAD_REQUEST),
       title: TITLES[HttpStatus.BAD_REQUEST],
       status: HttpStatus.BAD_REQUEST,
       detail: 'The request failed validation.',
       instance: context.instance,
-      errors: exception.issues.map((issue) => ({
+      errors: zodError.issues.map((issue) => ({
         path: issue.path.join('.'),
         message: issue.message,
       })),

@@ -3,20 +3,27 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
-    "@fastify/cors": "^11.3.0",
-    "@fastify/helmet": "^13.1.1",
+    "@fastify/cors": "catalog:",
+    "@fastify/helmet": "catalog:",
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
     "@nestjs/platform-fastify": "catalog:",
+    "@nestjs/swagger": "catalog:",
     "@opentelemetry/api": "catalog:",
     "@workspace/core-server-core": "workspace:*",
+    "@workspace/core-server-data-access-db": "workspace:*",
     "better-auth": "catalog:",
-    "nestjs-pino": "^5.0.0",
+    "class-transformer": "catalog:",
+    "fastify": "catalog:",
+    "nestjs-pino": "catalog:",
+    "nestjs-zod": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
-    "tslib": "catalog:"
+    "tslib": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@nestjs/testing": "catalog:"
+    "@nestjs/testing": "catalog:",
+    "tsx": "catalog:"
   }
 }
