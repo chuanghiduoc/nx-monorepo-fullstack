@@ -20,9 +20,7 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "exclude": [
     "eslint.config.js",
     "eslint.config.cjs",
@@ -31,5 +29,10 @@
     "vite.config.mts",
     "vitest.config.ts",
     "vitest.config.mts"
+  ],
+  "references": [
+    {
+      "path": "../../../libs/core/server/core/tsconfig.lib.json"
+    }
   ]
 }

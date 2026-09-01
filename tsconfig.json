@@ -29,6 +29,9 @@
     },
     {
       "path": "./libs/core/server/data-access-db"
+    },
+    {
+      "path": "./libs/core/server/core"
     }
   ],
   "compilerOptions": {}

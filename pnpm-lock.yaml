@@ -288,6 +288,9 @@ importers:
       '@opentelemetry/api':
         specifier: 'catalog:'
         version: 1.9.1
+      '@workspace/core-server-core':
+        specifier: workspace:*
+        version: link:../../../libs/core/server/core
       better-auth:
         specifier: 'catalog:'
         version: 1.7.2(@opentelemetry/api@1.9.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3))(mysql2@3.15.3)(next@16.1.7(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.62.1)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.103.1))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.11)
@@ -349,6 +352,21 @@ importers:
         version: 1.4.0
 
   apps/core/web-e2e: {}
+
+  libs/core/server/core:
+    dependencies:
+      '@nestjs/common':
+        specifier: 'catalog:'
+        version: 11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1)
+      '@nestjs/config':
+        specifier: ^12.0.0
+        version: 12.0.0(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1))(rxjs@7.8.1)
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+      zod:
+        specifier: ^4.5.4
+        version: 4.5.4
 
   libs/core/server/data-access-db:
     dependencies:
@@ -2088,6 +2106,12 @@ packages:
         optional: true
       class-validator:
         optional: true
+
+  '@nestjs/config@12.0.0':
+    resolution: {integrity: sha512-pG5+fFfCo3cdgVkLJLvvhUGfxEjwzv9hIAQ1aJVHvHlHVniDWfwX5pR/utgoAkJzSikv2oTR1BmIF03FXdi42Q==}
+    peerDependencies:
+      '@nestjs/common': ^11.0.0 || ^12.0.0
+      rxjs: ^7.1.0
 
   '@nestjs/core@11.2.3':
     resolution: {integrity: sha512-vkA9/Ja0Z3hvqXErSa+HaxrfF+cNXthNFi8VPNEKVli4rMd009yExAl0gLmko/Kf8peDXr72u1RN+j9Da2ukHg==}
@@ -6411,6 +6435,10 @@ packages:
     resolution: {integrity: sha512-uc47g4b+4k/M/SeaW1y4OApx+mtLWl92l5LMPP0GNXctZqELk+YGgOPIIC5elYmUH4OuoK3JLhuRUYegeySiFA==}
     engines: {node: '>=12'}
 
+  dotenv-expand@13.0.0:
+    resolution: {integrity: sha512-aBfBS8eYIeXmpHI9ThIlA7/WLq+SLt18iXUZhb52rW89QLKQFoIpPG1bPeewoPZsTyjSSO3T7234FBVUM1V2rA==}
+    engines: {node: '>=12'}
+
   dotenv@16.4.7:
     resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
     engines: {node: '>=12'}
@@ -6557,6 +6585,9 @@ packages:
   es-to-primitive@1.3.4:
     resolution: {integrity: sha512-yPDz7wqpg1/mmHLmS3tcfTfbw5f1eryXvyghYBffGdERwe+mV7ZcWzTR8LR17Kvqt3qfPurjlonmnq3MKXIOXw==}
     engines: {node: '>= 0.4'}
+
+  es-toolkit@1.51.0:
+    resolution: {integrity: sha512-zC2lQGkM7QX+Gm6iM3+WIdZJzthsEd14LvRNJneSO2hzyz/zNBENR8+YXWo1cKxgPBtV6ksPYHELbcwBRzmdCw==}
 
   es-toolkit@1.52.0:
     resolution: {integrity: sha512-XTNEJQh1tY1ZJVcf6ayP/2n4ZPyaHlW2FWs7xvw5ddPuhUVjLD3olQVQS7kf58JbAB48iL0uL/jerTrjtV3lDA==}
@@ -13623,6 +13654,15 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@nestjs/config@12.0.0(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1))(rxjs@7.8.1)':
+    dependencies:
+      '@nestjs/common': 11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1)
+      '@standard-schema/spec': 1.1.0
+      dotenv: 17.4.2
+      dotenv-expand: 13.0.0
+      es-toolkit: 1.51.0
+      rxjs: 7.8.1
+
   '@nestjs/core@11.2.3(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@7.2.0))(@nestjs/platform-express@11.2.3)(reflect-metadata@0.2.2)(rxjs@7.8.1)':
     dependencies:
       '@nestjs/common': 11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@7.2.0)
@@ -16826,7 +16866,7 @@ snapshots:
       obug: 2.1.4
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@7.2.0))(vite@8.2.2(@types/node@24.13.3)(jiti@2.4.2)(less@4.5.1)(sass-embedded@1.103.1)(sass@1.103.1)(terser@5.51.2)(yaml@2.9.0))
+      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@8.1.1))(vite@8.2.2(@types/node@24.13.3)(jiti@2.4.2)(less@4.5.1)(sass-embedded@1.103.1)(sass@1.103.1)(terser@5.51.2)(yaml@2.9.0))
 
   '@vitest/expect@4.1.11':
     dependencies:
@@ -16872,7 +16912,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.1
-      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@7.2.0))(vite@8.2.2(@types/node@24.13.3)(jiti@2.4.2)(less@4.5.1)(sass-embedded@1.103.1)(sass@1.103.1)(terser@5.51.2)(yaml@2.9.0))
+      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@8.1.1))(vite@8.2.2(@types/node@24.13.3)(jiti@2.4.2)(less@4.5.1)(sass-embedded@1.103.1)(sass@1.103.1)(terser@5.51.2)(yaml@2.9.0))
 
   '@vitest/utils@4.1.11':
     dependencies:
@@ -18645,6 +18685,10 @@ snapshots:
     dependencies:
       dotenv: 16.4.7
 
+  dotenv-expand@13.0.0:
+    dependencies:
+      dotenv: 17.4.2
+
   dotenv@16.4.7: {}
 
   dotenv@17.4.2: {}
@@ -18839,6 +18883,8 @@ snapshots:
       is-callable: 1.2.7
       is-date-object: 1.1.0
       is-symbol: 1.1.1
+
+  es-toolkit@1.51.0: {}
 
   es-toolkit@1.52.0: {}
 

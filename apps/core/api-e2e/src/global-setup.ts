@@ -39,7 +39,20 @@ export async function setup(): Promise<void> {
   api = spawn(process.execPath, ['main.js'], {
     cwd: distDir,
     stdio: 'inherit',
-    env: { ...process.env, PORT: '3000', HOST: '127.0.0.1' },
+    env: {
+      ...process.env,
+      PORT: '3000',
+      HOST: '127.0.0.1',
+      // core-api validates its configuration at boot (AppConfigModule), so the
+      // suite must supply what a running service would have.
+      DATABASE_URL:
+        process.env['DATABASE_URL'] ??
+        'postgresql://postgres:postgres@localhost:5432/app',
+      REDIS_CRITICAL_URL:
+        process.env['REDIS_CRITICAL_URL'] ?? 'redis://localhost:6379',
+      REDIS_CACHE_URL:
+        process.env['REDIS_CACHE_URL'] ?? 'redis://localhost:6380',
+    },
   });
 
   await waitForApi();
