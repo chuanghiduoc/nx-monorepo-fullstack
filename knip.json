@@ -19,7 +19,8 @@
     "eslint-plugin-react-hooks",
     "typescript-eslint",
     "prettier",
-    "@typescript/native"
+    "@typescript/native",
+    "@opentelemetry/api"
   ],
   "webpack": false,
   "workspaces": {

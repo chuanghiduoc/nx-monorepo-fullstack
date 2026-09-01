@@ -6,6 +6,8 @@
     "@nestjs/common": "catalog:",
     "@nestjs/core": "catalog:",
     "@nestjs/platform-fastify": "catalog:",
+    "@opentelemetry/api": "catalog:",
+    "better-auth": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "tslib": "catalog:"

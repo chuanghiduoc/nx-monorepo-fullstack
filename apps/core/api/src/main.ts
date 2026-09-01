@@ -6,6 +6,7 @@ import {
 } from '@nestjs/platform-fastify';
 
 import { AppModule } from './app/app.module';
+import { mountBetterAuth } from './app/auth/auth.handler';
 
 const DEFAULT_PORT = 3000;
 const GLOBAL_PREFIX = 'api';
@@ -13,9 +14,16 @@ const GLOBAL_PREFIX = 'api';
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
+    // Behind the edge proxy (spec §6.18) the client address and protocol arrive
+    // in X-Forwarded-* headers; without trustProxy, secure cookies and rate
+    // limiting would see the proxy instead of the caller.
+    new FastifyAdapter({ trustProxy: true }),
   );
   app.setGlobalPrefix(GLOBAL_PREFIX);
+
+  // better-auth owns /api/auth/* and is mounted on the Fastify instance itself,
+  // outside Nest's router (ADR-0002).
+  mountBetterAuth(app);
 
   const configuredPort = Number(process.env.PORT);
   const port = Number.isInteger(configuredPort) && configuredPort > 0
