@@ -22,7 +22,8 @@
     "eslint-plugin-react-hooks",
     "prettier",
     "typescript-eslint",
-    "@nx/plugin"
+    "@nx/plugin",
+    "@typescript/native"
   ],
   "webpack": false,
   "workspaces": {

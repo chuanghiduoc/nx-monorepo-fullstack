@@ -10,16 +10,16 @@ Entries are grouped by what triggers them, not by technology.
 
 ## Toolchain
 
-### TypeScript 7 (native compiler)
+### TypeScript 7.1 — drop the dual install
 
-- **Signal:** typecheck time becomes a felt cost in the local loop or CI.
-- **Status:** not adopted; the workspace uses the TypeScript 6.0 that
-  `create-nx-workspace` installs.
-- **Steps:** follow Nx's side-by-side recipe (`nx.dev/docs/kb/typescript-7`):
-  alias `@typescript/native` to TypeScript 7 and keep `typescript` pointing at
-  the 6.x package so tools that need the compiler API keep working. Measure
-  `nx run-many -t typecheck --skip-nx-cache` before and after, record both
-  numbers in an ADR. Roll back by reverting the two devDependency lines.
+- **Signal:** TypeScript 7 exposes a stable programmatic compiler API and the Nx
+  plugin plus typescript-eslint consume it directly.
+- **Today:** the workspace runs the Nx dual install — `tsc` is TypeScript 7.0.2
+  (native) while the `typescript` specifier resolves to `@typescript/typescript6`
+  so API consumers keep working (ADR-0001 §11).
+- **Steps:** replace both aliases with a single `typescript` dependency on the 7.x
+  line, run `pnpm nx run-many -t lint typecheck test build --skip-nx-cache`, and
+  record the new typecheck timing in the ADR.
 
 ### Biome instead of ESLint + Prettier
 

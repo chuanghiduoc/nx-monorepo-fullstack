@@ -22,13 +22,10 @@ have to reverse-engineer them from configuration files.
 | 8 | **Nest optional integrations excluded from the bundle** | Nest lazily `require()`s class-validator, microservices, websockets and `@fastify/static`. Webpack fails on each one that is absent even though the runtime never loads them. Validation is Zod-based (spec §3), so they are ignored deliberately — install and un-ignore when a phase needs one. |
 | 9 | **`shared-ui` consumed as TypeScript source** | Vite library mode bundles JS into a single entry, so subpath exports would not resolve. Next compiles the package via `transpilePackages`, the standard internal-package pattern. |
 | 10 | **Two Redis roles, not one instance** | BullMQ requires `noeviction`; a cache wants `allkeys-lru`. One instance cannot satisfy both, and eviction on the queue silently drops jobs. |
+| 11 | **TypeScript 7 via the Nx dual-install** | `tsc` is the native TypeScript 7.0.2 compiler while `typescript` resolves to 6.0.2, so tools that need the compiler API (the Nx plugin, typescript-eslint) keep working. Measured on this workspace: `nx run-many -t typecheck --skip-nx-cache` took **8.15s before and 7.96s after** — at six projects the gain is inside the noise. It is kept because the whole gate stays green, the cost is two dependency lines, and the benefit grows with the graph. Reverting is those same two lines. |
 
 ## Deliberately deferred
 
-TypeScript 7 (native compiler) is **not** adopted yet: the workspace runs
-TypeScript 6.0 as installed by `create-nx-workspace`. The Nx dual-install recipe
-targets a workspace that already has TS 7 available and is worth a measured step
-of its own; `docs/upgrades.md` carries the trigger and the procedure.
-
-Everything else kept intentionally light is listed in `docs/upgrades.md` — that
-file is a hard requirement of the spec, not documentation courtesy.
+Nothing from Phase 1 is deferred; simplifications made in later phases must be
+recorded in `docs/upgrades.md` before they are allowed — that file is a hard
+requirement of the spec, not documentation courtesy.

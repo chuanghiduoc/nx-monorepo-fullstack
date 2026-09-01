@@ -18,3 +18,4 @@ external behaviour.
 | PostgreSQL 18 ships a built-in `uuidv7()` | Verified in the running container: `SELECT uuidv7()` → `01a05e45-face-7843-…` | 2026-09-02 | postgres 18.6 | Spec §3 ID standard |
 | BullMQ requires `maxmemory-policy=noeviction` for correct queue behaviour | https://docs.bullmq.io/guide/going-to-production | 2026-09-02 | redis 8-alpine | `docker-compose.yml` `redis-critical` |
 | Lefthook 2.x configures hooks under `jobs:`, not the 1.x `commands:` | https://lefthook.dev/configuration/ | 2026-09-02 | lefthook 2.1.12 | `lefthook.yml` |
+| TypeScript 7.0.2 and `@typescript/typescript6` 6.0.2 both publish; Nx documents running them side by side | https://nx.dev/docs/kb/typescript-7 ; `npm view typescript@7 version` | 2026-09-02 | tsc 7.0.2 / API 6.0.2 | ADR-0001 §11 |
