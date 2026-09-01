@@ -57,3 +57,10 @@ test-output
 .next
 out
 vite.config.*.timestamp*
+
+# Prisma CLI installs agent skill documentation next to the schema. It is
+# vendor documentation, not project source; `prisma init` recreates it.
+libs/**/.agents/
+libs/**/.claude/
+libs/**/.windsurf/
+libs/**/skills-lock.json
