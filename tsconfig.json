@@ -23,6 +23,9 @@
     },
     {
       "path": "./tools/workspace-plugin"
+    },
+    {
+      "path": "./apps/core/api-e2e"
     }
   ],
   "compilerOptions": {}

@@ -118,6 +118,7 @@
     }
   },
   "release": {
+    "projects": ["core-api", "core-web"],
     "projectsRelationship": "fixed",
     "version": {
       "conventionalCommits": true,
