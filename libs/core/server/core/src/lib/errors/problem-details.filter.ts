@@ -46,8 +46,11 @@ export class ProblemDetailsFilter implements ExceptionFilter {
 
     if (problem.status === HttpStatus.TOO_MANY_REQUESTS) {
       // Without this a client can only guess when to retry, and guessing means
-      // hammering the endpoint that just asked it to stop.
-      reply.header(RETRY_AFTER_HEADER, DEFAULT_RETRY_AFTER_SECONDS);
+      // hammering the endpoint that just asked it to stop. The throttler sets a
+      // window-accurate value when it can; the constant is the fallback.
+      if (!reply.getHeader(RETRY_AFTER_HEADER)) {
+        reply.header(RETRY_AFTER_HEADER, DEFAULT_RETRY_AFTER_SECONDS);
+      }
     }
 
     reply.send(problem);

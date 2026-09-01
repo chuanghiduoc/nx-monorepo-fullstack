@@ -16,10 +16,13 @@
     }
   },
   "dependencies": {
+    "@nest-lab/throttler-storage-redis": "catalog:",
     "@nestjs/common": "catalog:",
     "@nestjs/config": "catalog:",
     "@nestjs/core": "catalog:",
+    "@nestjs/throttler": "catalog:",
     "fastify": "catalog:",
+    "ioredis": "catalog:",
     "nestjs-pino": "catalog:",
     "pino-pretty": "catalog:",
     "tslib": "catalog:",

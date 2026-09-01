@@ -191,3 +191,34 @@ describe('demo items (the reference feature)', () => {
     expect(response.status).toBe(200);
   });
 });
+
+describe('rate limiting', () => {
+  // The suite runs the API with THROTTLE_LIMIT set low so the limit can be
+  // reached without sending a hundred requests.
+  const LIMIT = Number(process.env['THROTTLE_LIMIT'] ?? '20');
+
+  it('answers with a problem document once the window is exhausted', async () => {
+    let limited: Response | undefined;
+
+    for (let attempt = 0; attempt <= LIMIT + 1; attempt += 1) {
+      const response = await fetch(`${API_URL}/api`);
+      if (response.status === 429) {
+        limited = response;
+        break;
+      }
+    }
+
+    expect(limited).toBeDefined();
+    expect(limited?.headers.get('content-type')).toContain(
+      'application/problem+json',
+    );
+  });
+
+  it('tells the client when to come back', async () => {
+    const response = await fetch(`${API_URL}/api`);
+
+    // Still limited from the previous test; the window has not elapsed.
+    expect(response.status).toBe(429);
+    expect(Number(response.headers.get('retry-after'))).toBeGreaterThan(0);
+  });
+});

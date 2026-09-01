@@ -36,6 +36,12 @@ export const envSchema = z.object({
       message: 'REDIS_CACHE_URL must be a Redis connection string',
     }),
 
+  // Rate limiting is configurable so operations can tighten it without a
+  // rebuild, and so tests can exercise the limit without sending a hundred
+  // requests.
+  THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60_000),
+  THROTTLE_LIMIT: z.coerce.number().int().positive().default(100),
+
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),

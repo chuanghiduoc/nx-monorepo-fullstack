@@ -52,6 +52,10 @@ export async function setup(): Promise<void> {
         process.env['REDIS_CRITICAL_URL'] ?? 'redis://localhost:6379',
       REDIS_CACHE_URL:
         process.env['REDIS_CACHE_URL'] ?? 'redis://localhost:6380',
+      // Low enough that the rate-limit test does not need a hundred requests,
+      // high enough that the other suites are not throttled.
+      THROTTLE_LIMIT: process.env['THROTTLE_LIMIT'] ?? '40',
+      THROTTLE_TTL_MS: process.env['THROTTLE_TTL_MS'] ?? '30000',
     },
   });
 

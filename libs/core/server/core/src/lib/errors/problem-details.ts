@@ -70,16 +70,21 @@ function unwrapZodError(exception: unknown): ZodError | undefined {
   return undefined;
 }
 
+/** Exception classes prefix their own name; that is our internals, not detail. */
+function stripExceptionPrefix(message: string): string {
+  return message.replace(/^\w*(Exception|Error):\s*/, '');
+}
+
 function detailFrom(exception: HttpException): string {
   const response = exception.getResponse();
 
-  if (typeof response === 'string') return response;
+  if (typeof response === 'string') return stripExceptionPrefix(response);
 
   const message = (response as { message?: unknown }).message;
-  if (typeof message === 'string') return message;
+  if (typeof message === 'string') return stripExceptionPrefix(message);
   if (Array.isArray(message)) return message.join('; ');
 
-  return exception.message;
+  return stripExceptionPrefix(exception.message);
 }
 
 /**

@@ -67,6 +67,19 @@ describe('envSchema', () => {
     expect(parsed.NODE_ENV).toBe('development');
   });
 
+  it('defaults the rate limit to a value that protects without blocking', () => {
+    const parsed = envSchema.parse(validEnv);
+
+    expect(parsed.THROTTLE_LIMIT).toBe(100);
+    expect(parsed.THROTTLE_TTL_MS).toBe(60_000);
+  });
+
+  it('lets operations tighten the rate limit without a rebuild', () => {
+    const parsed = envSchema.parse({ ...validEnv, THROTTLE_LIMIT: '5' });
+
+    expect(parsed.THROTTLE_LIMIT).toBe(5);
+  });
+
   it('splits the cors origin list', () => {
     const parsed = envSchema.parse({
       ...validEnv,

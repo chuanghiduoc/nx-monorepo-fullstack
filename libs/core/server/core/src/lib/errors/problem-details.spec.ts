@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  NotFoundException,
+} from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
@@ -79,6 +83,20 @@ describe('toProblemDetails', () => {
     expect(problem.errors).toEqual([
       expect.objectContaining({ path: 'title' }),
     ]);
+  });
+
+  it('strips the exception class name from the message', () => {
+    // Nest's ThrottlerException stringifies as "ThrottlerException: Too Many
+    // Requests"; the class name is an implementation detail of ours.
+    class ThrottlerException extends HttpException {
+      constructor() {
+        super('ThrottlerException: Too Many Requests', 429);
+      }
+    }
+
+    const problem = toProblemDetails(new ThrottlerException(), context);
+
+    expect(problem.detail).toBe('Too Many Requests');
   });
 
   it('uses the problem+json media type', () => {
