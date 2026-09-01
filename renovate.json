@@ -1,0 +1,23 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits", ":dependencyDashboard"],
+  "postUpdateOptions": ["pnpmDedupe"],
+  "packageRules": [
+    {
+      "description": "Nx packages are upgraded through `nx migrate`, which also runs code migrations. Renovate bumping them alone would skip those.",
+      "matchPackageNames": ["nx", "@nx/**", "create-nx-workspace"],
+      "enabled": false
+    },
+    {
+      "description": "NestJS majors are pinned to the line supported by the installed @nx/nest generators (spec §3).",
+      "matchPackageNames": ["@nestjs/**"],
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Group lint/format tooling so one PR covers the whole toolchain.",
+      "matchPackageNames": ["eslint", "eslint-**", "@eslint/**", "typescript-eslint", "prettier"],
+      "groupName": "lint and format toolchain"
+    }
+  ]
+}

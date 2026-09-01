@@ -7,5 +7,3 @@ export function SharedUi() {
     </div>
   );
 }
-
-export default SharedUi;
