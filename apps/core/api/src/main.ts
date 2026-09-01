@@ -11,8 +11,11 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 
+import { IdempotencyStore } from '@workspace/core-server-data-access-db';
+
 import {
   AppConfig,
+  IdempotencyInterceptor,
   OriginCheckGuard,
   ProblemDetailsFilter,
   REQUEST_ID_HEADER,
@@ -60,6 +63,10 @@ async function bootstrap() {
 
   // CSRF: SameSite cookies plus an origin check on state-changing requests.
   app.useGlobalGuards(new OriginCheckGuard(allowedOrigins));
+
+  // Retries of a mutation that carries an Idempotency-Key replay the first
+  // result instead of doing the work twice.
+  app.useGlobalInterceptors(new IdempotencyInterceptor(app.get(IdempotencyStore)));
 
   // Echo the id so a caller can quote it when reporting a problem.
   app

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Res } from '@nestjs/common';
 import {
   ApiBody,
   ApiCreatedResponse,
@@ -21,7 +21,7 @@ const RESOURCE_PATH = '/api/v1/demo-items';
 export class DemoItemsController {
   private readonly service: DemoItemsService;
 
-  constructor(service: DemoItemsService) {
+  constructor(@Inject(DemoItemsService) service: DemoItemsService) {
     this.service = service;
   }
 

@@ -25,6 +25,7 @@
     "ioredis": "catalog:",
     "nestjs-pino": "catalog:",
     "pino-pretty": "catalog:",
+    "rxjs": "catalog:",
     "tslib": "catalog:",
     "zod": "catalog:"
   }

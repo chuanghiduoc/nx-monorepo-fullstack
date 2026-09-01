@@ -12,3 +12,12 @@ export {
 export { ProblemDetailsFilter } from './lib/errors/problem-details.filter.js';
 export { OriginCheckGuard } from './lib/security/origin-check.guard.js';
 export { AppThrottlerModule } from './lib/security/throttler.module.js';
+export {
+  fingerprintRequest,
+  normaliseRoute,
+} from './lib/idempotency/request-fingerprint.js';
+export {
+  IDEMPOTENCY_KEY_HEADER,
+  IdempotencyInterceptor,
+  type IdempotencyBackend,
+} from './lib/idempotency/idempotency.interceptor.js';

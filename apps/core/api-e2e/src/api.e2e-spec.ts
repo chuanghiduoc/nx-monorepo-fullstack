@@ -194,6 +194,63 @@ describe('demo items (the reference feature)', () => {
   });
 });
 
+describe('idempotency', () => {
+  const ALLOWED_ORIGIN = 'http://localhost:4200';
+
+  async function post(key: string, title: string) {
+    return fetch(`${API_URL}/api/v1/demo-items`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: ALLOWED_ORIGIN,
+        'Idempotency-Key': key,
+      },
+      body: JSON.stringify({ title }),
+    });
+  }
+
+  it('replays the first response instead of doing the work twice', async () => {
+    const key = `e2e-${Date.now()}`;
+
+    const first = (await (await post(key, 'once')).json()) as { id: string };
+    const second = (await (await post(key, 'once')).json()) as { id: string };
+
+    expect(second.id).toBe(first.id);
+  });
+
+  it('rejects the same key used for a different request', async () => {
+    const key = `mismatch-${Date.now()}`;
+
+    await post(key, 'original');
+    const response = await post(key, 'changed');
+
+    expect(response.status).toBe(422);
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    );
+  });
+
+  it('leaves requests without the header alone', async () => {
+    const first = (await (
+      await fetch(`${API_URL}/api/v1/demo-items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: ALLOWED_ORIGIN },
+        body: JSON.stringify({ title: 'no-key' }),
+      })
+    ).json()) as { id: string };
+
+    const second = (await (
+      await fetch(`${API_URL}/api/v1/demo-items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: ALLOWED_ORIGIN },
+        body: JSON.stringify({ title: 'no-key' }),
+      })
+    ).json()) as { id: string };
+
+    expect(second.id).not.toBe(first.id);
+  });
+});
+
 describe('rate limiting', () => {
   // The API under test runs with this limit (see global-setup.ts), low enough
   // that the window can be exhausted without sending a hundred requests.

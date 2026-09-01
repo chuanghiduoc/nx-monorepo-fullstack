@@ -33,3 +33,40 @@ model DemoItem {
   @@index([createdAt(sort: Desc), id(sort: Desc)])
   @@map("demo_items")
 }
+
+/// Durable idempotency (spec 5.5).
+///
+/// Redis alone would lose these on a restart, and a retried payment would run
+/// twice. The unique key is the source of truth; Redis is only ever cache.
+///
+/// Every column in the unique key is NOT NULL on purpose: PostgreSQL treats
+/// NULLs as distinct, so a nullable tenant column would let duplicates through
+/// for exactly the callers who are not in an organization.
+model IdempotencyRecord {
+  id             String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  /// Who the key belongs to: an organization, a user, an API key, or the system.
+  scopeType      String   @db.VarChar(16)
+  scopeId        String   @db.VarChar(64)
+  /// Method and normalised path, so the same key on two routes cannot collide.
+  route          String   @db.VarChar(200)
+  idempotencyKey String   @db.VarChar(200)
+
+  /// Fingerprint of the request. Same key, different request means the client
+  /// made a mistake, and replaying the old response would hide it.
+  requestHash    String   @db.VarChar(64)
+  state          String   @db.VarChar(16)
+
+  responseStatus Int?
+  responseBody   Json?
+
+  /// Lease, not a timeout: expiry allows a recovery attempt, it does not prove
+  /// the first attempt died. The fence token is what makes a zombie writer safe.
+  startedAt      DateTime @default(now()) @db.Timestamptz(6)
+  leaseUntil     DateTime @db.Timestamptz(6)
+  fenceToken     Int      @default(1)
+  completedAt    DateTime? @db.Timestamptz(6)
+
+  @@unique([scopeType, scopeId, route, idempotencyKey])
+  @@index([completedAt])
+  @@map("idempotency_records")
+}

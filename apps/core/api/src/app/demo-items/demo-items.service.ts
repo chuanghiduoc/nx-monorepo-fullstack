@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '@workspace/core-server-data-access-db';
 
 import type { CreateDemoItemDto } from './demo-item.dto';
@@ -27,7 +27,7 @@ export interface DemoItemPage {
 export class DemoItemsService {
   private readonly prisma: PrismaService;
 
-  constructor(prisma: PrismaService) {
+  constructor(@Inject(PrismaService) prisma: PrismaService) {
     this.prisma = prisma;
   }
 
