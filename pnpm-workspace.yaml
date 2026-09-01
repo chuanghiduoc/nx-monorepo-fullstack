@@ -3,3 +3,8 @@ packages:
   - 'libs/*/*'
   - 'libs/*/*/*'
   - 'tools/*'
+allowBuilds:
+  '@parcel/watcher': true
+  unrs-resolver: true
+  '@nestjs/core': false
+  less: true
