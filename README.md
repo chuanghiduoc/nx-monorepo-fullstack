@@ -51,11 +51,24 @@ second product or a second frontend never forces a rename.
 ```
 apps/core/api        core-api      NestJS + Fastify
 apps/core/web        core-web      Next.js App Router + Tailwind
+apps/core/api-e2e    core-api-e2e  API tests against the built bundle
 apps/core/web-e2e    core-web-e2e  Playwright
 libs/shared/ui       shared-ui     design system
 libs/shared/i18n     shared-i18n   message catalogs
 libs/shared/api-client-core        generated from openapi.json (do not edit)
 ```
+
+## Adding a UI component
+
+The design system lives in one place, so shadcn components are always added from
+that library — never from an app:
+
+```bash
+cd libs/shared/ui
+pnpm dlx shadcn@latest add <component>
+```
+
+Export it from `src/index.ts` and consume it as `@workspace/shared-ui`.
 
 Dependency rules are enforced by ESLint (`@nx/enforce-module-boundaries`) on three
 axes — `scope:*`, `platform:*`, `type:*`. Notably a `type:feature` library may not

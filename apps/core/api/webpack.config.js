@@ -12,6 +12,9 @@ const UNUSED_NEST_OPTIONAL_INTEGRATIONS =
   /^(class-validator|class-transformer|cache-manager|@fastify\/(static|view)|@nestjs\/(websockets|microservices)(\/.*)?)$/;
 
 module.exports = {
+  // Dependencies ship .js without the .ts they were built from; source-map-loader
+  // then warns once per file. The warnings say nothing actionable about this code.
+  ignoreWarnings: [/Failed to parse source map/],
   output: {
     path: join(__dirname, 'dist'),
     clean: true,

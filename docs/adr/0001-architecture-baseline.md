@@ -24,6 +24,26 @@ have to reverse-engineer them from configuration files.
 | 10 | **Two Redis roles, not one instance** | BullMQ requires `noeviction`; a cache wants `allkeys-lru`. One instance cannot satisfy both, and eviction on the queue silently drops jobs. |
 | 11 | **TypeScript 7 via the Nx dual-install** | `tsc` is the native TypeScript 7.0.2 compiler while `typescript` resolves to 6.0.2, so tools that need the compiler API (the Nx plugin, typescript-eslint) keep working. Measured on this workspace: `nx run-many -t typecheck --skip-nx-cache` took **8.15s before and 7.96s after** — at six projects the gain is inside the noise. It is kept because the whole gate stays green, the cost is two dependency lines, and the benefit grows with the graph. Reverting is those same two lines. |
 
+## Verified during review
+
+- **The `IgnorePlugin` entry is required, not belt-and-braces.** Removing it
+  while keeping `externalDependencies: 'all'` fails the build with 9 unresolved
+  modules — `'all'` externalises declared dependencies, and these optional
+  integrations are not declared anywhere. Re-check with a build before deleting it.
+- **`test-ci` / `e2e-ci` cannot run without Nx Cloud.** Nx refuses the atomized
+  targets outright, so CI runs `test` and `e2e`; the switch belongs in the commit
+  that enables `nx connect`.
+- **knip ignore list.** Entries fall into two groups: packages consumed through
+  configuration rather than imports (ESLint plugins, `@nx/*` generators,
+  `prettier`), and packages providing a binary or compiler behaviour
+  (`tslib`, `@typescript/native`). No application dependency is ignored, and the
+  `unresolved` issue class stays enabled — only the `"types": ["*"]` entry that
+  `create-nx-workspace` writes into `tsconfig.base.json` is silenced.
+- **Five webpack warnings remain by choice.** They report dynamic `require()`
+  inside NestJS and Express. They are real information about lazy loading, so
+  they stay visible; only the unactionable source-map warnings from prebuilt
+  dependencies are filtered.
+
 ## Deliberately deferred
 
 Nothing from Phase 1 is deferred; simplifications made in later phases must be

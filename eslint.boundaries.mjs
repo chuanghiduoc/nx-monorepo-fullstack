@@ -60,5 +60,13 @@ export const depConstraints = [
   },
 ];
 
+/**
+ * Phase 2+ placeholder for spec §4 rules 5 and 5b: Prisma may only be imported
+ * inside data-access-db, BullMQ only inside the queue facade, the AWS SDK only
+ * inside feature-storage. `@nx/enforce-module-boundaries` supports this through
+ * `bannedExternalImports` on the matching constraint — add it to the relevant
+ * entry above as each library appears, rather than relying on review.
+ */
+
 /** Import paths every project is allowed to use regardless of tags. */
 export const baseAllow = ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'];
