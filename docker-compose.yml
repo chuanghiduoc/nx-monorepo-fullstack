@@ -1,0 +1,92 @@
+name: nx-monorepo-fullstack
+
+# Development infrastructure only — the apps themselves run from the Nx dev servers.
+# Production compose (Caddy, hardened images, migration entry) lands in Phase 6.
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app
+    ports:
+      - '5432:5432'
+    volumes:
+      # postgres:18+ expects a single mount at /var/lib/postgresql and places the
+      # cluster in a versioned subdirectory, so pg_upgrade --link can work later.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d app']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Queue, quota, rate limiting, locks and idempotency acceleration (spec §3).
+  # BullMQ requires noeviction: evicting a key here would silently drop jobs.
+  redis-critical:
+    image: redis:8-alpine
+    command: redis-server --maxmemory-policy noeviction --appendonly yes
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Disposable cache and transient realtime state — safe to evict under pressure.
+  redis-cache:
+    image: redis:8-alpine
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - '6380:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    healthcheck:
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio12345
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Grafana + Loki + Tempo + Prometheus in one container, opt-in to keep the
+  # default dev footprint small: docker compose --profile observability up -d
+  otel-lgtm:
+    image: grafana/otel-lgtm:latest
+    profiles: ['observability']
+    ports:
+      - '3001:3000'
+      - '4317:4317'
+      - '4318:4318'
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
