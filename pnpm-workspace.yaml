@@ -10,3 +10,17 @@ allowBuilds:
   less: true
   sharp: true
   esbuild: false
+catalog:
+  '@nestjs/common': '^11.0.0'
+  '@nestjs/core': '^11.0.0'
+  '@nestjs/platform-fastify': '^11.2.3'
+  '@nestjs/testing': '^11.0.0'
+  '@tailwindcss/postcss': '^4.3.3'
+  'next': '~16.1.6'
+  'postcss': '^8.5.26'
+  'react': '^19.0.0'
+  'react-dom': '^19.0.0'
+  'reflect-metadata': '^0.2.0'
+  'rxjs': '^7.8.0'
+  'tailwindcss': '^4.3.3'
+  'tslib': '^2.3.0'
