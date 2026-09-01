@@ -5,6 +5,12 @@
   "references": [
     {
       "path": "./apps/core/api"
+    },
+    {
+      "path": "./apps/core/web-e2e"
+    },
+    {
+      "path": "./apps/core/web"
     }
   ],
   "compilerOptions": {}

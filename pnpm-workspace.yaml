@@ -8,3 +8,4 @@ allowBuilds:
   unrs-resolver: true
   '@nestjs/core': false
   less: true
+  sharp: true

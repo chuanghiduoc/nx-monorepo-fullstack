@@ -52,3 +52,7 @@ vitest.config.*.timestamp*
 dist
 out-tsc
 test-output
+
+# Next.js
+.next
+out
