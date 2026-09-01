@@ -10,7 +10,7 @@
       "!{projectRoot}/eslint.config.mjs",
       "!{projectRoot}/src/test-setup.[jt]s"
     ],
-    "sharedGlobals": []
+    "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
   },
   "plugins": [
     {
