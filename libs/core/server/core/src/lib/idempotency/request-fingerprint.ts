@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+import { canonicalJson } from '../serialisation/canonical-json.js';
+
 /**
  * Method plus path, without the query string.
  *
@@ -28,22 +30,6 @@ export function fingerprintRequest(
   return createHash('sha256')
     .update(normaliseRoute(method, url))
     .update('\n')
-    .update(canonicalise(body))
+    .update(canonicalJson(body))
     .digest('hex');
-}
-
-function canonicalise(value: unknown): string {
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value) ?? 'null';
-  }
-
-  if (Array.isArray(value)) {
-    return `[${value.map(canonicalise).join(',')}]`;
-  }
-
-  const entries = Object.entries(value as Record<string, unknown>)
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([key, item]) => `${JSON.stringify(key)}:${canonicalise(item)}`);
-
-  return `{${entries.join(',')}}`;
 }

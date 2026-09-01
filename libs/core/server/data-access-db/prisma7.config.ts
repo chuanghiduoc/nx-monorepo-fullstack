@@ -10,5 +10,9 @@ export default defineConfig({
   },
   datasource: {
     url: process.env["DATABASE_URL"],
+    // Required by `prisma migrate diff --from-migrations`, which the migration
+    // drift check runs: Prisma replays the migration history into a throwaway
+    // database and compares the result with the schema.
+    shadowDatabaseUrl: process.env["SHADOW_DATABASE_URL"],
   },
 });

@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 import pretty from 'pino-pretty';
 
-import { AppConfig, AppConfigModule } from '../config/config.module.js';
+import { AppConfig } from '../config/config.module.js';
 import { REDACTED_PATHS, REDACTION_CENSOR } from './redaction.js';
 
 /**
@@ -18,9 +18,7 @@ import { REDACTED_PATHS, REDACTION_CENSOR } from './redaction.js';
  */
 @Module({
   imports: [
-    AppConfigModule,
     LoggerModule.forRootAsync({
-      imports: [AppConfigModule],
       inject: [AppConfig],
       useFactory: (config: AppConfig) => ({
         // A destination stream, not a transport: pino transports run in a worker

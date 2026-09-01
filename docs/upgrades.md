@@ -234,3 +234,20 @@ These are deliberate and small, but they are simplifications and so belong here.
 - **Signal:** an upgrade is wanted, or Renovate opens the PR.
 - **Steps:** bump the pin, run `pnpm nx run shared-api-client-core:generate`, and
   commit the regenerated output in the same commit — the diff is the review.
+
+### Cursors are opaque but not signed
+
+- **Today:** base64url of canonical JSON with a filter hash. A forged cursor can
+  only move a client's own reading position within data it may already read.
+- **Signal:** a cursor starts carrying something the client must not choose —
+  a tenant id, a visibility flag, a price band.
+- **Steps:** append an HMAC (key from the environment schema) in `encodeCursor`
+  and verify it in `decodeCursor` before parsing. The format is internal, so
+  no client changes.
+
+### `prisma-generate` is a plain Nx target
+
+- **Today:** `core-server-data-access-db:prisma-generate` runs `prisma generate`
+  with the schema as its input; `typecheck`, `build`, `test` and `lint` depend
+  on it, so the client can never lag the schema.
+- **Signal:** none expected. If Prisma ships an official Nx plugin, switch.

@@ -4,7 +4,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { Redis } from 'ioredis';
 
-import { AppConfig, AppConfigModule } from '../config/config.module.js';
+import { AppConfig } from '../config/config.module.js';
 
 /**
  * Rate limiting backed by Redis.
@@ -19,9 +19,7 @@ import { AppConfig, AppConfigModule } from '../config/config.module.js';
  */
 @Module({
   imports: [
-    AppConfigModule,
     ThrottlerModule.forRootAsync({
-      imports: [AppConfigModule],
       inject: [AppConfig],
       useFactory: (config: AppConfig) => ({
         throttlers: [

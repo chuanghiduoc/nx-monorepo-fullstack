@@ -39,7 +39,10 @@ export type AppControllerGetDataResponses = {
 export type DemoItemsControllerListData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        limit?: number;
+        cursor?: string;
+    };
     url: '/api/v1/demo-items';
 };
 

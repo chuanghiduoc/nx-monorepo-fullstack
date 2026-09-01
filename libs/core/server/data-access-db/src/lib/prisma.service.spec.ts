@@ -62,13 +62,19 @@ describe('PrismaService against a real PostgreSQL 18', () => {
     expect(second.id > first.id).toBe(true);
   });
 
-  it('stores timestamps with a time zone', async () => {
-    const [column] = await prisma.$queryRaw<{ data_type: string }[]>`
-      SELECT data_type FROM information_schema.columns
-      WHERE table_name = 'demo_items' AND column_name = 'createdAt'
+  it('stores timestamps with a time zone at millisecond precision', async () => {
+    const [column] = await prisma.$queryRaw<
+      { data_type: string; datetime_precision: number }[]
+    >`
+      SELECT data_type, datetime_precision FROM information_schema.columns
+      WHERE table_name = 'demo_items' AND column_name = 'created_at'
     `;
 
     expect(column.data_type).toBe('timestamp with time zone');
+    // Millisecond precision, matching JavaScript Date: a column holding
+    // microseconds stores values the application can never read back exactly,
+    // which breaks keyset pagination on that column.
+    expect(column.datetime_precision).toBe(3);
   });
 
   it('refuses to construct without a database url', () => {

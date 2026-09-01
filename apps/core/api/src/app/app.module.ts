@@ -13,7 +13,7 @@ import { AppService } from './app.service';
   // Configuration is validated here, so an invalid environment fails the boot
   // rather than the first request that needs a value.
   imports: [
-    AppConfigModule,
+    AppConfigModule.forRoot(),
     AppLoggerModule,
     AppThrottlerModule,
     DemoItemsModule,

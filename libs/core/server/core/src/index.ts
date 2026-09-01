@@ -16,6 +16,17 @@ export {
   fingerprintRequest,
   normaliseRoute,
 } from './lib/idempotency/request-fingerprint.js';
+export { canonicalJson } from './lib/serialisation/canonical-json.js';
+export {
+  CURSOR_MAX_LENGTH,
+  DEFAULT_PAGE_LIMIT,
+  MAX_PAGE_LIMIT,
+  decodeCursor,
+  encodeCursor,
+  hashPaginationFilter,
+  resolvePageLimit,
+  type CursorPayload,
+} from './lib/pagination/cursor.js';
 export {
   IDEMPOTENCY_KEY_HEADER,
   IdempotencyInterceptor,

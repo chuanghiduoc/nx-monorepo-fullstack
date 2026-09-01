@@ -1,9 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
+import {
+  decodeCursor,
+  encodeCursor,
+  hashPaginationFilter,
+  resolvePageLimit,
+} from '@workspace/core-server-core';
 import { PrismaService } from '@workspace/core-server-data-access-db';
 
 import type { CreateDemoItemDto } from './demo-item.dto';
-
-const DEFAULT_PAGE_SIZE = 20;
 
 export interface DemoItem {
   id: string;
@@ -16,6 +20,18 @@ export interface DemoItemPage {
   items: DemoItem[];
   nextCursor: string | null;
 }
+
+export interface ListDemoItemsInput {
+  cursor?: string;
+  limit?: number;
+}
+
+/**
+ * The list has one sort order today, so its filter hash is a constant. It is
+ * still computed rather than hard-coded: the day a status filter is added, the
+ * hash must change with it, and a literal string would not.
+ */
+const LIST_FILTER = { sort: 'createdAt:desc,id:desc' } as const;
 
 /**
  * Reference feature.
@@ -39,15 +55,46 @@ export class DemoItemsService {
     return this.toDto(created);
   }
 
-  async list(limit = DEFAULT_PAGE_SIZE): Promise<DemoItemPage> {
-    // Keyset ordering matches the (createdAt DESC, id DESC) index; the opaque
-    // cursor arrives in the next task, which is why nextCursor is still null.
+  async list(input: ListDemoItemsInput = {}): Promise<DemoItemPage> {
+    const limit = resolvePageLimit(input.limit);
+    const filterHash = hashPaginationFilter(LIST_FILTER);
+    const position = input.cursor ? decodeCursor(input.cursor, filterHash) : undefined;
+
+    // Keyset, not offset: OFFSET makes the database walk and discard every
+    // skipped row, and a row inserted between pages shifts everything after it.
+    // The compound comparison is what makes (createdAt, id) a total order —
+    // timestamps collide, primary keys do not.
     const rows = await this.prisma.demoItem.findMany({
-      take: limit,
+      // One extra row is the cheapest way to know whether another page exists
+      // without a second COUNT query.
+      take: limit + 1,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      where: position
+        ? {
+            OR: [
+              { createdAt: { lt: new Date(position.sortKey) } },
+              { createdAt: new Date(position.sortKey), id: { lt: position.id } },
+            ],
+          }
+        : undefined,
     });
 
-    return { items: rows.map((row) => this.toDto(row)), nextCursor: null };
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const last = page.at(-1);
+
+    return {
+      items: page.map((row) => this.toDto(row)),
+      nextCursor:
+        hasMore && last
+          ? encodeCursor({
+              sortKey: last.createdAt.toISOString(),
+              id: last.id,
+              filterHash,
+              direction: 'forward',
+            })
+          : null,
+    };
   }
 
   /**

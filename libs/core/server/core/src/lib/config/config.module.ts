@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, Module, type DynamicModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { envSchema, type AppEnv } from './env.schema.js';
@@ -36,16 +36,30 @@ function validate(raw: Record<string, unknown>): AppEnv {
   return result.data;
 }
 
+/**
+ * A dynamic module rather than a static `@Module({ imports: [...] })`:
+ * `ConfigModule.forRoot()` reads and validates the environment the moment it
+ * is called, and a decorator argument is evaluated when the file is imported.
+ * That made importing a pure helper from this library's barrel — a cursor
+ * codec, say — fail in any process without a full production environment,
+ * such as a unit test. Validation now happens where it belongs: when the
+ * application module is assembled.
+ */
 @Global()
-@Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true, cache: true, validate })],
-  providers: [
-    {
-      provide: AppConfig,
-      useFactory: (config: ConfigService<AppEnv, true>) => new AppConfig(config),
-      inject: [ConfigService],
-    },
-  ],
-  exports: [AppConfig],
-})
-export class AppConfigModule {}
+@Module({})
+export class AppConfigModule {
+  static forRoot(): DynamicModule {
+    return {
+      module: AppConfigModule,
+      imports: [ConfigModule.forRoot({ isGlobal: true, cache: true, validate })],
+      providers: [
+        {
+          provide: AppConfig,
+          useFactory: (config: ConfigService<AppEnv, true>) => new AppConfig(config),
+          inject: [ConfigService],
+        },
+      ],
+      exports: [AppConfig],
+    };
+  }
+}

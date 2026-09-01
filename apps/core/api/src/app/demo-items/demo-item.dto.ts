@@ -1,3 +1,4 @@
+import { CURSOR_MAX_LENGTH, MAX_PAGE_LIMIT } from '@workspace/core-server-core';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
@@ -19,6 +20,14 @@ const demoItemSchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 
+const listDemoItemsQuerySchema = z.object({
+  /** Opaque; produced by a previous page and handed back unchanged. */
+  cursor: z.string().max(CURSOR_MAX_LENGTH).optional(),
+  // Query strings are strings; coerce here so the OpenAPI document still
+  // describes an integer and the client sends `?limit=50`, not `?limit="50"`.
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).optional(),
+});
+
 const demoItemPageSchema = z.object({
   items: z.array(demoItemSchema),
   /** `null` means there is nothing after this page — no separate flag. */
@@ -26,5 +35,6 @@ const demoItemPageSchema = z.object({
 });
 
 export class CreateDemoItemDto extends createZodDto(createDemoItemSchema) {}
+export class ListDemoItemsQueryDto extends createZodDto(listDemoItemsQuerySchema) {}
 export class DemoItemDto extends createZodDto(demoItemSchema) {}
 export class DemoItemPageDto extends createZodDto(demoItemPageSchema) {}

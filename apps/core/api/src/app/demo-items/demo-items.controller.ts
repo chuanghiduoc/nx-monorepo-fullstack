@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Inject, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Query, Res } from '@nestjs/common';
 import {
   ApiBody,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import type { FastifyReply } from 'fastify';
@@ -11,6 +12,7 @@ import {
   CreateDemoItemDto,
   DemoItemDto,
   DemoItemPageDto,
+  ListDemoItemsQueryDto,
 } from './demo-item.dto';
 import { DemoItemsService } from './demo-items.service';
 
@@ -27,8 +29,13 @@ export class DemoItemsController {
 
   @Get()
   @ApiOkResponse({ type: DemoItemPageDto })
-  list(): Promise<DemoItemPageDto> {
-    return this.service.list();
+  // Declared explicitly for the same reason as @ApiBody: without the swagger
+  // CLI plugin, a @Query() DTO contributes nothing to the document, and the
+  // generated client would have no way to send a cursor.
+  @ApiQuery({ name: 'cursor', required: false, type: String })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  list(@Query() query: ListDemoItemsQueryDto): Promise<DemoItemPageDto> {
+    return this.service.list(query);
   }
 
   @Post()
