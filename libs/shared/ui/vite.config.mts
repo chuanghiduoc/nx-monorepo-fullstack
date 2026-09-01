@@ -7,6 +7,13 @@ import * as path from 'path';
 export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../../node_modules/.vite/libs/shared/ui',
+  resolve: {
+    // shadcn generates imports against this package's own name (the pattern its
+    // monorepo mode uses); map it back to src so the bundler resolves them.
+    alias: {
+      '@org/shared-ui': path.join(import.meta.dirname, 'src'),
+    },
+  },
   plugins: [
     react(),
     dts({

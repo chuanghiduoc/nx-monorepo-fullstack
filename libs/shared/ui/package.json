@@ -12,6 +12,22 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./lib/*": {
+      "@org/source": "./src/lib/*.ts",
+      "types": "./src/lib/*.ts",
+      "default": "./src/lib/*.ts"
+    },
+    "./components/*": {
+      "@org/source": "./src/components/*.tsx",
+      "types": "./src/components/*.tsx",
+      "default": "./src/components/*.tsx"
     }
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "radix-ui": "^1.6.7",
+    "tailwind-merge": "^3.6.0"
   }
 }
