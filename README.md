@@ -1,107 +1,63 @@
-# New Nx Repository
+# nx-monorepo-fullstack
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+Full-stack platform monorepo: **NestJS (Fastify)** + **Next.js (App Router)** on **Nx**,
+built to be reused across products (CRM, ERP, HRM, CMS, AI, e-commerce admin…).
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+- Architecture spec: [`docs/superpowers/specs/`](docs/superpowers/specs)
+- Upgrade paths for anything deliberately kept light: [`docs/upgrades.md`](docs/upgrades.md)
+- Decision records: [`docs/adr/`](docs/adr)
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/docs/technologies/typescript/introduction?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
-🚀 If you haven't connected to Nx Cloud yet, [complete your setup here](https://cloud.nx.app/get-started). Get faster builds with remote caching, distributed task execution, and self-healing CI. [See how your workspace can benefit](#nx-cloud).
-## Generate a library
+## Getting started
 
-```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
+```bash
+pnpm install
+pnpm dev
 ```
 
-## Run tasks
+`pnpm dev` starts the dev infrastructure in Docker and both apps:
 
-To build the library use:
+| Service        | URL                            |
+| -------------- | ------------------------------ |
+| API (Fastify)  | http://localhost:3000/api      |
+| Web (Next.js)  | http://localhost:4200          |
+| Mailpit UI     | http://localhost:8025          |
+| MinIO console  | http://localhost:9001          |
+| Postgres 18    | `localhost:5432`               |
+| Redis critical | `localhost:6379` (noeviction)  |
+| Redis cache    | `localhost:6380` (allkeys-lru) |
 
-```sh
-npx nx run pkg1:build
+Observability (Grafana + Loki + Tempo + Prometheus) is opt-in to keep the default
+footprint small:
+
+```bash
+pnpm dev:obs   # Grafana on http://localhost:3001, OTLP on :4317/:4318
 ```
 
-To run any task with Nx use:
+## Everyday commands
 
-```sh
-npx nx run <project-name>:<target>
+| Command                      | What it does                                     |
+| ---------------------------- | ------------------------------------------------ |
+| `pnpm verify`                | lint + typecheck + test + build across the graph  |
+| `pnpm nx affected -t test`   | only what the current change touches              |
+| `pnpm knip`                  | report unused files, dependencies and exports     |
+| `pnpm nx release --dry-run`  | preview the next version and changelog            |
+| `pnpm dev:down`              | stop the dev infrastructure                       |
+
+## Workspace layout
+
+Projects are named after their **scope**, never after a role or a framework, so a
+second product or a second frontend never forces a rename.
+
+```
+apps/core/api        core-api      NestJS + Fastify
+apps/core/web        core-web      Next.js App Router + Tailwind
+apps/core/web-e2e    core-web-e2e  Playwright
+libs/shared/ui       shared-ui     design system
+libs/shared/i18n     shared-i18n   message catalogs
+libs/shared/api-client-core        generated from openapi.json (do not edit)
 ```
 
-These targets are either [inferred automatically](https://nx.dev/docs/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
-
-[More about running tasks in the docs &raquo;](https://nx.dev/docs/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Versioning and releasing
-
-To version and release the library use
-
-```
-npx nx release
-```
-
-Pass `--dry-run` to see what would happen without actually releasing the library.
-
-[Learn more about Nx release &raquo;](https://nx.dev/docs/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Keep TypeScript project references up to date
-
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
-
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
-
-```sh
-npx nx sync
-```
-
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
-
-```sh
-npx nx sync:check
-```
-
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
-
-## Nx Cloud
-
-Nx Cloud ensures a [fast and scalable CI](https://nx.dev/nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/docs/features/ci-features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/docs/features/ci-features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/docs/features/ci-features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/docs/features/ci-features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Set up CI (non-Github Actions CI)
-
-**Note:** This is only required if your CI provider is not GitHub Actions.
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
-```
-
-[Learn more about Nx on CI](https://nx.dev/docs/features/ci-features?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/docs/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## 🔗 Learn More
-
-- [Nx Documentation](https://nx.dev/docs)
-- [Crafting Your Workspace Tutorial](https://nx.dev/docs/getting-started/tutorials/crafting-your-workspace)
-- [Module Boundaries](https://nx.dev/docs/features/enforce-module-boundaries)
-- [Releasing Packages](https://nx.dev/docs/features/manage-releases)
-- [Nx Plugins](https://nx.dev/docs/concepts/nx-plugins)
-- [Nx Cloud](https://nx.dev/nx-cloud)
-
-## 💬 Community
-
-Join the Nx community:
-
-- [Discord](https://go.nx.dev/community)
-- [X (Twitter)](https://twitter.com/nxdevtools)
-- [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [YouTube](https://www.youtube.com/@nxdevtools)
-- [Blog](https://nx.dev/blog)
+Dependency rules are enforced by ESLint (`@nx/enforce-module-boundaries`) on three
+axes — `scope:*`, `platform:*`, `type:*`. Notably a `type:feature` library may not
+import another `type:feature`: cross-feature communication goes through domain
+events or shared contracts.

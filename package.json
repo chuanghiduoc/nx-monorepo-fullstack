@@ -4,7 +4,10 @@
   "license": "MIT",
   "scripts": {
     "knip": "knip --exclude unresolved",
-    "verify": "nx run-many -t lint typecheck test build"
+    "verify": "nx run-many -t lint typecheck test build",
+    "dev": "docker compose up -d && nx run-many -t serve dev --projects=core-api,core-web",
+    "dev:down": "docker compose down",
+    "dev:obs": "docker compose --profile observability up -d"
   },
   "private": true,
   "devDependencies": {
