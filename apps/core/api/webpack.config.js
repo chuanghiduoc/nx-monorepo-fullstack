@@ -2,12 +2,14 @@ const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
 const { IgnorePlugin } = require('webpack');
 const { join } = require('path');
 
-// @nestjs/platform-fastify lazy-requires these inside try/catch, only when
-// useStaticAssets() / setViewEngine() are called. They are not declared
-// dependencies, so `externalDependencies: 'all'` does not cover them and webpack
-// reports them as unresolved. We use neither feature; install the package and drop
-// it from this list if a future phase needs static asset serving.
-const UNUSED_FASTIFY_OPTIONAL_PLUGINS = /^@fastify\/(static|view)$/;
+// NestJS resolves a number of optional integrations through lazy `require()` calls
+// wrapped in try/catch. Webpack still analyses them statically and fails the build
+// for every one that is not installed, even though the runtime never loads them.
+// This project deliberately does not use any of them (validation is Zod-based per
+// spec §3), so they are excluded from the bundle. When a phase introduces one of
+// these — e.g. @nestjs/websockets for realtime — install it and remove it here.
+const UNUSED_NEST_OPTIONAL_INTEGRATIONS =
+  /^(class-validator|class-transformer|cache-manager|@fastify\/(static|view)|@nestjs\/(websockets|microservices)(\/.*)?)$/;
 
 module.exports = {
   output: {
@@ -18,7 +20,7 @@ module.exports = {
     }),
   },
   plugins: [
-    new IgnorePlugin({ resourceRegExp: UNUSED_FASTIFY_OPTIONAL_PLUGINS }),
+    new IgnorePlugin({ resourceRegExp: UNUSED_NEST_OPTIONAL_INTEGRATIONS }),
     new NxAppWebpackPlugin({
       target: 'node',
       compiler: 'tsc',
