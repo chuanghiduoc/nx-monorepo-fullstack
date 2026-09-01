@@ -26,6 +26,9 @@
     },
     {
       "path": "./apps/core/api-e2e"
+    },
+    {
+      "path": "./libs/core/server/data-access-db"
     }
   ],
   "compilerOptions": {}

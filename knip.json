@@ -38,6 +38,15 @@
         "src/generators/*/*.ts"
       ],
       "ignoreExportsUsedInFile": true
+    },
+    "libs/core/server/data-access-db": {
+      "ignoreDependencies": [
+        "@prisma/client",
+        "pg"
+      ],
+      "entry": [
+        "prisma7.config.ts"
+      ]
     }
   },
   "ignoreUnresolved": [

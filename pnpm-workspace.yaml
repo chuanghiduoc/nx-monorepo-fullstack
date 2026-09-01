@@ -13,8 +13,13 @@ allowBuilds:
   lefthook: true
   '@swc/core': true
   nx: true
+  '@prisma/engines': true
+  prisma: true
+  cpu-features: true
+  protobufjs: true
+  ssh2: true
 catalog:
-  '@nestjs/common': '^11.0.0'
+  '@nestjs/common': '^11.2.3'
   '@nestjs/core': '^11.0.0'
   '@nestjs/platform-fastify': '^11.2.3'
   '@nestjs/testing': '^11.0.0'
@@ -38,3 +43,9 @@ catalog:
   'jsdom': '^27.1.0'
   'better-auth': '^1.7.2'
   '@opentelemetry/api': '^1.9.1'
+  '@prisma/adapter-pg': '^7.10.0'
+  '@prisma/client': '^7.10.0'
+  'pg': '^8.23.0'
+  'prisma': '^7.10.0'
+  'dotenv': '^17.4.2'
+  '@testcontainers/postgresql': '^12.1.0'
