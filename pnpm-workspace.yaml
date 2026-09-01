@@ -9,3 +9,4 @@ allowBuilds:
   '@nestjs/core': false
   less: true
   sharp: true
+  esbuild: false

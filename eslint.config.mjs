@@ -10,6 +10,7 @@ export default [
       '**/out-tsc',
       '**/vitest.config.*.timestamp*',
       '**/test-output',
+      '**/vite.config.*.timestamp*',
     ],
   },
   {
@@ -20,10 +21,60 @@ export default [
         {
           enforceBuildableLibDependency: true,
           allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
+          // Spec §4 — three independent axes: scope, platform, type.
           depConstraints: [
+            // scope: a product scope may only reach its own scope plus shared.
             {
-              sourceTag: '*',
-              onlyDependOnLibsWithTags: ['*'],
+              sourceTag: 'scope:shared',
+              onlyDependOnLibsWithTags: ['scope:shared'],
+            },
+            {
+              sourceTag: 'scope:core',
+              onlyDependOnLibsWithTags: ['scope:core', 'scope:shared'],
+            },
+            // platform: web and node never meet; the only door is a generated api client.
+            {
+              sourceTag: 'platform:web',
+              onlyDependOnLibsWithTags: ['platform:web', 'platform:shared'],
+            },
+            {
+              sourceTag: 'platform:node',
+              onlyDependOnLibsWithTags: ['platform:node', 'platform:shared'],
+            },
+            {
+              sourceTag: 'platform:shared',
+              onlyDependOnLibsWithTags: ['platform:shared'],
+            },
+            // type: feature must NOT import another feature — cross-feature talk
+            // goes through domain events or shared contracts (spec §4 rule 3).
+            {
+              sourceTag: 'type:util',
+              onlyDependOnLibsWithTags: ['type:util'],
+            },
+            {
+              sourceTag: 'type:ui',
+              onlyDependOnLibsWithTags: ['type:ui', 'type:util'],
+            },
+            {
+              sourceTag: 'type:data-access',
+              onlyDependOnLibsWithTags: ['type:data-access', 'type:util'],
+            },
+            {
+              sourceTag: 'type:feature',
+              onlyDependOnLibsWithTags: [
+                'type:ui',
+                'type:data-access',
+                'type:util',
+              ],
+            },
+            {
+              sourceTag: 'type:app',
+              onlyDependOnLibsWithTags: [
+                'type:feature',
+                'type:ui',
+                'type:data-access',
+                'type:util',
+              ],
             },
           ],
         },

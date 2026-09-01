@@ -11,6 +11,15 @@
     },
     {
       "path": "./apps/core/web"
+    },
+    {
+      "path": "./libs/shared/i18n"
+    },
+    {
+      "path": "./libs/shared/api-client-core"
+    },
+    {
+      "path": "./libs/shared/ui"
     }
   ],
   "compilerOptions": {}
