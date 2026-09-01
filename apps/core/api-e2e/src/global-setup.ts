@@ -3,6 +3,12 @@ import { join } from 'node:path';
 
 const API_URL = process.env['API_URL'] ?? 'http://localhost:3000';
 const READY_TIMEOUT_MS = 60_000;
+
+// Low enough that the rate-limit test does not need a hundred requests, high
+// enough that the other suites are not throttled. Exported through the
+// environment so the suite and the server agree on the number.
+const THROTTLE_LIMIT = process.env['THROTTLE_LIMIT'] ?? '40';
+const THROTTLE_TTL_MS = process.env['THROTTLE_TTL_MS'] ?? '30000';
 const POLL_INTERVAL_MS = 250;
 
 let api: ChildProcess | undefined;
@@ -28,6 +34,9 @@ async function waitForApi(): Promise<void> {
  * last gate before the artifact ships, so they must exercise the artifact.
  * Set API_URL to point at an already-running instance and nothing is spawned.
  */
+/** Vitest runs globalSetup in its own context, so the limit is published here. */
+export const throttleLimit = Number(THROTTLE_LIMIT);
+
 export async function setup(): Promise<void> {
   if (process.env['API_URL']) {
     await waitForApi();
@@ -52,10 +61,8 @@ export async function setup(): Promise<void> {
         process.env['REDIS_CRITICAL_URL'] ?? 'redis://localhost:6379',
       REDIS_CACHE_URL:
         process.env['REDIS_CACHE_URL'] ?? 'redis://localhost:6380',
-      // Low enough that the rate-limit test does not need a hundred requests,
-      // high enough that the other suites are not throttled.
-      THROTTLE_LIMIT: process.env['THROTTLE_LIMIT'] ?? '40',
-      THROTTLE_TTL_MS: process.env['THROTTLE_TTL_MS'] ?? '30000',
+      THROTTLE_LIMIT: THROTTLE_LIMIT,
+      THROTTLE_TTL_MS: THROTTLE_TTL_MS,
     },
   });
 

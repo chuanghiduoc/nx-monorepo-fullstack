@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
+import { throttleLimit } from './global-setup.js';
+
 const API_URL = process.env['API_URL'] ?? 'http://localhost:3000';
 
 describe('core-api', () => {
@@ -193,9 +195,9 @@ describe('demo items (the reference feature)', () => {
 });
 
 describe('rate limiting', () => {
-  // The suite runs the API with THROTTLE_LIMIT set low so the limit can be
-  // reached without sending a hundred requests.
-  const LIMIT = Number(process.env['THROTTLE_LIMIT'] ?? '20');
+  // The API under test runs with this limit (see global-setup.ts), low enough
+  // that the window can be exhausted without sending a hundred requests.
+  const LIMIT = throttleLimit;
 
   it('answers with a problem document once the window is exhausted', async () => {
     let limited: Response | undefined;
