@@ -33,6 +33,50 @@ describe('core-api', () => {
   });
 });
 
+interface ProblemResponse {
+  type: string;
+  title: string;
+  status: number;
+  detail: string;
+  instance: string;
+  traceId: string;
+  errors?: { path: string; message: string }[];
+}
+
+describe('error contract (RFC 9457)', () => {
+  it('answers an unknown route with a problem document', async () => {
+    const response = await fetch(`${API_URL}/api/definitely-not-here`);
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get('content-type')).toContain(
+      'application/problem+json',
+    );
+  });
+
+  it('includes the members a client needs to act on and to report', async () => {
+    const response = await fetch(`${API_URL}/api/definitely-not-here`);
+    const problem = (await response.json()) as ProblemResponse;
+
+    expect(problem).toMatchObject({
+      type: expect.stringContaining('not-found'),
+      title: 'Not Found',
+      status: 404,
+      instance: '/api/definitely-not-here',
+    });
+    expect(problem.traceId).toBeTruthy();
+  });
+
+  it('uses the same trace id in the body and the response header', async () => {
+    const response = await fetch(`${API_URL}/api/definitely-not-here`, {
+      headers: { 'x-request-id': 'known-trace' },
+    });
+    const problem = (await response.json()) as ProblemResponse;
+
+    expect(problem.traceId).toBe('known-trace');
+    expect(response.headers.get('x-request-id')).toBe('known-trace');
+  });
+});
+
 describe('better-auth mount (ADR-0002)', () => {
   it('serves its own routes instead of falling through to Nest', async () => {
     const response = await fetch(`${API_URL}/api/auth/sign-up/email`, {

@@ -51,6 +51,9 @@ catalogs:
     dotenv:
       specifier: ^17.4.2
       version: 17.4.2
+    fastify:
+      specifier: ^5.11.3
+      version: 5.12.1
     jsdom:
       specifier: ^27.1.0
       version: 27.4.0
@@ -376,6 +379,9 @@ importers:
       '@nestjs/config':
         specifier: 'catalog:'
         version: 12.0.0(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1))(rxjs@7.8.1)
+      fastify:
+        specifier: 'catalog:'
+        version: 5.12.1
       nestjs-pino:
         specifier: 'catalog:'
         version: 5.0.0(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1))(@nestjs/core@11.2.3)(pino-http@11.0.0)(pino@10.3.1)(rxjs@7.8.1)
@@ -19504,7 +19510,6 @@ snapshots:
       secure-json-parse: 4.1.0
       semver: 7.8.5
       toad-cache: 3.7.4
-    optional: true
 
   fastq@1.20.3:
     dependencies:

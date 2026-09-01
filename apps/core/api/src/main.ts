@@ -7,6 +7,7 @@ import {
 
 import { Logger as PinoLogger } from 'nestjs-pino';
 import {
+  ProblemDetailsFilter,
   REQUEST_ID_HEADER,
   requestIdOptions,
 } from '@workspace/core-server-core';
@@ -28,6 +29,9 @@ async function bootstrap() {
   // Framework logs go through pino too, so everything is one JSON stream.
   app.useLogger(app.get(PinoLogger));
   app.setGlobalPrefix(GLOBAL_PREFIX);
+
+  // One error shape for the whole service (RFC 9457).
+  app.useGlobalFilters(new ProblemDetailsFilter());
 
   // Echo the id so a caller can quote it when reporting a problem.
   app
