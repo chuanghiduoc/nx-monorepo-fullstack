@@ -16,11 +16,11 @@ Depends on: Phase 2 transaction seam (`withTenantTransaction`) and the contract 
 
 1. better-auth wired per ADR-0002: email/password, 2FA, organizations, access control with dynamic roles, admin plugin (ban + impersonation), multi-session (device list/revoke), API keys.
 2. Tenant context: AsyncLocalStorage carrying `orgId` **and** `userId`, injected by a Prisma Client Extension that *guards* — it never opens transactions (spec §6.5).
-3. RLS migrations: `ENABLE` + `FORCE` per tenant-owned table, the four table classes (`GLOBAL`, `TENANT_OWNED`, `TENANT_OPTIONAL`, `SYSTEM`) with the policy template from the spec, and the five database roles.
+3. RLS migrations: `ENABLE` + `FORCE` per tenant-owned table, the five table classes (`GLOBAL`, `TENANT_OWNED`, `TENANT_OPTIONAL`, `SYSTEM`, `AUTH`) with the policy template from the spec, and the five database roles. `AUTH` is the carve-out the auth library needs: a user must list every membership before any organization is active.
 4. `libs/core/server/platform/authz`: `can` / `require` / `canAny` / `canAll`, an action registry, default deny, principal types (`user` | `apiKey` | `system`), `actor` vs `effectiveUser`.
 5. `org_settings` (Zod-validated per key) including the per-org IP allowlist.
 6. Frontend: auth screens from `shared-ui`, organization switcher, device sessions, `proxy.ts` route protection, `next-intl` (vi/en).
-7. Tenant-scoped user CRUD as the reference feature.
+7. A tenant-scoped reference feature — `notes`, not user CRUD: membership lives in the auth library's own table, whose plugin owns the hooks and access control that guard it, and a second write path around them would defeat both.
 
 **Three separate exit gates** (a green UI must not hide an unfinished foundation):
 

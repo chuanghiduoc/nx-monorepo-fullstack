@@ -123,13 +123,15 @@ libs/
         quota/           # quota engine atomic (6.7)
       feature/           # nghiệp vụ: KHÔNG import lẫn nhau
         auth/            # better-auth: orgs, AC, admin, multi-session, api-key
-        users/           # user CRUD mẫu (tenant-scoped) — xem ghi chú dưới
+        notes/           # feature mẫu tenant-scoped — xem ghi chú dưới
         entitlements/    # plans, guard, onPlanChanged, UI (gọi quota infra)
         flags/           # OpenFeature + in-house provider
         audit/  webhooks/  storage/  realtime/
         ai/              # AI SDK provider abstraction, embeddings, RAG demo
     web/                 # platform:web — component riêng product app
-
+docs/  (superpowers/specs/, adr/, adding-a-service-in-another-language.md, upgrades.md)
+docker-compose.yml       # dev: PG18, Redis, Mailpit, MinIO, grafana/otel-lgtm
+```
 **Thư mục phản ánh luật ranh giới, không thay thế nó.** `platform/` đúng bằng
 tập hợp thứ một feature được phép phụ thuộc; `feature/` là tập hợp không được
 import lẫn nhau. Tag (`type:util`, `type:data-access`, `type:feature`) vẫn là
@@ -149,9 +151,6 @@ khi sản phẩm cần trường mà plugin không có.
 `core-server-feature-auth`): import đi qua tên package, nên di chuyển thư mục
 không sửa một dòng import nào. Di chuyển bằng `nx g @nx/workspace:move` —
 generator cập nhật project.json, tsconfig references và graph cùng lúc.
-docs/  (superpowers/specs/, adr/, adding-a-language.md, upgrades.md)
-docker-compose.yml       # dev: PG18, Redis, Mailpit, MinIO, grafana/otel-lgtm
-```
 
 **Luật ranh giới** (tags scope/platform/type — chốt TRƯỚC khi viết generator):
 

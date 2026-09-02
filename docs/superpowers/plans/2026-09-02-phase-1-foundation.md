@@ -856,13 +856,13 @@ git add .github && git commit -m "ci: nx affected workflow with gitleaks, osv-sc
 ### Task 15: ADR-0001 + khung upgrades.md
 
 **Files:**
-- Create: `docs/adr/0001-architecture-baseline.md`, `docs/upgrades.md`, `docs/adding-a-language.md`
+- Create: `docs/adr/0001-architecture-baseline.md`, `docs/upgrades.md`, `docs/adding-a-service-in-another-language.md`
 
 - [ ] **Step 1: ADR-0001** — nội dung: tóm tắt 10 quyết định lớn từ spec (Nx+pnpm, Fastify, OpenAPI contract, Prisma 7+PG18+UUIDv7, better-auth, BullMQ+outbox, RLS 2 lớp, authz facade, Vitest, TS7 dual-install) — mỗi cái 2 dòng: chọn gì + vì sao, link về spec. Ghi thêm mục "knip ignores" nếu Task 9 có false positive.
 
 - [ ] **Step 2: upgrades.md** — tạo khung từ spec mục 10: mỗi mục là một heading với 2 phần `**Tín hiệu:**` và `**Các bước:**` — điền đủ 25 mục của spec (SSO, billing, ReBAC, Kafka, search ladder, flags provider, platform/auth, gateway, GraphQL, NestJS 12, Rspack, Biome, TS7.1, Nx Cloud, Prisma 8, pg-boss/RabbitMQ, gRPC, Sentry, k6, AV scan, preview env, scheduler entry, HA multi-node, backup PITR, FE state manager). Phase 1 điền chi tiết được ngay các mục: Biome, Rspack, TS 7.1, Nx Cloud, NestJS 12; các mục còn lại ghi tín hiệu + tham chiếu mục spec (chi tiết bổ sung ở phase liên quan).
 
-- [ ] **Step 3: adding-a-language.md** — quy ước service polyglot (từ spec 5.7): nhả openapi.json, ProblemDetails, versioning /v1, cursor pagination, securityScheme; đăng ký `libs/shared/api-client-<service>`; ví dụ lệnh thêm plugin cộng đồng (`@nxlv/python`, `@nx-go/nx-go`).
+- [ ] **Step 3: adding-a-service-in-another-language.md** — quy ước service polyglot (từ spec 5.7): nhả openapi.json, ProblemDetails, versioning /v1, cursor pagination, securityScheme; đăng ký `libs/shared/api-client-<service>`; ví dụ lệnh thêm plugin cộng đồng (`@nxlv/python`, `@nx-go/nx-go`).
 
 - [ ] **Step 4: Khung contracts + sources evidence** — tạo `docs/contracts/`
 với file rỗng-có-heading cho 7 contract (spec 6.19) ghi "giao ở Phase X";

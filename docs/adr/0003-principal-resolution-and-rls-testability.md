@@ -65,10 +65,11 @@ designed, and exactly where it matters.
 - The rule is enforced by the runtime, not by review: any `auth.api.*` call
   that slips inside a transaction fails loudly on the first request that hits
   it, and a test asserts that refusal.
-- better-auth's own tables get no tenant RLS (class `AUTH`): a user must be
-  able to list every membership before an organization is active, and the
-  adapter runs with no GUCs set. Their isolation is better-auth's access
-  control, which `docs/security/threat-model.md` records.
+- better-auth's own tables get no tenant row-level security (class `AUTH`): a
+  user must be able to list every membership before an organization is active,
+  and the adapter runs with no GUCs set. Their isolation is better-auth's own
+  access control, and that trade is worth writing down in the threat model
+  when one exists.
 
 ## How to re-run the evidence
 

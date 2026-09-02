@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/schema",
   "$id": "FeatureLib",
   "title": "Create a feature library that follows the workspace conventions",
-  "description": "Generates libs/<scope>/<server|web>/feature-<name> with the scope, platform and type tags the module-boundary rules expect.",
+  "description": "Generates libs/<scope>/server/feature/<name> (or libs/<scope>/web/feature-<name>) with the scope, platform and type tags the module-boundary rules expect.",
   "type": "object",
   "properties": {
     "name": {

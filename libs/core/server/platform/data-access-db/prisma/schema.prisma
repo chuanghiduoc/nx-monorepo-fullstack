@@ -27,8 +27,12 @@ datasource db {
   provider = "postgresql"
 }
 
-/// Reference model. It exists to prove the conventions above end to end and is
-/// what Phase 2's demo endpoint and pagination work against.
+/// class: GLOBAL — shared reference data, no tenant policy.
+///
+/// It exists to prove the conventions above end to end, and it is what the
+/// demo endpoint and the pagination tests work against. Deliberately global:
+/// an unauthenticated page reads it, and giving it an organization would make
+/// the reference for the global pattern require a tenant.
 model DemoItem {
   id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   title     String   @db.VarChar(200)
@@ -40,6 +44,8 @@ model DemoItem {
   @@map("demo_items")
 }
 
+/// class: SYSTEM — belongs to no tenant; reached through grants, not policies.
+///
 /// Durable idempotency.
 ///
 /// Redis alone would lose these on a restart, and a retried payment would run
@@ -88,7 +94,6 @@ model IdempotencyRecord {
 /// organization is active, and better-auth's adapter runs outside our
 /// transactions, so it never sets the tenant GUCs. Isolation for
 /// these tables is better-auth's own access control, recorded in
-///.
 ///
 /// Regenerate after a plugin change:
 ///   pnpm dlx @better-auth/cli@latest generate \

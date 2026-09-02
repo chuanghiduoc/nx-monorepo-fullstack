@@ -13,11 +13,12 @@ libs/shared/<name>                  used by both the browser and the server
 apps/core/<name>                    a deployable process
 ```
 
-The two server layers are the boundary rule made visible. A feature that
-several other features need is not a feature: move it to `platform/`. ESLint
-enforces the rule through tags (`type:util`, `type:data-access`,
-`type:feature`), and adding a library to the wrong layer fails lint, not
-review.
+The two server layers make the dependency rule visible; ESLint is what
+enforces it, through tags (`type:util`, `type:data-access`, `type:feature`) —
+no rule reads a directory. A library in the wrong folder with the right tags
+lints clean, so the folder is a convention held by review and the tag is the
+one held by the tool. A feature that several other features need is not a
+feature: it moves to `platform/`, and its tag moves with it.
 
 Create every library with the generator, never by copying a folder:
 

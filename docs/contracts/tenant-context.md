@@ -58,17 +58,24 @@ Guessing a tenant would be the worst possible recovery.
 2. **The transaction** sets the GUCs with `set_config(..., true)`, so they are
    transaction-local and a pooled connection never carries one tenant's
    identity into the next request.
-3. **PostgreSQL row-level security** is the boundary that holds when the first
-   two are wrong. Policies read the GUCs; `FORCE ROW LEVEL SECURITY` binds even
-   the table owner.
+3. **PostgreSQL row-level security** — the boundary that holds when the first
+   two are wrong. Policies read the GUCs, and `FORCE ROW LEVEL SECURITY` binds
+   even the table owner.
 
-The third layer is the only one that survives an application bug, which is why
-the tests for it run as `app_user` — a role that is neither a superuser nor
-`BYPASSRLS`, verified at the top of every isolation suite and at service boot.
+**The third layer is not in place yet.** No migration creates a policy; the
+tenant-owned tables it will protect do not exist either. What does exist is
+everything that makes it testable when it arrives: the application connects as
+`app_user`, a role that is neither a superuser nor `BYPASSRLS`; the service
+refuses to boot on a connection that row-level security cannot bind; and every
+isolation suite opens by proving a live `FORCE` policy actually hides a row.
+That order is deliberate — a policy written against a superuser connection
+would have looked like it worked.
 
 ## Table classes
 
-Every model declares one. Nothing is inferred from a column name.
+Every model declares one, in a comment above it. Nothing is inferred from a
+column name — an `org_id` on an auth table would otherwise imply a policy that
+must not exist there.
 
 | Class | Meaning | Policy |
 |---|---|---|

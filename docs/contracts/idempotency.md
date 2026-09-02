@@ -97,5 +97,7 @@ the correct outcome when another attempt legitimately took the key over.
   one wins.
 - `libs/core/server/platform/core/src/lib/idempotency/request-fingerprint.spec.ts` —
   route normalisation and body canonicalisation.
-- `apps/core/api-e2e/src/api.e2e-spec.ts` — the HTTP behaviour above,
-  including a retry sent the instant the first response arrives.
+- `apps/core/api-e2e/src/api.e2e-spec.ts` — replay, the 422 on a changed
+  request, and requests without the header. The 409 while in progress, the
+  release after a failure and the state guards are covered by the store spec
+  above; no end-to-end test races a retry against the first response yet.

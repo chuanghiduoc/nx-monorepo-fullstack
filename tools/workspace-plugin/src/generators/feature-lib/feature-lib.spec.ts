@@ -21,7 +21,7 @@ describe('feature-lib generator', () => {
     await featureLibGenerator(tree, options);
 
     const project = readProjectConfiguration(tree, 'core-server-feature-users');
-    expect(project.root).toBe('libs/core/server/feature-users');
+    expect(project.root).toBe('libs/core/server/feature/users');
   });
 
   it('places a web feature under the scope web directory', async () => {
@@ -54,7 +54,7 @@ describe('feature-lib generator', () => {
     });
 
     const packageJson = JSON.parse(
-      tree.read('libs/core/server/feature-invoices/package.json', 'utf-8') ?? '{}',
+      tree.read('libs/core/server/feature/invoices/package.json', 'utf-8') ?? '{}',
     );
 
     expect(packageJson.dependencies?.tslib).toBe('catalog:');

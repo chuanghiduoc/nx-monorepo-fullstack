@@ -13,6 +13,8 @@ built to be reused across products (CRM, ERP, HRM, CMS, AI, e-commerce admin…)
 | [`docs/upgrades.md`](docs/upgrades.md) | everything deliberately kept light, with the signal that says it is time |
 | [`docs/ops/`](docs/ops) | running it: database roles, secrets, checks |
 | [`docs/superpowers/specs/`](docs/superpowers/specs) | the full architecture design |
+| [`docs/adding-a-service-in-another-language.md`](docs/adding-a-service-in-another-language.md) | adding a service written in Go, Python or anything else |
+| [`docs/sources.md`](docs/sources.md) | where the version and behaviour claims came from |
 
 ## Getting started
 
@@ -69,7 +71,7 @@ libs/core/server/platform/testing      Testcontainers harness and factories
 libs/core/server/feature/auth          sessions, organizations, 2FA, API keys
 
 libs/shared/ui                         design system
-libs/shared/i18n                       message catalogs
+libs/shared/i18n                       message catalogs (a stub until the web app is translated)
 libs/shared/api-client-core            generated from openapi.json (do not edit)
 ```
 
@@ -93,4 +95,6 @@ Export it from `src/index.ts` and consume it as `@workspace/shared-ui`.
 Dependency rules are enforced by ESLint (`@nx/enforce-module-boundaries`) on three
 axes — `scope:*`, `platform:*`, `type:*`. Notably a `type:feature` library may not
 import another `type:feature`: cross-feature communication goes through domain
-events or shared contracts.
+events or shared contracts. [`docs/conventions.md`](docs/conventions.md) has the
+rest, including where a new capability goes and why library imports carry a
+`.js` extension.

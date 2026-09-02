@@ -15,7 +15,13 @@ async function featureLibGenerator(
   options: FeatureLibGeneratorSchema,
 ) {
   const side = options.platform === 'node' ? 'server' : 'web';
-  const directory = `libs/${options.scope}/${side}/feature-${options.name}`;
+  // Server libraries sit in two layers: infrastructure under platform/, which
+  // any feature may depend on, and features under feature/, which may not
+  // depend on each other. Web libraries have no such split yet.
+  const directory =
+    side === 'server'
+      ? `libs/${options.scope}/server/feature/${options.name}`
+      : `libs/${options.scope}/web/feature-${options.name}`;
 
   await libraryGenerator(tree, {
     directory,
