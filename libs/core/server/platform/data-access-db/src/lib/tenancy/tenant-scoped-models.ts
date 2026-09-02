@@ -8,4 +8,5 @@
 export const TENANT_SCOPED_DELEGATES: ReadonlySet<string> = new Set([
   'bookmark',
   'note',
+  'orgSetting',
 ]);

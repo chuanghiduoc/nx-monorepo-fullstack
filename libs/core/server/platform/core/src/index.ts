@@ -13,6 +13,16 @@ export {
   type ProblemError,
 } from './lib/errors/problem-details.js';
 export { ProblemDetailsFilter } from './lib/errors/problem-details.filter.js';
+export { isAddressAllowed } from './lib/security/ip-allowlist.js';
+export {
+  SETTING_SCHEMAS,
+  UnknownSettingError,
+  defaultSetting,
+  isSettingKey,
+  parseSetting,
+  type SettingKey,
+  type SettingValue,
+} from './lib/org-settings/setting-registry.js';
 export { OriginCheckGuard } from './lib/security/origin-check.guard.js';
 export { AppThrottlerModule } from './lib/security/throttler.module.js';
 export {

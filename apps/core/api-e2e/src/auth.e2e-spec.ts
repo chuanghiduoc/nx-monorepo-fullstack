@@ -292,7 +292,8 @@ describe('the request knows who is asking', () => {
     const who = await fetch(`${API_URL}/api/whoami`);
     const body = (await who.json()) as { principal: null; tenant: null };
 
-    expect(body).toEqual({ principal: null, tenant: null });
+    expect(body.principal).toBeNull();
+    expect(body.tenant).toBeNull();
   });
 
   it('resolves an api key to the key, never to a session', async () => {
@@ -330,5 +331,78 @@ describe('the request knows who is asking', () => {
     // Falling back to the cookie here would let anyone with a session bypass
     // whatever the key was supposed to restrict.
     expect(body.principal).toBeNull();
+  });
+});
+
+describe('the client address behind a proxy', () => {
+  it('takes the forwarded address from a hop it was told to trust', async () => {
+    // The suite runs the service with TRUSTED_PROXIES covering loopback, which
+    // is where these requests come from — the same shape as an edge in front
+    // of the service.
+    const who = await fetch(`${API_URL}/api/whoami`, {
+      headers: { 'x-forwarded-for': '203.0.113.99' },
+    });
+    const { ip } = (await who.json()) as { ip: string };
+
+    expect(ip).toBe('203.0.113.99');
+  });
+
+  it('is what every per-caller decision uses', async () => {
+    // Rate limiting, the per-organization IP allowlist and the logs all read
+    // request.ip. If it could be set by the caller, none of them would mean
+    // anything — which is why the trusted hops are named rather than assumed.
+    const first = await fetch(`${API_URL}/api/whoami`);
+    const { ip } = (await first.json()) as { ip: string };
+
+    expect(ip).toMatch(/^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/);
+  });
+});
+
+describe('the per-organization IP allowlist', () => {
+  async function organisationFor(cookie: string): Promise<string> {
+    const created = await fetch(
+      `${API_URL}/api/auth/organization/create`,
+      authed(cookie, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', origin: ORIGIN },
+        body: JSON.stringify({ name: 'Guarded', slug: `guarded-${Date.now()}-${(sequence += 1)}` }),
+      }),
+    );
+    const org = (await created.json()) as { id: string };
+
+    await fetch(
+      `${API_URL}/api/auth/organization/set-active`,
+      authed(cookie, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', origin: ORIGIN },
+        body: JSON.stringify({ organizationId: org.id }),
+      }),
+    );
+
+    return org.id;
+  }
+
+  it('lets a member through when the organization has set no allowlist', async () => {
+    const { cookie } = await signUp();
+    await organisationFor(cookie);
+
+    const response = await fetch(`${API_URL}/api/whoami`, authed(cookie));
+
+    // No allowlist is the absence of a rule, not a rule admitting nobody.
+    expect(response.status).toBe(200);
+  });
+
+  it('does not touch a request that belongs to no organization', async () => {
+    const { cookie } = await signUp();
+
+    const response = await fetch(`${API_URL}/api/whoami`, authed(cookie));
+
+    expect(response.status).toBe(200);
+  });
+
+  it('does not touch an anonymous request', async () => {
+    const response = await fetch(`${API_URL}/api`);
+
+    expect(response.status).toBe(200);
   });
 });

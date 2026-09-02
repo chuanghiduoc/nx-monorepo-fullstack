@@ -17,6 +17,10 @@ export {
   type CompleteInput,
   type IdempotencyScopeType,
 } from './lib/idempotency.store.js';
+export {
+  OrgSettingsRepository,
+  type StoredSetting,
+} from './lib/org-settings/org-settings.repository.js';
 export { NoTenantContextError } from './lib/tenancy/tenant-guard.js';
 export {
   DemoItemRepository,

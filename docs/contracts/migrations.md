@@ -19,6 +19,18 @@ Both `migrate dev` and `migrate diff --from-migrations` need
 `SHADOW_DATABASE_URL`: Prisma replays the history into a throwaway database.
 Never point it at a database holding anything; Prisma resets it.
 
+## Check before you re-run
+
+`migrate dev --create-only` prints nothing obvious when it succeeds, so it is
+easy to think it failed and run it again. The second run creates a second
+directory, empty, because the first already brought the database up to date —
+and the empty one then fails the "every migration ships a down script" test.
+
+    ls prisma/migrations | tail -3
+
+before re-running. If a stray empty directory does appear, delete it and its
+row in `_prisma_migrations`.
+
 ## An applied migration is immutable — comments included
 
 Prisma stores a checksum of every migration it has applied and refuses to

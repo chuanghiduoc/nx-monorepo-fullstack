@@ -171,7 +171,7 @@
 
 ---
 
-### Task 7: `org_settings` and the IP allowlist guard
+### Task 7 ✅ DONE: `org_settings` and the IP allowlist guard
 
 **Files:**
 - Create: migration `..._org_settings` (**TENANT_OWNED**, `UNIQUE (org_id, key)`, `value JSONB`, `version INT`)

@@ -1,4 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Req } from '@nestjs/common';
+import type { FastifyRequest } from 'fastify';
 import { currentRequestContext } from '@workspace/core-server-core';
 
 /**
@@ -12,12 +13,16 @@ import { currentRequestContext } from '@workspace/core-server-core';
 @Controller()
 export class WhoamiController {
   @Get('whoami')
-  whoami() {
+  whoami(@Req() request: FastifyRequest) {
     const context = currentRequestContext();
 
     return {
       principal: context?.principal ?? null,
       tenant: context?.tenant ?? null,
+      // The address every per-caller decision uses: rate limiting, the
+      // per-organization IP allowlist, and what a log line records. Reported
+      // here so the forwarding rules can be tested rather than assumed.
+      ip: request.ip,
     };
   }
 }

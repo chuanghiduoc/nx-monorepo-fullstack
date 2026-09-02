@@ -8,7 +8,10 @@ import { DatabaseModule } from '@workspace/core-server-data-access-db';
 
 import { AuthModule } from '@workspace/core-server-feature-auth';
 
+import { APP_GUARD } from '@nestjs/core';
+
 import { AppController } from './app.controller';
+import { IpAllowlistGuard } from './security/ip-allowlist.guard';
 import { WhoamiController } from './whoami.controller';
 import { DemoItemsModule } from './demo-items/demo-items.module';
 import { AppService } from './app.service';
@@ -25,6 +28,11 @@ import { AppService } from './app.service';
     DemoItemsModule,
   ],
   controllers: [AppController, WhoamiController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Global: an organization that restricts its networks means every route,
+    // not the ones a developer remembered to annotate.
+    { provide: APP_GUARD, useClass: IpAllowlistGuard },
+  ],
 })
 export class AppModule {}

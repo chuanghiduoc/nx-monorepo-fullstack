@@ -74,6 +74,20 @@ export const envSchema = z.object({
   // better-auth derives cookie domains and callback URLs from it.
   BETTER_AUTH_URL: z.url().default('http://localhost:3000'),
 
+  // Which hops may set X-Forwarded-*. `trustProxy: true` would trust every
+  // one of them, so any client could name its own address and the per-tenant
+  // IP allowlist would guard nothing. Default: the loopback edge a developer
+  // runs. In production this is the edge's address or CIDR.
+  TRUSTED_PROXIES: z
+    .string()
+    .default('127.0.0.1,::1')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((hop) => hop.trim())
+        .filter(Boolean),
+    ),
+
   CORS_ORIGINS: z
     .string()
     .default('http://localhost:4200')

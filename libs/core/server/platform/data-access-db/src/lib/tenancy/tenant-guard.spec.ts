@@ -118,7 +118,7 @@ describe('model classes', () => {
   it('derives the scoped delegates from the classes, not from a list', () => {
     const scoped = tenantScopedDelegates();
 
-    expect([...scoped].sort()).toEqual(['bookmark', 'note']);
+    expect([...scoped].sort()).toEqual(['bookmark', 'note', 'orgSetting']);
     expect(TENANT_SCOPED_CLASSES).toEqual(['TENANT_OWNED', 'TENANT_OPTIONAL']);
   });
 

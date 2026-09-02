@@ -39,10 +39,21 @@ const DOCS_PATH = '/docs';
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    // Behind the edge proxy the client address and protocol arrive
-    // in X-Forwarded-* headers; without trustProxy, secure cookies and rate
-    // limiting would see the proxy instead of the caller.
-    new FastifyAdapter({ trustProxy: true, ...requestIdOptions }),
+    // Behind the edge the client address and protocol arrive in X-Forwarded-*
+    // headers; without this, secure cookies and rate limiting would see the
+    // edge instead of the caller. It names the hops it trusts rather than
+    // trusting all of them: `true` would let any client set its own address,
+    // and the per-organization IP allowlist would then guard nothing.
+    //
+    // Read from the environment directly because the adapter is built before
+    // the configuration module exists. The schema still validates it at boot.
+    new FastifyAdapter({
+      trustProxy: (process.env['TRUSTED_PROXIES'] ?? '127.0.0.1,::1')
+        .split(',')
+        .map((hop) => hop.trim())
+        .filter(Boolean),
+      ...requestIdOptions,
+    }),
   );
   // Framework logs go through pino too, so everything is one JSON stream.
   app.useLogger(app.get(PinoLogger));

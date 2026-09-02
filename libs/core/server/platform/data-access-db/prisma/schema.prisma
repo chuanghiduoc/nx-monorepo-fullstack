@@ -92,6 +92,30 @@ model Bookmark {
   @@map("bookmarks")
 }
 
+/// class: TENANT_OWNED — an organization's own configuration.
+///
+/// Key-value rather than a column per setting: a setting is added by
+/// registering a schema for its key, not by migrating a table, and a product
+/// built on this platform adds settings the platform never heard of. The
+/// value is validated against that schema on the way in, so "key-value" does
+/// not mean "anything goes".
+model OrgSetting {
+  id    String @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  orgId String @map("org_id") @db.Uuid
+  key   String @db.VarChar(100)
+  value Json
+
+  /// Optimistic concurrency: two administrators editing the same setting do
+  /// not silently overwrite each other.
+  version Int @default(1)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([orgId, key])
+  @@map("org_settings")
+}
+
 /// class: SYSTEM — belongs to no tenant; reached through grants, not policies.
 ///
 /// Durable idempotency.

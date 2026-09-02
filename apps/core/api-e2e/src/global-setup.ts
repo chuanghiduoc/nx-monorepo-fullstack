@@ -6,10 +6,11 @@ import { Redis } from 'ioredis';
 const API_URL = process.env['API_URL'] ?? 'http://localhost:3000';
 const READY_TIMEOUT_MS = 60_000;
 
-// Low enough that the rate-limit test does not need a hundred requests, high
-// enough that the other suites are not throttled. Exported through the
-// environment so the suite and the server agree on the number.
-const THROTTLE_LIMIT = process.env['THROTTLE_LIMIT'] ?? '40';
+// High enough that the rest of the suite is never throttled — it grows with
+// every feature — and low enough that the rate-limit test reaches the ceiling
+// in a second. Exported through the environment so the suite and the server
+// agree on the number.
+const THROTTLE_LIMIT = process.env['THROTTLE_LIMIT'] ?? '300';
 const THROTTLE_TTL_MS = process.env['THROTTLE_TTL_MS'] ?? '30000';
 const POLL_INTERVAL_MS = 250;
 
