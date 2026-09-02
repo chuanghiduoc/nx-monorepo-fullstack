@@ -105,6 +105,9 @@ catalogs:
     pg:
       specifier: ^8.23.0
       version: 8.23.0
+    pino:
+      specifier: ^10.3.1
+      version: 10.3.1
     pino-pretty:
       specifier: ^13.1.3
       version: 13.1.3
@@ -362,13 +365,13 @@ importers:
         version: 1.67.0
       '@workspace/core-server-core':
         specifier: workspace:*
-        version: link:../../../libs/core/server/core
+        version: link:../../../libs/core/server/platform/core
       '@workspace/core-server-data-access-db':
         specifier: workspace:*
-        version: link:../../../libs/core/server/data-access-db
+        version: link:../../../libs/core/server/platform/data-access-db
       '@workspace/core-server-feature-auth':
         specifier: workspace:*
-        version: link:../../../libs/core/server/feature-auth
+        version: link:../../../libs/core/server/feature/auth
       class-transformer:
         specifier: 'catalog:'
         version: 0.5.1
@@ -399,7 +402,7 @@ importers:
         version: 11.2.3(@nestjs/common@11.2.3(class-transformer@0.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1))(@nestjs/core@11.2.3)(@nestjs/platform-express@11.2.3)
       '@workspace/core-server-testing':
         specifier: workspace:*
-        version: link:../../../libs/core/server/testing
+        version: link:../../../libs/core/server/platform/testing
       tsx:
         specifier: 'catalog:'
         version: 4.23.13
@@ -455,7 +458,37 @@ importers:
 
   apps/core/web-e2e: {}
 
-  libs/core/server/authz:
+  libs/core/server/feature/auth:
+    dependencies:
+      '@better-auth/api-key':
+        specifier: 'catalog:'
+        version: 1.7.2(@better-auth/core@1.7.2(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.5.4))(jose@6.2.10)(kysely@0.29.5)(nanostores@1.5.2))(@better-auth/utils@0.4.2)(better-auth@1.7.2(@opentelemetry/api@1.9.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3))(mysql2@3.15.3)(next@16.1.7(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.62.1)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.103.1))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.11))(better-call@1.4.0(zod@4.5.4))
+      '@nestjs/common':
+        specifier: 'catalog:'
+        version: 11.2.3(class-transformer@0.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1)
+      '@nestjs/platform-fastify':
+        specifier: 'catalog:'
+        version: 11.2.3(@nestjs/common@11.2.3(class-transformer@0.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1))(@nestjs/core@11.2.3)
+      '@workspace/core-server-authz':
+        specifier: workspace:*
+        version: link:../../platform/authz
+      '@workspace/core-server-core':
+        specifier: workspace:*
+        version: link:../../platform/core
+      '@workspace/core-server-data-access-db':
+        specifier: workspace:*
+        version: link:../../platform/data-access-db
+      better-auth:
+        specifier: 'catalog:'
+        version: 1.7.2(@opentelemetry/api@1.9.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3))(mysql2@3.15.3)(next@16.1.7(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.62.1)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.103.1))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.11)
+      fastify:
+        specifier: ^5.12.1
+        version: 5.12.1
+      tslib:
+        specifier: 'catalog:'
+        version: 2.8.1
+
+  libs/core/server/platform/authz:
     dependencies:
       '@nestjs/common':
         specifier: 'catalog:'
@@ -464,7 +497,7 @@ importers:
         specifier: 'catalog:'
         version: 2.8.1
 
-  libs/core/server/core:
+  libs/core/server/platform/core:
     dependencies:
       '@nest-lab/throttler-storage-redis':
         specifier: 'catalog:'
@@ -481,6 +514,9 @@ importers:
       '@nestjs/throttler':
         specifier: 'catalog:'
         version: 6.5.0(@nestjs/common@11.2.3(class-transformer@0.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1))(@nestjs/core@11.2.3)(reflect-metadata@0.2.2)
+      '@workspace/core-server-authz':
+        specifier: workspace:*
+        version: link:../authz
       fastify:
         specifier: ^5.12.1
         version: 5.12.1
@@ -502,8 +538,12 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.5.4
+    devDependencies:
+      pino:
+        specifier: 'catalog:'
+        version: 10.3.1
 
-  libs/core/server/data-access-db:
+  libs/core/server/platform/data-access-db:
     dependencies:
       '@nestjs/common':
         specifier: 'catalog:'
@@ -514,6 +554,9 @@ importers:
       '@prisma/client':
         specifier: 'catalog:'
         version: 7.10.0(prisma@7.10.0(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3)
+      '@workspace/core-server-core':
+        specifier: workspace:*
+        version: link:../core
       pg:
         specifier: 'catalog:'
         version: 8.23.0
@@ -537,31 +580,7 @@ importers:
         specifier: 'catalog:'
         version: 4.23.13
 
-  libs/core/server/feature-auth:
-    dependencies:
-      '@better-auth/api-key':
-        specifier: 'catalog:'
-        version: 1.7.2(@better-auth/core@1.7.2(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.5.4))(jose@6.2.10)(kysely@0.29.5)(nanostores@1.5.2))(@better-auth/utils@0.4.2)(better-auth@1.7.2(@opentelemetry/api@1.9.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3))(mysql2@3.15.3)(next@16.1.7(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.62.1)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.103.1))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.11))(better-call@1.4.0(zod@4.5.4))
-      '@nestjs/common':
-        specifier: 'catalog:'
-        version: 11.2.3(class-transformer@0.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1)
-      '@nestjs/platform-fastify':
-        specifier: 'catalog:'
-        version: 11.2.3(@nestjs/common@11.2.3(class-transformer@0.5.1)(reflect-metadata@0.2.2)(rxjs@7.8.1)(supports-color@8.1.1))(@nestjs/core@11.2.3)
-      '@workspace/core-server-core':
-        specifier: workspace:*
-        version: link:../core
-      '@workspace/core-server-data-access-db':
-        specifier: workspace:*
-        version: link:../data-access-db
-      better-auth:
-        specifier: 'catalog:'
-        version: 1.7.2(@opentelemetry/api@1.9.1)(@prisma/client@7.10.0(prisma@7.10.0(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3))(mysql2@3.15.3)(next@16.1.7(@babel/core@7.29.7(supports-color@8.1.1))(@opentelemetry/api@1.9.1)(@playwright/test@1.62.1)(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.103.1))(pg@8.23.0)(prisma@7.10.0(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(magicast@0.5.4)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.11)
-      tslib:
-        specifier: 'catalog:'
-        version: 2.8.1
-
-  libs/core/server/testing:
+  libs/core/server/platform/testing:
     dependencies:
       '@faker-js/faker':
         specifier: 'catalog:'

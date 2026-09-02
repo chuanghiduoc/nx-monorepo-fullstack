@@ -32,16 +32,16 @@
   ],
   "references": [
     {
-      "path": "../../../libs/core/server/data-access-db/tsconfig.lib.json"
+      "path": "../../../libs/core/server/platform/data-access-db/tsconfig.lib.json"
     },
     {
-      "path": "../../../libs/core/server/core/tsconfig.lib.json"
+      "path": "../../../libs/core/server/platform/core/tsconfig.lib.json"
     },
     {
-      "path": "../../../libs/core/server/testing/tsconfig.lib.json"
+      "path": "../../../libs/core/server/platform/testing/tsconfig.lib.json"
     },
     {
-      "path": "../../../libs/core/server/feature-auth/tsconfig.lib.json"
+      "path": "../../../libs/core/server/feature/auth/tsconfig.lib.json"
     }
   ]
 }

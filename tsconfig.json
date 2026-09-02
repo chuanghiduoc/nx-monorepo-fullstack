@@ -28,19 +28,34 @@
       "path": "./apps/core/api-e2e"
     },
     {
-      "path": "./libs/core/server/data-access-db"
+      "path": "./libs\\core\\server\\platform\\core"
     },
     {
-      "path": "./libs/core/server/core"
+      "path": "./libs\\core\\server\\platform\\data-access-db"
     },
     {
-      "path": "./libs/core/server/testing"
+      "path": "./libs\\core\\server\\platform\\authz"
     },
     {
-      "path": "./libs/core/server/authz"
+      "path": "./libs\\core\\server\\platform\\testing"
     },
     {
-      "path": "./libs/core/server/feature-auth"
+      "path": "./libs\\core\\server\\feature\\auth"
+    },
+    {
+      "path": "./libs/core/server/platform/data-access-db"
+    },
+    {
+      "path": "./libs/core/server/platform/testing"
+    },
+    {
+      "path": "./libs/core/server/platform/authz"
+    },
+    {
+      "path": "./libs/core/server/platform/core"
+    },
+    {
+      "path": "./libs/core/server/feature/auth"
     }
   ],
   "compilerOptions": {}

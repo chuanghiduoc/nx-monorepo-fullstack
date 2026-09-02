@@ -44,7 +44,7 @@
         "src/generated/**/*.ts"
       ]
     },
-    "libs/core/server/data-access-db": {
+    "libs/core/server/platform/data-access-db": {
       "ignoreDependencies": [
         "@prisma/client"
       ],
@@ -52,7 +52,7 @@
         "prisma7.config.ts"
       ]
     },
-    "libs/core/server/feature-auth": {
+    "libs/core/server/feature/auth": {
       "entry": [
         "src/lib/access-control.ts"
       ]

@@ -9,6 +9,7 @@ import { DatabaseModule } from '@workspace/core-server-data-access-db';
 import { AuthModule } from '@workspace/core-server-feature-auth';
 
 import { AppController } from './app.controller';
+import { WhoamiController } from './whoami.controller';
 import { DemoItemsModule } from './demo-items/demo-items.module';
 import { AppService } from './app.service';
 
@@ -23,7 +24,7 @@ import { AppService } from './app.service';
     AuthModule,
     DemoItemsModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, WhoamiController],
   providers: [AppService],
 })
 export class AppModule {}

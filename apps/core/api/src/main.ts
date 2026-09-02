@@ -26,6 +26,7 @@ import {
 import {
   AuthService,
   mountBetterAuth,
+  mountTenantContext,
 } from '@workspace/core-server-feature-auth';
 
 import { AppModule } from './app/app.module';
@@ -93,7 +94,13 @@ async function bootstrap() {
 
   // better-auth owns /api/auth/* and is mounted on the Fastify instance itself,
   // outside Nest's router.
-  mountBetterAuth(app, app.get(AuthService).instance);
+  const auth = app.get(AuthService).instance;
+  mountBetterAuth(app, auth);
+
+  // Identity is resolved before any handler, and therefore before any
+  // transaction: the database call it makes is one the root client refuses
+  // once a transaction is open.
+  mountTenantContext(app, auth);
 
   // Interactive docs render the very document the client is generated from.
   // Off in production unless DOCS_ENABLED says otherwise.

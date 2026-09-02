@@ -245,3 +245,90 @@ describe('two-factor authentication', () => {
     expect(body.backupCodes.length).toBeGreaterThan(0);
   });
 });
+
+describe('the request knows who is asking', () => {
+  it('reports an organization member as acting in that organization', async () => {
+    const { cookie } = await signUp();
+    const created = await fetch(
+      `${API_URL}/api/auth/organization/create`,
+      authed(cookie, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', origin: ORIGIN },
+        body: JSON.stringify({ name: 'Whoami', slug: `whoami-${Date.now()}` }),
+      }),
+    );
+    const org = (await created.json()) as { id: string };
+
+    await fetch(
+      `${API_URL}/api/auth/organization/set-active`,
+      authed(cookie, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', origin: ORIGIN },
+        body: JSON.stringify({ organizationId: org.id }),
+      }),
+    );
+
+    const who = await fetch(`${API_URL}/api/whoami`, authed(cookie));
+    const body = (await who.json()) as {
+      principal: { type: string } | null;
+      tenant: { kind: string; orgId?: string } | null;
+    };
+
+    expect(body.principal?.type).toBe('user');
+    expect(body.tenant).toEqual({ kind: 'org', orgId: org.id, userId: expect.any(String) });
+  });
+
+  it('reports a signed-in user with no organization as their own tenant', async () => {
+    const { cookie } = await signUp();
+
+    const who = await fetch(`${API_URL}/api/whoami`, authed(cookie));
+    const body = (await who.json()) as { tenant: { kind: string } | null };
+
+    // Not "no tenant": rows they own with no organization are theirs.
+    expect(body.tenant?.kind).toBe('user');
+  });
+
+  it('reports an anonymous request as having no identity at all', async () => {
+    const who = await fetch(`${API_URL}/api/whoami`);
+    const body = (await who.json()) as { principal: null; tenant: null };
+
+    expect(body).toEqual({ principal: null, tenant: null });
+  });
+
+  it('resolves an api key to the key, never to a session', async () => {
+    const { cookie } = await signUp();
+    const key = await (async () => {
+      const response = await fetch(
+        `${API_URL}/api/auth/api-key/create`,
+        authed(cookie, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', origin: ORIGIN },
+          body: JSON.stringify({ name: 'whoami' }),
+        }),
+      );
+      return ((await response.json()) as { key: string }).key;
+    })();
+
+    // Both credentials present: the key wins and the cookie is not consulted,
+    // so a leaked key cannot ride someone's browser session.
+    const who = await fetch(`${API_URL}/api/whoami`, {
+      headers: { cookie, 'x-api-key': key },
+    });
+    const body = (await who.json()) as { principal: { type: string } | null };
+
+    expect(body.principal?.type).toBe('apiKey');
+  });
+
+  it('treats an invalid api key as no identity, not as a session', async () => {
+    const { cookie } = await signUp();
+
+    const who = await fetch(`${API_URL}/api/whoami`, {
+      headers: { cookie, 'x-api-key': 'not-a-key-anyone-issued' },
+    });
+    const body = (await who.json()) as { principal: null };
+
+    // Falling back to the cookie here would let anyone with a session bypass
+    // whatever the key was supposed to restrict.
+    expect(body.principal).toBeNull();
+  });
+});
