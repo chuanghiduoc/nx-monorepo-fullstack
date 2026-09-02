@@ -2,7 +2,7 @@ import { apiKey } from '@better-auth/api-key';
 import type { BetterAuthOptions } from 'better-auth';
 import { admin, multiSession, organization, twoFactor } from 'better-auth/plugins';
 
-import { ac, roles } from './access-control';
+import { ac, roles } from './access-control.js';
 
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 const SESSION_UPDATE_AGE_SECONDS = 60 * 60 * 24;
@@ -28,7 +28,7 @@ export const authOptions = {
 
   advanced: {
     database: {
-      // PostgreSQL generates every id with uuidv7() (spec §3). Letting
+      // PostgreSQL generates every id with uuidv7. Letting
       // better-auth generate them too would put two kinds of id in one
       // database and lose the time-ordering the indexes depend on.
       generateId: false,
@@ -46,7 +46,7 @@ export const authOptions = {
     }),
     admin({ ac, roles }),
     twoFactor(),
-    // Device sessions: list them, revoke one, keep the others (spec §6.14).
+    // Device sessions: list them, revoke one, keep the others.
     multiSession(),
     apiKey({
       // Left at its default, and asserted by a test: with it on, a valid key

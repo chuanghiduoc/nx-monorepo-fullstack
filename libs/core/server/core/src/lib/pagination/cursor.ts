@@ -89,7 +89,7 @@ export function decodeCursor(
   // Backward paging is part of the payload shape but no endpoint implements
   // it. Accepting the cursor and then returning the forward page would give a
   // caller the wrong rows with a 200; saying so is the only honest answer
-  // until the feature exists (see docs/upgrades.md).
+  // until the feature exists.
   if (result.data.direction === 'backward') {
     throw new BadRequestException('Paging backwards is not supported yet.');
   }

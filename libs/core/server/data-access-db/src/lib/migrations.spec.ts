@@ -158,7 +158,7 @@ describe('migration history', () => {
         ]);
         // Prisma has no command that forgets a *successfully* applied migration
         // (`migrate resolve --rolled-back` is for failed ones), so the history
-        // row is removed directly. See docs/contracts/migrations.md.
+        // row is removed directly. See.
         prisma(['db', 'execute', '--file', writeForget(name)]);
 
         expect(

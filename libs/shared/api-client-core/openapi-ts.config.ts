@@ -20,10 +20,10 @@ export default defineConfig({
     {
       name: '@hey-api/client-fetch',
       // The client reads its base URL from a runtime file rather than a
-      // caller-side setConfig(): a server component that forgot to call it
+      // caller-side setConfig: a server component that forgot to call it
       // would silently fetch a relative URL. This is the vendor's own hook for
       // the case (`createClientConfig`), so nothing is patched by hand.
-      // Written with the .js extension the emitted import needs: the generator
+      // Written with the.js extension the emitted import needs: the generator
       // copies this string into the import verbatim, and a '.ts' there is a
       // TS5097 error under our module resolution.
       runtimeConfigPath: './src/client-config.js',

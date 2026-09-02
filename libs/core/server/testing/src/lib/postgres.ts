@@ -27,7 +27,7 @@ export interface TestPostgres {
    *
    * Not the container's superuser: `FORCE ROW LEVEL SECURITY` binds table
    * owners and never superusers, so a suite running as one would prove
-   * isolation it does not have (ADR-0003).
+   * isolation it does not have.
    */
   readonly connectionUri: string;
   /** Owner connection, for migrations and for setup a policy would block. */

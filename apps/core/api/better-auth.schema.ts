@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 
-import { authOptions } from './src/app/auth/auth.options';
+import { authOptions } from '@workspace/core-server-feature-auth';
 
 /**
  * Configuration for `@better-auth/cli generate` only.

@@ -31,7 +31,7 @@ export interface ClaimInput {
   requestHash: string;
   /** Negative values are useful in tests to simulate an expired lease. */
   leaseMs?: number;
-  /** Set by claim() itself; the insert race is retried exactly once. */
+  /** Set by claim itself; the insert race is retried exactly once. */
   isRetry?: boolean;
 }
 
@@ -68,7 +68,7 @@ export type ClaimResult =
  * zombie attempt waking up with an old token cannot overwrite the result of the
  * attempt that legitimately owns the key now.
  *
- * Records are SYSTEM data (spec §6.5): they belong to no tenant, and the
+ * Records are SYSTEM data: they belong to no tenant, and the
  * interceptor claims a key before any tenant transaction exists, so every
  * method runs in its own short system transaction.
  */
@@ -172,7 +172,7 @@ export class IdempotencyStore {
     const existing = await records.findUnique({ where });
 
     if (!existing) {
-      // May throw P2002 when another request inserts first; claim() retries.
+      // May throw P2002 when another request inserts first; claim retries.
       const created = await records.create({
         data: {
           ...where.scopeType_scopeId_route_idempotencyKey,

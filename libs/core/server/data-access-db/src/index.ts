@@ -1,5 +1,5 @@
 // The root Prisma client (PrismaService) is deliberately not exported: work
-// goes through Database and the repositories (spec §6.5).
+// goes through Database and the repositories.
 export { DatabaseModule } from './lib/database.module.js';
 export {
   AuthDatabaseProvider,

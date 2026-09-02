@@ -19,7 +19,7 @@ export const envSchema = z.object({
 
   // The application's own connection, as a role bound by row-level security.
   // Migrations use MIGRATION_DATABASE_URL and are not part of a running
-  // service's configuration (spec §6.17: the app never migrates at boot).
+  // service's configuration.
   DATABASE_URL: z
     .string()
     .refine((value) => value.startsWith('postgresql://') || value.startsWith('postgres://'), {
@@ -49,7 +49,7 @@ export const envSchema = z.object({
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),
 
-  // Interactive API docs (spec §6.18): on wherever a developer runs the
+  // Interactive API docs: on wherever a developer runs the
   // service, off in production unless someone turns it on deliberately.
   // Absent means "decide from NODE_ENV", which is why this is optional
   // rather than defaulted.

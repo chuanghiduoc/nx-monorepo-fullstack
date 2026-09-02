@@ -38,7 +38,7 @@ export class DemoItemsController {
   @Get()
   @ApiOkResponse({ type: DemoItemPageDto })
   // Declared explicitly for the same reason as @ApiBody: without the swagger
-  // CLI plugin, a @Query() DTO contributes nothing to the document, and the
+  // CLI plugin, a @Query DTO contributes nothing to the document, and the
   // generated client would have no way to send a cursor.
   @ApiQuery({ name: 'cursor', required: false, type: String })
   @ApiQuery({ name: 'limit', required: false, type: Number })

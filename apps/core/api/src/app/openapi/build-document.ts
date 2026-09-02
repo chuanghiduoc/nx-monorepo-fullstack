@@ -19,14 +19,14 @@ const OPENAPI_VERSION = '3.1.0';
  */
 export function buildOpenApiDocument(app: INestApplication): OpenAPIObject {
   const config = new DocumentBuilder()
-    // OpenAPI 3.1 speaks JSON Schema natively. Under 3.0, a Zod `.nullable()`
+    // OpenAPI 3.1 speaks JSON Schema natively. Under 3.0, a Zod `.nullable`
     // came out as `type: array` — the generated client believed `nextCursor`
     // was a list of strings. Caught by reading the generated types, not by
-    // any test, which is why docs/contracts/api-client.md now has one.
+    // any test, which is why now has one.
     .setOpenAPIVersion(OPENAPI_VERSION)
     .setTitle('core-api')
     .setDescription(
-      'Errors follow RFC 9457 (application/problem+json); see docs/contracts/problem-details.md.',
+      'Errors follow RFC 9457 (application/problem+json).',
     )
     .setVersion(API_VERSION)
     .addCookieAuth('better-auth.session_token')

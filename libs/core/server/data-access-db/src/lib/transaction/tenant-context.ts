@@ -1,7 +1,7 @@
 /**
  * Who a unit of work runs as. Declared explicitly, never inferred: the kind
  * decides which GUCs the transaction sets, and therefore which rows RLS lets
- * it see (spec §6.5).
+ * it see.
  *
  * - `org`: a member acting inside an organization — both GUCs are set.
  * - `user`: a signed-in user with no active organization (B2C) — only the

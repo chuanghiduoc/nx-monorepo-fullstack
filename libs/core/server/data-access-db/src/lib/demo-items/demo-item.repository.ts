@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 
 import { Database } from '../transaction/database.js';
 
-/** Domain shape. Prisma's row type stops at this file (spec §4 rule 5b). */
+/** Domain shape. Prisma's row type stops at this file. */
 export interface DemoItem {
   readonly id: string;
   readonly title: string;

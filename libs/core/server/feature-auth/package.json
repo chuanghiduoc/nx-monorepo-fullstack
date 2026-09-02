@@ -1,0 +1,27 @@
+{
+  "name": "@workspace/core-server-feature-auth",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@workspace/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@better-auth/api-key": "catalog:",
+    "@nestjs/common": "catalog:",
+    "@nestjs/platform-fastify": "catalog:",
+    "@workspace/core-server-core": "workspace:*",
+    "@workspace/core-server-data-access-db": "workspace:*",
+    "better-auth": "catalog:",
+    "tslib": "catalog:"
+  }
+}

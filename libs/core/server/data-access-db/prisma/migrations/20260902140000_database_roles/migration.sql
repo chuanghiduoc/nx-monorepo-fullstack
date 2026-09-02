@@ -1,4 +1,4 @@
--- The five roles from spec §6.17. Written by hand with --create-only: Prisma's
+-- The five roles from Written by hand with --create-only: Prisma's
 -- schema cannot express roles, grants or RLS, and this is the only place the
 -- database's own invariants can live.
 --

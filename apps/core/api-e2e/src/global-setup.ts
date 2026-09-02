@@ -96,7 +96,7 @@ export async function setup(): Promise<void> {
       // suite must supply what a running service would have.
       // app_user, not the owner: the service under test must run with the
       // rights it will have in production, which is what makes an RLS policy
-      // mean anything (ADR-0003).
+      // mean anything.
       DATABASE_URL:
         process.env['DATABASE_URL'] ??
         'postgresql://app_user:app_user@localhost:5432/app',
@@ -107,7 +107,7 @@ export async function setup(): Promise<void> {
       THROTTLE_LIMIT: THROTTLE_LIMIT,
       THROTTLE_TTL_MS: THROTTLE_TTL_MS,
       // Long enough to satisfy the schema; a real deployment reads this from
-      // its secret manager (docs/ops/database-roles.md has the pattern).
+      // its secret manager.
       BETTER_AUTH_SECRET:
         process.env['BETTER_AUTH_SECRET'] ??
         'e2e-secret-that-is-at-least-32-characters-long',

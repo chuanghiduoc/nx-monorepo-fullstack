@@ -7,9 +7,9 @@ import { describe, expect, it } from 'vitest';
 import { authOptions } from './auth.options.js';
 
 const SCHEMA_PATH = join(
-  __dirname,
-  '../../../../../..',
-  'libs/core/server/data-access-db/prisma/schema.prisma',
+  import.meta.dirname,
+  '../..',
+  '../data-access-db/prisma/schema.prisma',
 );
 
 /**

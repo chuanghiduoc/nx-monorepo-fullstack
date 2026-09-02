@@ -35,6 +35,12 @@
     },
     {
       "path": "./libs/core/server/testing"
+    },
+    {
+      "path": "./libs/core/server/authz"
+    },
+    {
+      "path": "./libs/core/server/feature-auth"
     }
   ],
   "compilerOptions": {}

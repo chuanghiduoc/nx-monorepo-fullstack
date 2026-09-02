@@ -29,8 +29,8 @@ const ALLOWED_DURING_TRANSACTION = new Set([
 /**
  * The single Prisma client for the service — the *root* client.
  *
- * Nothing outside this library imports the generated client (spec section 4 rule 5),
- * and nothing outside it sees `Prisma.*` types (rule 5b) - swapping the ORM
+ * Nothing outside this library imports the generated client,
+ * and nothing outside it sees `Prisma.*` types - swapping the ORM
  * must mean rewriting this library, not the whole codebase. Work goes through
  * `Database` (transaction/database.ts); this class exists to own the
  * connection pool.
@@ -94,7 +94,7 @@ export class PrismaService
         `The database connection uses "${role.name}", which row-level security cannot bind ` +
           '(superuser or BYPASSRLS). Point DATABASE_URL at app_user. ' +
           'If the role has no login, the database volume predates the roles migration: ' +
-          'run `docker compose down -v` and start again, or see docs/ops/database-roles.md.',
+          'run `docker compose down -v` and start again.',
       );
     }
   }

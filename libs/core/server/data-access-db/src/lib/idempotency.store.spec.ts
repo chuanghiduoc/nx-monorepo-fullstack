@@ -185,7 +185,7 @@ describe('IdempotencyStore', () => {
       responseStatus: 500,
     });
 
-    // Without fail(), this would be 'in-progress' for the whole lease.
+    // Without fail, this would be 'in-progress' for the whole lease.
     const retry = await store.claim({ ...scope, route, key, requestHash });
 
     expect(retry.outcome).toBe('claimed');

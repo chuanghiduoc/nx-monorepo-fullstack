@@ -27,13 +27,11 @@
     "apps/core/api": {
       "entry": [
         "src/main.ts",
-        "webpack.config.js",
-        "src/app/auth/access-control.ts"
+        "webpack.config.js"
       ],
       "project": [
         "src/**/*.ts"
-      ],
-      "ignoreExportsUsedInFile": true
+      ]
     },
     "tools/workspace-plugin": {
       "entry": [
@@ -52,6 +50,11 @@
       ],
       "entry": [
         "prisma7.config.ts"
+      ]
+    },
+    "libs/core/server/feature-auth": {
+      "entry": [
+        "src/lib/access-control.ts"
       ]
     }
   },

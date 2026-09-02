@@ -23,9 +23,12 @@ import {
   requestIdOptions,
 } from '@workspace/core-server-core';
 
+import {
+  AuthService,
+  mountBetterAuth,
+} from '@workspace/core-server-feature-auth';
+
 import { AppModule } from './app/app.module';
-import { mountBetterAuth } from './app/auth/auth.handler';
-import { AuthService } from './app/auth/auth.service';
 import { buildOpenApiDocument } from './app/openapi/build-document';
 
 const DEFAULT_PORT = 3000;
@@ -35,7 +38,7 @@ const DOCS_PATH = '/docs';
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    // Behind the edge proxy (spec §6.18) the client address and protocol arrive
+    // Behind the edge proxy the client address and protocol arrive
     // in X-Forwarded-* headers; without trustProxy, secure cookies and rate
     // limiting would see the proxy instead of the caller.
     new FastifyAdapter({ trustProxy: true, ...requestIdOptions }),
@@ -89,11 +92,11 @@ async function bootstrap() {
     });
 
   // better-auth owns /api/auth/* and is mounted on the Fastify instance itself,
-  // outside Nest's router (ADR-0002).
+  // outside Nest's router.
   mountBetterAuth(app, app.get(AuthService).instance);
 
   // Interactive docs render the very document the client is generated from.
-  // Off in production unless DOCS_ENABLED says otherwise (spec §6.18).
+  // Off in production unless DOCS_ENABLED says otherwise.
   if (config.get('DOCS_ENABLED') ?? !config.isProduction) {
     await app.register(ScalarApiReference, {
       routePrefix: DOCS_PATH,
@@ -136,7 +139,7 @@ async function bootstrap() {
       : DEFAULT_PORT;
 
   // Lets Nest run onModuleDestroy/onApplicationShutdown handlers on SIGTERM,
-  // which the worker's graceful drain (Phase 4) and rolling deploys depend on.
+  // which the worker's graceful drain and rolling deploys depend on.
   app.enableShutdownHooks();
   // Containers need 0.0.0.0 to accept traffic from outside the container; a
   // developer machine should not put the API on the local network.

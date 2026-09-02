@@ -16,7 +16,7 @@ import { Database } from '../transaction/database.js';
  * `FORCE ROW LEVEL SECURITY` binds table owners; it has never bound superusers
  * or roles with `BYPASSRLS`. Against such a connection every isolation test
  * passes with no policy in effect at all — which is exactly what this harness
- * did before Phase 3 (ADR-0003).
+ * did before Phase 3.
  */
 describe('the test connection can be bound by row-level security', () => {
   let postgres: TestPostgres;

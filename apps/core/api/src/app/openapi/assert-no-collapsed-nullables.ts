@@ -25,7 +25,7 @@ interface SchemaLike {
  * because the runtime never validates response shapes against the document.
  *
  * The fix on the schema side is to give the branch a constraint or a
- * description (`z.string().max(n).nullable()`), which makes Zod emit `anyOf`
+ * description (`z.string.max(n).nullable`), which makes Zod emit `anyOf`
  * instead. This check is what turns the next occurrence into a build failure
  * with the property named, rather than a wrong contract in production.
  */

@@ -79,7 +79,7 @@ describe('error contract (RFC 9457)', () => {
   });
 });
 
-describe('better-auth mount (ADR-0002)', () => {
+describe('better-auth mount', () => {
   it('serves its own routes instead of falling through to Nest', async () => {
     const response = await fetch(`${API_URL}/api/auth/sign-up/email`, {
       method: 'POST',

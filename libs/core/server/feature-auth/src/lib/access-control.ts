@@ -3,7 +3,7 @@ import { createAccessControl } from 'better-auth/plugins/access';
 /**
  * Permission statements for organization roles.
  *
- * Phase 3 Task 5 replaces this literal with output generated from the
+ * replaces this literal with output generated from the
  * `ActionRegistry` in `@workspace/core-server-authz`, so that the permissions
  * better-auth enforces and the actions the authz facade knows about cannot
  * drift apart. Until then it is written once, here, and imported by both the

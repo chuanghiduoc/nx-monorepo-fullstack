@@ -123,7 +123,7 @@ describe('organizations', () => {
   it('does not hide other members’ organizations behind the active one', async () => {
     // better-auth's tables are class AUTH and carry no tenant RLS on purpose:
     // a user must see every organization they belong to before any of them is
-    // active (ADR-0003).
+    // active.
     const { cookie } = await signUp();
 
     for (const name of ['First', 'Second']) {

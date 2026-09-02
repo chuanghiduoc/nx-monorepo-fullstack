@@ -33,17 +33,17 @@ const ISOLATION: Record<IsolationLevel, Prisma.TransactionIsolationLevel> = {
 };
 
 /**
- * The only sanctioned way to touch the database (spec §6.5).
+ * The only sanctioned way to touch the database.
  *
  * `withTenantTransaction` and `withSystemTransaction` own the transaction and
  * the tenant GUCs. Everything inside them reaches the transaction client via
- * `tenant()` / `system()`, which read it from async context — so a repository
+ * `tenant` / `system`, which read it from async context — so a repository
  * three calls deep runs on the same transaction as the use case that opened
  * it, and Phase 3's RLS policies see the GUCs on every query.
  *
  * The callbacks deliberately receive no client: a `tx` parameter would carry
  * a Prisma type into feature code, and swapping the ORM would then break
- * every caller (spec §4 rule 5b).
+ * every caller.
  */
 @Injectable()
 export class Database {
@@ -101,7 +101,7 @@ export class Database {
     return active.client;
   }
 
-  // `async` so a caller's `.catch()` sees the nesting error too: a synchronous
+  // `async` so a caller's `.catch` sees the nesting error too: a synchronous
   // throw from here would escape the promise chain.
   private async run<T>(
     context: TenantContext,

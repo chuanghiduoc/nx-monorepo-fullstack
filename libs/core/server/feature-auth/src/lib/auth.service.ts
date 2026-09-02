@@ -4,7 +4,7 @@ import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { AppConfig } from '@workspace/core-server-core';
 import { AuthDatabaseProvider } from '@workspace/core-server-data-access-db';
 
-import { authOptions } from './auth.options';
+import { authOptions } from './auth.options.js';
 
 /**
  * The concrete instance type, inferred from our own options.
@@ -36,7 +36,7 @@ function createAuth(options: {
  * **Never call `auth.api.*` while a `Database` transaction is active.** The
  * adapter talks to the root client, which the Phase 2 proxy refuses inside a
  * transaction; the principal is resolved once per request, before any
- * transaction opens (ADR-0003).
+ * transaction opens.
  */
 @Injectable()
 export class AuthService {

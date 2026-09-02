@@ -39,6 +39,9 @@
     },
     {
       "path": "../../../libs/core/server/testing/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/feature-auth/tsconfig.lib.json"
     }
   ]
 }

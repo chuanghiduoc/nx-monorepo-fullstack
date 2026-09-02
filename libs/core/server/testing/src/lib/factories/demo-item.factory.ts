@@ -8,7 +8,7 @@ export interface DemoItemInput {
 
 /**
  * Deterministic by default: the seed is fixed so a failing test reproduces
- * with the same data. Call `faker.seed()` in a test that needs fresh values.
+ * with the same data. Call `faker.seed` in a test that needs fresh values.
  */
 faker.seed(20260902);
 

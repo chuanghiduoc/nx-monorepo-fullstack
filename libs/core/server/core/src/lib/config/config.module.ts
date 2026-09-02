@@ -38,7 +38,7 @@ function validate(raw: Record<string, unknown>): AppEnv {
 
 /**
  * A dynamic module rather than a static `@Module({ imports: [...] })`:
- * `ConfigModule.forRoot()` reads and validates the environment the moment it
+ * `ConfigModule.forRoot` reads and validates the environment the moment it
  * is called, and a decorator argument is evaluated when the file is imported.
  * That made importing a pure helper from this library's barrel — a cursor
  * codec, say — fail in any process without a full production environment,

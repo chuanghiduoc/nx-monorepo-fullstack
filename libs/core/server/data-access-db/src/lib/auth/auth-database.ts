@@ -11,10 +11,10 @@ import { PrismaService } from '../prisma.service.js';
  * is active, which is exactly the mistake worth catching. Measured in the
  * Task 0 spike: a sign-up inside `withTenantTransaction` fails with "The root
  * database client was used", while the same call outside one reaches
- * PostgreSQL (ADR-0003).
+ * PostgreSQL.
  *
  * The type is deliberately opaque. Nothing outside this library learns that
- * the object is a Prisma client, so spec §4 rule 5 still holds.
+ * the object is a Prisma client, so still holds.
  */
 export type AuthDatabase = object;
 

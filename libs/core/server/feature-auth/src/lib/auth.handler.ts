@@ -1,7 +1,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { fromNodeHeaders } from 'better-auth/node';
 
-import type { Auth } from './auth.service';
+import type { Auth } from './auth.service.js';
 
 const AUTH_ROUTE = '/api/auth/*';
 const METHODS = ['GET', 'POST'] as const;
@@ -13,7 +13,7 @@ const METHODS = ['GET', 'POST'] as const;
  * streams. This adapter is the bridge, taken from better-auth's Fastify
  * integration guide. Mounting directly avoids depending on a third-party Nest
  * wrapper for the one piece of infrastructure everything else authenticates
- * against (ADR-0002).
+ * against.
  */
 export function mountBetterAuth(
   app: NestFastifyApplication,

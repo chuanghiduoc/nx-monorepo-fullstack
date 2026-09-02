@@ -6,8 +6,9 @@ import {
 } from '@workspace/core-server-core';
 import { DatabaseModule } from '@workspace/core-server-data-access-db';
 
+import { AuthModule } from '@workspace/core-server-feature-auth';
+
 import { AppController } from './app.controller';
-import { AuthModule } from './auth/auth.module';
 import { DemoItemsModule } from './demo-items/demo-items.module';
 import { AppService } from './app.service';
 
