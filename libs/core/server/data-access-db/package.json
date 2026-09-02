@@ -25,6 +25,7 @@
   "devDependencies": {
     "@testcontainers/postgresql": "catalog:",
     "dotenv": "catalog:",
-    "prisma": "catalog:"
+    "prisma": "catalog:",
+    "tsx": "catalog:"
   }
 }

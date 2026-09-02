@@ -251,3 +251,20 @@ These are deliberate and small, but they are simplifications and so belong here.
   with the schema as its input; `typecheck`, `build`, `test` and `lint` depend
   on it, so the client can never lag the schema.
 - **Signal:** none expected. If Prisma ships an official Nx plugin, switch.
+
+### `CREATE INDEX CONCURRENTLY` is not yet automated
+
+- **Today:** no migration needs it; every index was created with its table.
+- **Signal:** the first index added to a table with real volume.
+- **Steps:** create the migration with `--create-only`, write
+  `CREATE INDEX CONCURRENTLY`, and apply it outside Prisma's transaction:
+  `prisma db execute --file` followed by `prisma migrate resolve --applied`.
+  Add that sequence to `prisma-migrate-deploy` if it becomes routine.
+
+### Rolling back a successful migration removes its history row by hand
+
+- **Today:** `down.sql` plus `DELETE FROM "_prisma_migrations"`. Prisma's
+  `migrate resolve --rolled-back` only accepts failed migrations.
+- **Signal:** Prisma adds first-class down migrations.
+- **Steps:** replace the two-step in `docs/contracts/migrations.md` and in
+  `migrations.spec.ts` with the command.

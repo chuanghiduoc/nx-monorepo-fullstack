@@ -61,6 +61,14 @@
         "cwd": "libs/core/server/data-access-db",
         "command": "prisma migrate deploy"
       }
+    },
+    "prisma-down": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/core/server/data-access-db",
+        "command": "tsx tools/prisma-down.ts",
+        "forwardAllArgs": true
+      }
     }
   }
 }

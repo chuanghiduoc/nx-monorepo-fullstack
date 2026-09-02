@@ -35,7 +35,8 @@ describe('envSchema', () => {
   });
 
   it('requires both redis roles, because one instance cannot serve both', () => {
-    const { REDIS_CACHE_URL: _omitted, ...withoutCache } = validEnv;
+    const withoutCache: Partial<typeof validEnv> = { ...validEnv };
+    delete withoutCache.REDIS_CACHE_URL;
 
     const result = envSchema.safeParse(withoutCache);
 
