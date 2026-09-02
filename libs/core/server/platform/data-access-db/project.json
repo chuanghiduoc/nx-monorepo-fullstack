@@ -3,7 +3,11 @@
   "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/core/server/platform/data-access-db/src",
   "projectType": "library",
-  "tags": ["scope:core", "platform:node", "type:data-access"],
+  "tags": [
+    "scope:core",
+    "platform:node",
+    "type:data-access"
+  ],
   "targets": {
     "prisma-generate": {
       "executor": "nx:run-commands",
@@ -12,7 +16,9 @@
         "{projectRoot}/prisma/schema.prisma",
         "{projectRoot}/prisma7.config.ts"
       ],
-      "outputs": ["{projectRoot}/src/generated/prisma"],
+      "outputs": [
+        "{projectRoot}/src/generated/prisma"
+      ],
       "options": {
         "cwd": "libs/core/server/platform/data-access-db",
         "command": "prisma generate"
@@ -26,10 +32,16 @@
       }
     },
     "typecheck": {
-      "dependsOn": ["prisma-generate", "^build"]
+      "dependsOn": [
+        "prisma-generate",
+        "^build"
+      ]
     },
     "build": {
-      "dependsOn": ["prisma-generate", "^build"],
+      "dependsOn": [
+        "prisma-generate",
+        "^build"
+      ],
       "inputs": [
         "production",
         "^production",
@@ -38,10 +50,15 @@
       ]
     },
     "test": {
-      "dependsOn": ["prisma-generate", "^build"]
+      "dependsOn": [
+        "prisma-generate",
+        "^build"
+      ]
     },
     "lint": {
-      "dependsOn": ["prisma-generate"]
+      "dependsOn": [
+        "prisma-generate"
+      ]
     },
     "prisma-migrate-deploy": {
       "executor": "nx:run-commands",
@@ -56,6 +73,13 @@
         "cwd": "libs/core/server/platform/data-access-db",
         "command": "tsx tools/prisma-down.ts",
         "forwardAllArgs": true
+      }
+    },
+    "write-tenant-models": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/core/server/platform/data-access-db",
+        "command": "tsx tools/write-tenant-models.ts"
       }
     }
   }

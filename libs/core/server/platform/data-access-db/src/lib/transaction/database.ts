@@ -10,6 +10,8 @@ import {
   type TenantContext,
   type TenantScopedContext,
 } from '@workspace/core-server-core';
+import { TENANT_SCOPED_DELEGATES } from '../tenancy/tenant-scoped-models.js';
+import { guardTenantModels } from '../tenancy/tenant-guard.js';
 import {
   activeTransaction,
   runInTransaction,
@@ -132,7 +134,11 @@ export class Database {
           : 'No system transaction is active: wrap the call in withSystemTransaction(...)',
       );
     }
-    return active.client;
+
+    // A system transaction sets no tenant GUC, so a tenant-scoped table read
+    // through it comes back empty rather than wrong. Empty is worse: it reads
+    // exactly like an empty table. The guard makes it say so instead.
+    return guardTenantModels(active.client, TENANT_SCOPED_DELEGATES);
   }
 
   // `async` so a caller's `.catch` sees the nesting error too: a synchronous

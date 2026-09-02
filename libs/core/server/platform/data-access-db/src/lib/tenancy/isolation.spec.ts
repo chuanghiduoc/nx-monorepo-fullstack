@@ -101,13 +101,22 @@ describe('tenant isolation', () => {
     });
 
     it('returns nothing at all when no tenant context is set', async () => {
+      // Through raw SQL, which the guard does not cover, because the point is
+      // what the *database* does: with no tenant GUC the policy matches no
+      // row and the query succeeds with an empty result.
       const seen = await db.withSystemTransaction(() =>
-        db.system().note.findMany(),
+        db.system().$queryRawUnsafe<{ id: string }[]>('SELECT id FROM notes'),
       );
 
-      // This is why the guard extension must throw first: silence here reads
-      // exactly like an empty table.
       expect(seen).toEqual([]);
+    });
+
+    it('is refused before it can be silent, when reached through a model', async () => {
+      // The same mistake through the model path. Silence reads exactly like an
+      // empty table, so the accessor refuses instead.
+      const refused = db.withSystemTransaction(() => db.system().note.findMany());
+
+      await expect(refused).rejects.toThrow(/belongs to a tenant/i);
     });
   });
 

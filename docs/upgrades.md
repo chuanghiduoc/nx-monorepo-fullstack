@@ -389,3 +389,28 @@ These are deliberate and small, but they are simplifications and so belong here.
   second table. If that proves insufficient, a `feature/users` library owns the
   extra data keyed by member id, and membership itself still changes only
   through the plugin.
+
+### The tenant guard is an accessor, not a Prisma extension
+
+- **Today:** `db.system()` returns a client that refuses tenant-scoped tables
+  by name. The design called for a client extension checking the async context
+  on every operation; that does not work, because Prisma runs the extension
+  outside the context the transaction was opened in, so the store is always
+  empty and every query looks unscoped — measured, with correct reads being
+  rejected inside valid tenant transactions.
+- **Signal:** Prisma propagates async context into extensions, or exposes the
+  active interactive transaction to them.
+- **Steps:** move the check into `$extends`, which would then also cover a
+  client obtained some other way. The accessor covers every path that exists
+  today, because a client is only ever obtained from one.
+
+### The tenant-scoped model list is generated, not read at runtime
+
+- **Today:** `tenant-scoped-models.ts` is written by a generator from the
+  schema's class comments and committed; a test fails when the two disagree.
+  Reading the schema on module load worked in tests and made the built service
+  fail to boot — the schema is not in the bundle, and the file that read it
+  used `import.meta`, which webpack cannot express in CommonJS.
+- **Signal:** the schema ships alongside the bundle for another reason.
+- **Steps:** read it at startup and delete the generator, keeping the drift
+  test as a boot check.

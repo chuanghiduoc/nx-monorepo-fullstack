@@ -90,7 +90,7 @@
 
 ---
 
-### Task 3: `libs/core/server/platform/authz` — a pure facade and the Principal
+### Task 3 ✅ DONE: `libs/core/server/platform/authz` — a pure facade and the Principal
 
 **Files:**
 - Create: `libs/core/server/platform/authz` via `@nx/js:library` (tags `scope:core,platform:node,type:util`)
@@ -126,7 +126,7 @@
 
 ---
 
-### Task 5: RLS — policies on new reference tables
+### Task 5 ✅ DONE: RLS — policies on new reference tables
 
 **Files:**
 - Modify: `libs/core/server/platform/data-access-db/prisma/schema.prisma` — **required**: `migrations.spec.ts` diffs the migrated database against the schema and fails on any difference, so a table created only in SQL breaks the drift check
@@ -154,7 +154,7 @@
 
 ---
 
-### Task 6: Prisma Client Extension — the guard
+### Task 6 ✅ DONE: the tenant guard (an accessor, not an extension)
 
 **Files:**
 - Create: `libs/core/server/platform/data-access-db/src/lib/tenancy/{tenant-scoped-models,tenant-guard.extension}.ts` + spec

@@ -74,6 +74,26 @@ The order in which this was built is deliberate. The harness was moved to a
 bindable role *before* the first policy was written: a policy tested over an
 owner connection would have looked correct while protecting nothing.
 
+## The guard, and where it had to live
+
+A tenant-scoped table reached from a system transaction returns nothing and
+raises nothing: the policy matches no row, and the result is indistinguishable
+from an empty table. `db.system()` therefore hands back a client that refuses
+those tables by name, so the mistake is a stack trace rather than a blank
+list.
+
+The obvious implementation — a Prisma client extension checking the async
+context on every operation — does not work. Prisma runs the extension outside
+the asynchronous context the transaction was opened in, so the store is always
+empty and *every* query looks unscoped, including correct ones. Measured: the
+extension rejected reads made inside a perfectly valid tenant transaction. The
+accessor runs in the caller's own context, where the answer is known.
+
+It guards property access, not SQL. `$queryRaw` goes through untouched and
+stays the author's responsibility; the policy still applies to it, which is
+what the "returns nothing at all" test uses to show what the database does on
+its own.
+
 ## Table classes
 
 Every model declares one, in a comment above it. Nothing is inferred from a
