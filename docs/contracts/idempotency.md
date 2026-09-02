@@ -21,6 +21,7 @@ Content-Type: application/json
 | First request with this key | The work runs; the response is stored |
 | Retry, same key, same request | The stored response is replayed — the work does not run again |
 | Retry while the first is still running | `409` with `Retry-After` |
+| Retry after the first attempt failed | The work runs again — a failure releases the key immediately |
 | Same key, different request body | `422` — the client made a mistake, and replaying would hide it |
 | No key, or a safe method | Nothing changes |
 
@@ -57,6 +58,25 @@ The fence token is what makes that safe:
 Without the token, a stale attempt would overwrite the result of the attempt
 that legitimately owns the key.
 
+## Completion and failure
+
+The interceptor records the outcome **before** the response is sent, not
+alongside it. Sending first and recording after looks harmless and is not: an
+immediate retry then races the commit and is told the work is still in
+progress, which is the one answer that is neither true nor useful.
+
+A handler that throws releases the key. Without that, the record sits in
+PROCESSING for the whole lease and every retry inside that window is refused
+with a 409, even though nothing happened and the client is entitled to try
+again.
+
+Both `complete` and `fail` require the record to still be PROCESSING, so a
+late failure cannot overwrite a stored response and a late completion cannot
+resurrect a failed attempt. A stale fence token makes the update match
+nothing; the interceptor logs that and still returns the response, because the
+work did happen and the client is owed its answer — losing the stored copy is
+the correct outcome when another attempt legitimately took the key over.
+
 ## Storage rules
 
 - The database is the source of truth. Redis may cache lookups later, but a
@@ -77,4 +97,5 @@ that legitimately owns the key.
   one wins.
 - `libs/core/server/platform/core/src/lib/idempotency/request-fingerprint.spec.ts` —
   route normalisation and body canonicalisation.
-- `apps/core/api-e2e/src/api.e2e-spec.ts` — the HTTP behaviour above.
+- `apps/core/api-e2e/src/api.e2e-spec.ts` — the HTTP behaviour above,
+  including a retry sent the instant the first response arrives.

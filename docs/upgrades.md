@@ -281,15 +281,20 @@ These are deliberate and small, but they are simplifications and so belong here.
 - **Steps:** switch the route CSP to `'nonce-…'` via `@fastify/helmet`'s
   `enableCSPNonces`, drop `'unsafe-inline'`, keep the e2e assertion.
 
-### `db.tenant()` throws outside a transaction instead of opening one
+### `db.tenant()` stays synchronous; `withRequestTransaction` is the explicit form
 
-- **Today:** the accessor only returns the transaction in flight. Repositories
-  open a short transaction themselves when none is active, so callers never
-  notice.
-- **Signal:** Phase 3's request-scoped tenant context exists, and a read path
-  wants `db.tenant()` to open a short transaction from it implicitly.
-- **Steps:** resolve the context from the request store inside `tenant()` and
-  call `withTenantTransaction` — one implementation, no extension magic.
+- **Today:** the accessor returns the transaction in flight and throws outside
+  one. A request that wants a transaction for its own tenant calls
+  `withRequestTransaction`. The design does sanction an accessor that opens a
+  short transaction itself, and that was read and traded away: an accessor
+  that sometimes opens one makes two consecutive calls two transactions with
+  nothing atomic between them, and the call site does not say so.
+- **Signal:** a read path where the explicit call is pure ceremony — many
+  single-statement reads, each already inside a request, none of them
+  composing with a neighbour.
+- **Steps:** resolve the stored context inside `tenant()`, return a promise,
+  and migrate callers. The synchronous signature is what makes that a breaking
+  change, so it happens once, deliberately.
 
 ### Nullable fields must carry a constraint or description
 
@@ -358,14 +363,18 @@ These are deliberate and small, but they are simplifications and so belong here.
   Verification is `auth.api.verifyApiKey`, called by the request hook.
 - **Signal:** none expected.
 
-### Organization roles are declared in the app, not generated from the registry
+### Roles are defined once, from the action registry
 
-- **Today:** `libs/core/server/feature/auth/src/lib/access-control.ts` lists the permission
-  statements by hand. Phase 3 Task 5 generates them from the `ActionRegistry`,
-  so the permissions better-auth enforces and the actions the authz facade
-  knows about cannot drift.
-- **Signal:** Task 5 lands.
-- **Steps:** export the statements from the registry and import them here.
+- **Today:** `access-control.ts` builds the permission statements from
+  `permissionStatements()` in the authz library, so what the auth library
+  enforces and what the facade knows about come from one list. The role
+  *assignments* — which verbs an owner, an admin or a member gets — are still
+  written there by hand, because they are a product decision rather than a
+  vocabulary.
+- **Signal:** an organization wants roles it defines itself beyond the dynamic
+  roles the plugin already supports.
+- **Steps:** the assignments move into data, and the registry stays the
+  vocabulary they are validated against.
 
 ### The tenant-scoped reference feature is `notes`, not `users`
 

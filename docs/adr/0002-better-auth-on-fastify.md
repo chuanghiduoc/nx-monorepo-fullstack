@@ -54,9 +54,20 @@ Versions at the time of the spike: `better-auth` 1.7.2, `@nestjs/platform-fastif
 - **CSRF:** better-auth protects its own routes with `SameSite=Lax` cookies and a
   `trustedOrigins` allow-list. The rest of the API gets the origin-check guard
   planned in Phase 2, Task 6 — the two mechanisms are separate on purpose.
-- **The spike configuration has no database.** `database: undefined` keeps state
-  in memory, which is enough to prove routing and cookies and nothing else.
-  Phase 3 replaces it with the Prisma adapter and the organization, admin,
-  api-key and multi-session plugins, and adds the e2e coverage for them.
-- **Not yet verified:** behaviour behind a real reverse proxy, and the plugin set
-  above. Both belong to Phase 3 and must not be assumed from this spike.
+- **The spike configuration had no database.** That has since been replaced by
+  the Prisma adapter with the organization, admin, two-factor, multi-session
+  and api-key plugins, all covered end to end. Two things the spike could not
+  have predicted turned up there: the schema generator lags the library, so
+  `account.issuer` was missing and every sign-up returned 500; and the api-key
+  plugin is a separate package, not an export of the library.
+- **The mount now takes the instance as an argument** rather than importing a
+  module-level singleton. The adapter needs the client attached to the
+  connection pool the framework opens and closes, which makes the instance a
+  provider, and a provider cannot be imported at module scope.
+- **Where it lives:** the whole capability is a library
+  (`libs/core/server/feature/auth`), not application code. The application
+  imports it and mounts it. That is also what lets the request hook — which
+  must call the auth API — live beside it instead of in the application.
+- **Still not verified:** behaviour behind a real reverse proxy. The forwarded
+  client address is asserted, but cookie attributes under a production build
+  behind TLS are not.

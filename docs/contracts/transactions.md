@@ -18,13 +18,25 @@ await db.withTenantTransaction({ kind: 'org', orgId, userId }, async () => {
 | `withTenantTransaction(ctx, work)` | `ctx.kind = 'org'` | `app.current_org_id`, `app.current_user_id` |
 | | `ctx.kind = 'user'` (B2C, no active org) | `app.current_user_id`; org GUC cleared |
 | `withSystemTransaction(work)` | system (relays, schedulers, idempotency) | nothing |
+| `withRequestTransaction(work)` | the tenant the current request resolved to | whatever that context sets |
 | `tenant()` / `system()` | inside the matching transaction only | — |
 
 The callbacks receive **no client**. Work inside reaches the transaction via
 `db.tenant()` / `db.system()`, which read it from `AsyncLocalStorage`: a
 repository three calls deep runs on the transaction the use case opened,
 without every function in between passing `tx` along — and no `Prisma.*` type
-appears in a feature's signature (spec §4 rule 5b).
+appears in a feature's signature, so replacing the ORM does not ripple
+outwards.
+
+`withRequestTransaction` is the form a request handler uses: the request has
+already resolved who it acts as, and repeating that at every call site invites
+a mismatch. Outside a request — a job, a script — there is no context to read,
+and it says so rather than guessing a tenant.
+
+`tenant()` stays **synchronous** and throws outside a transaction. It could
+open a short one instead, but then two consecutive calls would be two
+transactions with nothing atomic between them, and nothing at the call site
+would say so. The explicit form is the trade.
 
 Options: `timeoutMs` (Prisma default 5 s), `maxWaitMs` (2 s), `isolation`
 (`read-committed` | `repeatable-read` | `serializable`). Keep interactive
@@ -56,12 +68,13 @@ into the next request, which is what makes PgBouncer transaction mode safe.
   (`DemoItemRepository` is the reference), so a caller never has to remember
   and a query never lands on the root client.
 
-## What Phase 3 adds on top
+## What tenancy added on top
 
-RLS policies read exactly these GUCs; a request-scoped `TenantContext`
-resolved by middleware feeds `withTenantTransaction`; the five database roles
-and the policy template are documented in `docs/contracts/tenant-context.md`.
-Nothing in this seam changes — that is the point of having it first.
+Row-level security policies read exactly these GUCs, and the request context
+that feeds `withRequestTransaction` is resolved before any handler runs. The
+seam itself did not change to accommodate either: one method was added, and
+nothing about ownership, nesting or the accessors moved. That was the point of
+building it first.
 
 ## Covered by
 
