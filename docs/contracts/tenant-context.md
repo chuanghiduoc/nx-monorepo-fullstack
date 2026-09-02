@@ -59,17 +59,20 @@ Guessing a tenant would be the worst possible recovery.
    transaction-local and a pooled connection never carries one tenant's
    identity into the next request.
 3. **PostgreSQL row-level security** — the boundary that holds when the first
-   two are wrong. Policies read the GUCs, and `FORCE ROW LEVEL SECURITY` binds
-   even the table owner.
+   two are wrong. Policies read the GUCs, and the application cannot escape
+   them: it connects as `app_user`, which owns no table, is not a superuser and
+   has no `BYPASSRLS`. The service refuses to boot on a connection that fails
+   any of those.
 
-**The third layer is not in place yet.** No migration creates a policy; the
-tenant-owned tables it will protect do not exist either. What does exist is
-everything that makes it testable when it arrives: the application connects as
-`app_user`, a role that is neither a superuser nor `BYPASSRLS`; the service
-refuses to boot on a connection that row-level security cannot bind; and every
-isolation suite opens by proving a live `FORCE` policy actually hides a row.
-That order is deliberate — a policy written against a superuser connection
-would have looked like it worked.
+`ENABLE ROW LEVEL SECURITY` is what binds the application. `FORCE` binds the
+table *owner* as well, and is carried as a second line: it costs nothing and
+covers the day someone points a service at the owner connection. Measured —
+commenting out `ENABLE` turns six isolation tests red; commenting out `FORCE`
+changes nothing, because the application was never the owner.
+
+The order in which this was built is deliberate. The harness was moved to a
+bindable role *before* the first policy was written: a policy tested over an
+owner connection would have looked correct while protecting nothing.
 
 ## Table classes
 
@@ -81,13 +84,20 @@ must not exist there.
 |---|---|---|
 | `GLOBAL` | shared reference data | none |
 | `TENANT_OWNED` | `org_id NOT NULL` | `org_id = current org` |
-| `TENANT_OPTIONAL` | `org_id` nullable, `user_id NOT NULL` | current org, **or** null org and current user |
+| `TENANT_OPTIONAL` | `org_id` nullable, `user_id NOT NULL` | current org, **or** — only when no organization is active — null org and current user |
 | `SYSTEM` | outbox, audit, idempotency | no tenant policy; reached through grants |
 | `AUTH` | better-auth's own tables | none — see below |
 
-A naive tenant-optional policy (`org_id IS NULL OR org_id = current`) would
-show every null-organization row to every tenant. The second branch must name
-the user as well.
+A tenant-optional row is visible in exactly one context, never two. Two
+mistakes are easy here, and the second is the subtler:
+
+- `org_id IS NULL OR org_id = current` shows every personal row to every
+  tenant. The personal branch must name the owner.
+- Naming the owner is still not enough. Both GUCs are set while a member acts
+  inside an organization, so a personal branch that only checks the user also
+  matches there, and the organization context sees the member's private rows.
+  An export of "everything this organization can see" would have carried them.
+  The branch therefore also requires that no organization is active.
 
 `AUTH` tables carry organization columns but get no tenant policy on purpose: a
 user must be able to list every organization they belong to *before* any of

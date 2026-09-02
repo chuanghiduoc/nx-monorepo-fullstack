@@ -9,7 +9,7 @@
 -- from a truncated timestamp never matches its own row again, so the equality
 -- branch of the comparison silently skips every row sharing that millisecond.
 -- Verified against this database before the change: a row stored at
---.123456 read back as.123 and did not match a query for.123.
+-- .123456 read back as .123 and did not match a query for .123.
 
 -- demo_items
 ALTER TABLE "demo_items" RENAME COLUMN "createdAt" TO "created_at";

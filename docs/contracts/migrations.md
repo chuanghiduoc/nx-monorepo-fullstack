@@ -19,6 +19,22 @@ Both `migrate dev` and `migrate diff --from-migrations` need
 `SHADOW_DATABASE_URL`: Prisma replays the history into a throwaway database.
 Never point it at a database holding anything; Prisma resets it.
 
+## An applied migration is immutable — comments included
+
+Prisma stores a checksum of every migration it has applied and refuses to
+continue when one changes. That includes whitespace inside a comment: a
+repository-wide tidy-up once altered `.123456` to `.123456` in an explanatory
+line and Prisma answered with "the migration was modified after it was
+applied" and a demand to reset the database.
+
+Nothing rewrites a migration that has been applied anywhere. A correction goes
+into a new migration; a comment that reads badly stays as it is, or its
+explanation moves here.
+
+Recovery, if it happens anyway: restore the file byte for byte from the commit
+that introduced it. The checksum matches again and no data is lost. Resetting
+the database is the answer only when the file is genuinely gone.
+
 ## When the generated SQL is wrong
 
 `prisma migrate dev` cannot tell a rename from a drop-and-add, and the

@@ -37,11 +37,59 @@ model DemoItem {
   id        String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   title     String   @db.VarChar(200)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   // Keyset pagination reads (created_at, id) in this order.
   @@index([createdAt(sort: Desc), id(sort: Desc)])
   @@map("demo_items")
+}
+
+/// class: TENANT_OWNED — every row belongs to exactly one organization.
+///
+/// The reference for the owned pattern: `org_id` is NOT NULL, the policy is
+/// the single-branch template, and every index leads with `org_id` because
+/// row-level security adds that predicate to every plan.
+model Note {
+  id    String @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  orgId String @map("org_id") @db.Uuid
+  title String @db.VarChar(200)
+  body  String @db.Text
+
+  /// Optimistic concurrency: an update carries the version it read, and a
+  /// mismatch is a 409 rather than a lost write. Two concurrent edits that
+  /// both read version 3 cannot both win.
+  version Int @default(1)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  /// `@updatedAt` is a Prisma behaviour, not a constraint: it sets the value
+  /// on update and leaves the column NOT NULL with no default, so any insert
+  /// that does not go through Prisma fails. The default makes the column
+  /// correct for a SQL fixture, a backfill, or a service in another language.
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([orgId, createdAt(sort: Desc), id(sort: Desc)])
+  @@map("notes")
+}
+
+/// class: TENANT_OPTIONAL — an organization's row, or a person's own.
+///
+/// The reference for the optional pattern, and the trap it hides: a policy of
+/// `org_id IS NULL OR org_id = current` would show every personal bookmark to
+/// every organization. The second branch must name the owner as well, which
+/// is why `user_id` is NOT NULL even when `org_id` is not.
+model Bookmark {
+  id     String  @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  orgId  String? @map("org_id") @db.Uuid
+  userId String  @map("user_id") @db.Uuid
+  url    String  @db.VarChar(2048)
+  label  String  @db.VarChar(200)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([orgId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc), id(sort: Desc)])
+  @@map("bookmarks")
 }
 
 /// class: SYSTEM — belongs to no tenant; reached through grants, not policies.
@@ -108,7 +156,7 @@ model User {
   emailVerified    Boolean      @default(false) @map("email_verified")
   image            String?
   createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedAt        DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   role             String?
   banned           Boolean?     @default(false)
   banReason        String?      @map("ban_reason")
@@ -129,7 +177,7 @@ model Session {
   expiresAt            DateTime @map("expires_at") @db.Timestamptz(3)
   token                String
   createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   ipAddress            String?  @map("ip_address")
   userAgent            String?  @map("user_agent")
   userId               String   @map("user_id") @db.Uuid
@@ -162,7 +210,7 @@ model Account {
   scope                 String?
   password              String?
   createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@unique([issuer, accountId])
   @@index([userId])
@@ -175,7 +223,7 @@ model Verification {
   value      String
   expiresAt  DateTime @map("expires_at") @db.Timestamptz(3)
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([identifier])
   @@map("verification")
