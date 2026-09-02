@@ -3,8 +3,8 @@
 A client that retries a mutation must not cause the work to happen twice. The
 client opts in by sending `Idempotency-Key`; the server guarantees the rest.
 
-Implemented by `IdempotencyStore` (`libs/core/server/data-access-db`) and
-`IdempotencyInterceptor` (`libs/core/server/core`).
+Implemented by `IdempotencyStore` (`libs/core/server/platform/data-access-db`) and
+`IdempotencyInterceptor` (`libs/core/server/platform/core`).
 
 ## Using it
 
@@ -71,10 +71,10 @@ that legitimately owns the key.
 
 ## Covered by
 
-- `libs/core/server/data-access-db/src/lib/idempotency.store.spec.ts` — against
+- `libs/core/server/platform/data-access-db/src/lib/idempotency.store.spec.ts` — against
   a real PostgreSQL: claim, replay, mismatch, per-scope isolation, lease
   reclaim, fence-token rejection, and eight simultaneous claims where exactly
   one wins.
-- `libs/core/server/core/src/lib/idempotency/request-fingerprint.spec.ts` —
+- `libs/core/server/platform/core/src/lib/idempotency/request-fingerprint.spec.ts` —
   route normalisation and body canonicalisation.
 - `apps/core/api-e2e/src/api.e2e-spec.ts` — the HTTP behaviour above.

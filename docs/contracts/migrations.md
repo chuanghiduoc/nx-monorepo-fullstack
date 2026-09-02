@@ -1,7 +1,7 @@
 # Contract: database migrations
 
 Prisma Migrate owns the schema. Every change is a migration directory under
-`libs/core/server/data-access-db/prisma/migrations/`, and every migration
+`libs/core/server/platform/data-access-db/prisma/migrations/`, and every migration
 ships with a `down.sql` beside its `migration.sql`.
 
 ## Commands

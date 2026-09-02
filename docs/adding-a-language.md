@@ -35,6 +35,7 @@ Then generate a client library for the service so frontends consume it the same
 way they consume `core-api`:
 
 ```
+# example, for a service that does not exist yet:
 libs/shared/api-client-billing   # generated from apps/billing/api/openapi.json
 ```
 

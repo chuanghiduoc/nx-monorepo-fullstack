@@ -1,6 +1,6 @@
 # Contract: transaction ownership
 
-`Database` (`libs/core/server/data-access-db`) is the only sanctioned way to
+`Database` (`libs/core/server/platform/data-access-db`) is the only sanctioned way to
 touch PostgreSQL. It owns the transaction and the tenant GUCs; nothing else
 opens one.
 
@@ -65,7 +65,7 @@ Nothing in this seam changes — that is the point of having it first.
 
 ## Covered by
 
-- `libs/core/server/data-access-db/src/lib/transaction/database.spec.ts`
+- `libs/core/server/platform/data-access-db/src/lib/transaction/database.spec.ts`
   against a real PostgreSQL: commit, rollback, both GUC shapes and their
   transaction-locality, nesting, context change refusal, accessor guards, root
   client refusal, and two tenants in flight at once.

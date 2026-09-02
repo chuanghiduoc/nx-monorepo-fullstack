@@ -4,7 +4,7 @@
 
 **Goal:** After this phase a real product can start on the platform: users sign in (email/password, 2FA, device sessions), belong to organizations, are isolated from each other by PostgreSQL row-level security that holds even when application code is wrong, and every permission decision goes through one registry-driven facade that denies by default. The web app has auth screens, an organization switcher and vi/en.
 
-**Architecture:** better-auth owns identity and organization membership (ADR-0002, mounted on Fastify). `Database.withTenantTransaction` from Phase 2 stays the only place tenant GUCs are set; RLS policies read them. A Prisma Client Extension *guards* (throws when a tenant-scoped model is queried without context) and never opens transactions. `libs/core/server/authz` is a **pure** facade: the principal — user, active organization, roles, permission statements — is resolved once per request, before any transaction, and evaluated without touching the database.
+**Architecture:** better-auth owns identity and organization membership (ADR-0002, mounted on Fastify). `Database.withTenantTransaction` from Phase 2 stays the only place tenant GUCs are set; RLS policies read them. A Prisma Client Extension *guards* (throws when a tenant-scoped model is queried without context) and never opens transactions. `libs/core/server/platform/authz` is a **pure** facade: the principal — user, active organization, roles, permission statements — is resolved once per request, before any transaction, and evaluated without touching the database.
 
 **Tech Stack:** better-auth 1.7 (+ organization, admin, two-factor, multi-session, api-key plugins), Prisma 7, PostgreSQL 18 RLS, `@nestjs/*` 11, Zod 4, Next 16, next-intl, react-hook-form + `@hookform/resolvers/zod`, shadcn/ui, Playwright, Vitest + Testcontainers (`@workspace/core-server-testing`).
 
@@ -22,96 +22,96 @@
 
 ---
 
-### Task 0: Spike — prove the two assumptions the whole phase rests on
+### Task 0 ✅ DONE: Spike — prove the two assumptions the whole phase rests on
 
 **Files:**
-- Temporary: a spec under `libs/core/server/data-access-db/src/lib/` (deleted at the end of the task)
+- Temporary: a spec under `libs/core/server/platform/data-access-db/src/lib/` (deleted at the end of the task)
 - Create: `docs/adr/0003-authz-principal-resolution.md`
 
 **Interfaces:**
 - Produces: two verified facts, or a different design. Nothing else in Phase 3 starts until this task is done.
 
-- [ ] **Step 1: Is RLS testable at all today?** Against a fresh container, `SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user`. The harness connects as `postgres`, and `FORCE ROW LEVEL SECURITY` does not apply to superusers — so every isolation test would pass without a single policy in effect. Record the output.
-- [ ] **Step 2: Does better-auth throw inside a transaction?** Wire the Prisma adapter to the *proxied* root client and call `auth.api.getSession` (a) outside any transaction, (b) inside `withTenantTransaction`, (c) inside `withSystemTransaction`. Record which throw.
-- [ ] **Step 3: Write ADR-0003** with what was observed: where the principal is resolved, why the authz facade performs no database access, and the rule that `auth.api.*` runs outside transactions. If Step 2 does *not* throw, say so and explain what actually happens — the design follows the observation, not the other way round.
-- [ ] **Step 4: Delete the spike spec. Commit the ADR.**
+- [x] **Step 1: Is RLS testable at all today?** Against a fresh container, `SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user`. The harness connects as `postgres`, and `FORCE ROW LEVEL SECURITY` does not apply to superusers — so every isolation test would pass without a single policy in effect. Record the output.
+- [x] **Step 2: Does better-auth throw inside a transaction?** Wire the Prisma adapter to the *proxied* root client and call `auth.api.getSession` (a) outside any transaction, (b) inside `withTenantTransaction`, (c) inside `withSystemTransaction`. Record which throw.
+- [x] **Step 3: Write ADR-0003** with what was observed: where the principal is resolved, why the authz facade performs no database access, and the rule that `auth.api.*` runs outside transactions. If Step 2 does *not* throw, say so and explain what actually happens — the design follows the observation, not the other way round.
+- [x] **Step 4: Delete the spike spec. Commit the ADR.**
 
 ---
 
-### Task 1: Harness — a non-superuser connection, before any policy exists
+### Task 1 ✅ DONE: Harness — a non-superuser connection, before any policy exists
 
 **Files:**
-- Modify: `libs/core/server/testing/src/lib/postgres.ts`
-- Modify: `apps/core/api-e2e/src/global-setup.ts`, `libs/core/server/data-access-db/src/lib/migrations.spec.ts`
+- Modify: `libs/core/server/platform/testing/src/lib/postgres.ts`
+- Modify: `apps/core/api-e2e/src/global-setup.ts`, `libs/core/server/platform/data-access-db/src/lib/migrations.spec.ts`
 - Create: migration `..._database_roles` (+ `down.sql`), `tools/postgres/10-dev-logins.sh`
-- Modify: `docker-compose.yml`, `.env.example`, `libs/core/server/data-access-db/prisma7.config.ts`
+- Modify: `docker-compose.yml`, `.env.example`, `libs/core/server/platform/data-access-db/prisma7.config.ts`
 - Modify: `docs/contracts/testing.md` — one line naming the rule: schema commands take `migrationUri`, application and isolation assertions take `connectionUri`
 - Create: `docs/ops/database-roles.md` — the production `ALTER ROLE ... LOGIN PASSWORD` step and where the secret comes from
 
 **Interfaces:**
 - Produces: `startPostgres()` returning `{ connectionUri (app_user), migrationUri (owner), createDatabase, stop }`, with `DATABASE_URL` set to the **app_user** URI. Roles `app_user`, `worker_user`, `erasure_role`, `migration_role`, `cross_tenant_admin_role` exist with explicit `GRANT`/`REVOKE`.
 
-- [ ] **Step 1: Failing guard test** — first test of every future RLS suite, added now: `current_user` has `rolsuper = false` and `rolbypassrls = false`, and `SET ROLE postgres` fails. It must fail against today's harness. That failure is the evidence that Task 0 Step 1 was right.
-- [ ] **Step 2: Roles migration.** Cluster-wide objects inside a per-database migration history need care:
+- [x] **Step 1: Failing guard test** — first test of every future RLS suite, added now: `current_user` has `rolsuper = false` and `rolbypassrls = false`, and `SET ROLE postgres` fails. It must fail against today's harness. That failure is the evidence that Task 0 Step 1 was right.
+- [x] **Step 2: Roles migration.** Cluster-wide objects inside a per-database migration history need care:
   - `DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_user') THEN CREATE ROLE app_user NOLOGIN; END IF; END $$;` — the migration replays into the shadow database in the same cluster, so a plain `CREATE ROLE` fails the second time.
   - `down.sql` does `REVOKE ALL` and `DROP OWNED BY` **in the current database** and does not `DROP ROLE` (state why: other databases in the cluster may still grant to it).
   - No password in the migration. `LOGIN PASSWORD` is granted by the compose init script for dev and by a documented step in `docs/ops/` for production.
   - `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user;` — **without** `FOR ROLE migration_role`. Default privileges apply only to objects created by the named role, and migrations run as the owner, so the `FOR ROLE` form would never fire and a table added in Task 5 or 7 would be silently unreadable — which reads exactly like RLS working.
   - A test that makes the two forms distinguishable: create a table through `migrationUri`, then assert `app_user` can `SELECT` from it with no explicit grant.
-- [ ] **Step 3: Make the guard test pass** by switching the harness to `app_user`, keeping `migrationUri` for `migrate deploy`. Run the whole existing suite: every Phase 2 test must still pass against the restricted role — that is the real check that the grants are right. `migrations.spec.ts` moves to `migrationUri`: as `app_user` it can run neither `migrate deploy` nor `db execute`.
-- [ ] **Step 4: Fail loudly on a stale volume.** The compose init script runs only on an empty data directory, so a developer carrying a Phase 2 volume gets `password authentication failed for user "app_user"` from `pnpm dev` with nothing pointing at the fix. The API's boot check names the remedy (`docker compose down -v`); `docs/ops/database-roles.md` covers production.
-- [ ] **Step 5: Commit.**
+- [x] **Step 3: Make the guard test pass** by switching the harness to `app_user`, keeping `migrationUri` for `migrate deploy`. Run the whole existing suite: every Phase 2 test must still pass against the restricted role — that is the real check that the grants are right. `migrations.spec.ts` moves to `migrationUri`: as `app_user` it can run neither `migrate deploy` nor `db execute`.
+- [x] **Step 4: Fail loudly on a stale volume.** The compose init script runs only on an empty data directory, so a developer carrying a Phase 2 volume gets `password authentication failed for user "app_user"` from `pnpm dev` with nothing pointing at the fix. The API's boot check names the remedy (`docker compose down -v`); `docs/ops/database-roles.md` covers production.
+- [x] **Step 5: Commit.**
 
 ---
 
-### Task 2: better-auth on Prisma with the plugin set
+### Task 2 ✅ DONE: better-auth on Prisma with the plugin set
 
 **Files:**
 - Modify: `apps/core/api/src/app/auth/auth.config.ts`, `auth.handler.ts`
-- Modify: `libs/core/server/data-access-db/prisma/schema.prisma`
-- Create: migration `..._better_auth` (+ `down.sql`), `libs/core/server/data-access-db/src/lib/auth/auth-database.ts`
-- Modify: `libs/core/server/core/src/lib/config/env.schema.ts` (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `APP_ORIGIN`)
+- Modify: `libs/core/server/platform/data-access-db/prisma/schema.prisma`
+- Create: migration `..._better_auth` (+ `down.sql`), `libs/core/server/platform/data-access-db/src/lib/auth/auth-database.ts`
+- Modify: `libs/core/server/platform/core/src/lib/config/env.schema.ts` (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `APP_ORIGIN`)
 
 **Interfaces:**
 - Produces: `auth` with `prismaAdapter(authDatabase, { provider: 'postgresql' })`, plugins `organization({ dynamicAccessControl: { enabled: true }, ac, roles })`, `admin({ ac, roles })`, `twoFactor()`, `multiSession()`, `apiKey(...)`; `advanced.database.generateId: false` so PostgreSQL's `uuidv7()` stays the only id source; `enableSessionForAPIKeys` **off**.
 - `authDatabase` is exported from data-access-db and is the proxied root client — the one sanctioned adapter seam. It throws if used inside a transaction, which is the behaviour Task 0 recorded and the rule the whole phase depends on.
 - All better-auth tables are class **AUTH**: no RLS, `app_user` gets CRUD. A user must list every membership before any organization is active, and the adapter runs without GUCs. Their isolation is better-auth's own access control, and the threat model records that.
 
-- [ ] **Step 1: Docs first, and record the api-key facts.** better-auth 1.7.2's export map has organization, admin, two-factor and multi-session but **no `./plugins/api-key`** (verified against the installed package). API keys are the separate package `@better-auth/api-key` (1.7.2 on npm). Record: the package, its version, and **the exact option name** that stops a key from authenticating session routes — `enableSessionForAPIKeys` is what this plan expects, and it appears nowhere in the installed tree. Write Step 4's assertion against the name you read. Assuming an option name is how `nextCursor` shipped as an array for two commits.
-- [ ] **Step 2: Install** with `pnpm --filter core-api add better-auth @better-auth/api-key`, catalog the ranges.
-- [ ] **Step 3: Generate the schema, do not write it.** `pnpm dlx @better-auth/cli@latest generate --adapter prisma --dialect postgresql` against a **plugins-only config file** (the real `auth.config.ts` imports the data-access adapter and the CJS client, which the CLI loader may not resolve). Merge into `schema.prisma` with `@map`/`@@map` to snake_case, `@db.Uuid` ids defaulting to `uuidv7()`, `@db.Timestamptz(3)`. Then `prisma migrate dev --create-only`, review, generate `down.sql`.
-- [ ] **Step 4: Failing e2e (api-e2e).** Sign-up, sign-in, `get-session`, sign-out; 2FA enable → verify → sign-in requires a code; multi-session list/revoke; org create → invite → accept → `activeOrganizationId` on the session; admin ban → sign-in refused; impersonate → session carries `impersonatedBy`. API keys, both directions:
+- [x] **Step 1: Docs first, and record the api-key facts.** better-auth 1.7.2's export map has organization, admin, two-factor and multi-session but **no `./plugins/api-key`** (verified against the installed package). API keys are the separate package `@better-auth/api-key` (1.7.2 on npm). Record: the package, its version, and **the exact option name** that stops a key from authenticating session routes — `enableSessionForAPIKeys` is what this plan expects, and it appears nowhere in the installed tree. Write Step 4's assertion against the name you read. Assuming an option name is how `nextCursor` shipped as an array for two commits.
+- [x] **Step 2: Install** with `pnpm --filter core-api add better-auth @better-auth/api-key`, catalog the ranges.
+- [x] **Step 3: Generate the schema, do not write it.** `pnpm dlx @better-auth/cli@latest generate --adapter prisma --dialect postgresql` against a **plugins-only config file** (the real `auth.config.ts` imports the data-access adapter and the CJS client, which the CLI loader may not resolve). Merge into `schema.prisma` with `@map`/`@@map` to snake_case, `@db.Uuid` ids defaulting to `uuidv7()`, `@db.Timestamptz(3)`. Then `prisma migrate dev --create-only`, review, generate `down.sql`.
+- [x] **Step 4: Failing e2e (api-e2e).** Sign-up, sign-in, `get-session`, sign-out; 2FA enable → verify → sign-in requires a code; multi-session list/revoke; org create → invite → accept → `activeOrganizationId` on the session; admin ban → sign-in refused; impersonate → session carries `impersonatedBy`. API keys, both directions:
   - opt-in route + valid `x-api-key` → 200;
   - opt-in route + cookie only → 401;
   - **session-only route + valid `x-api-key` → 401** (this is what `enableSessionForAPIKeys: false` buys, and it is asserted, not assumed).
-- [ ] **Step 5: Implement, green.** `trustedOrigins` from `CORS_ORIGINS`. Rate limiting on better-auth's own routes uses `rateLimit.customStorage` on redis-critical — **not** `storage: 'secondary-storage'`, which would also move sessions into Redis and contradict the deferral recorded in `docs/upgrades.md`.
-- [ ] **Step 6: Behind a proxy — the right two assertions.** `X-Forwarded-For` changes `request.ip` (asserted through a log line or an echo route); cookie attributes are audited against a second instance booted with `NODE_ENV=production` and an https `BETTER_AUTH_URL`, because `Secure` comes from `useSecureCookies`, not from the header.
-- [ ] **Step 7: Commit.**
+- [x] **Step 5: Implement, green.** `trustedOrigins` from `CORS_ORIGINS`. Rate limiting on better-auth's own routes uses `rateLimit.customStorage` on redis-critical — **not** `storage: 'secondary-storage'`, which would also move sessions into Redis and contradict the deferral recorded in `docs/upgrades.md`.
+- [x] **Step 6: Behind a proxy — the right two assertions.** `X-Forwarded-For` changes `request.ip` (asserted through a log line or an echo route); cookie attributes are audited against a second instance booted with `NODE_ENV=production` and an https `BETTER_AUTH_URL`, because `Secure` comes from `useSecureCookies`, not from the header.
+- [x] **Step 7: Commit.**
 
 ---
 
-### Task 3: `libs/core/server/authz` — a pure facade and the Principal
+### Task 3: `libs/core/server/platform/authz` — a pure facade and the Principal
 
 **Files:**
-- Create: `libs/core/server/authz` via `@nx/js:library` (tags `scope:core,platform:node,type:util`)
+- Create: `libs/core/server/platform/authz` via `@nx/js:library` (tags `scope:core,platform:node,type:util`)
 - Create: `src/lib/{action-registry,principal,authz.service,authz.errors}.ts` + specs
 
 **Interfaces:**
 - Produces: `Principal` (`{ type: 'user' | 'apiKey' | 'system', id, actorId?, orgId?, roles[], statements }`) — defined here because Task 4 resolves it; `ActionRegistry` (typed `<resource>.<verb>`, versioned, and the single source that *generates* better-auth's `createAccessControl` statements); `authz.can/require/canAny/canAll`; `ForbiddenProblem` (403 Problem Details, deny reason logged and never returned).
 - **No database access.** Evaluation runs against the principal and the role definitions in memory. That is what makes it safe to call from inside a transaction, and it is the direct consequence of Task 0.
 
-- [ ] **Step 1: Failing unit tests (pure, no DB, no container):** unknown action → deny; unknown resource → deny; role grants → allow; ownership condition; api-key principal limited to the key's own permissions and never the issuer's; `effectiveUser` vs `actor` — the check uses effective, the audit context carries both; `require` throws the 403 Problem with type `…/forbidden` and no reason in the body; **the same test installs a capturing logger and asserts the denial record carries the action, the principal type and the reason** (§6.5 requires the reason as a log and audit event, and the authz gate claims it); a policy version bump invalidates a cached decision. The "unknown action" test casts through `unknown`, since a typed registry would otherwise refuse to compile it — the point is the runtime deny path.
-- [ ] **Step 2: Implement.** Deny is the default branch of an exhaustive `switch` over `Principal['type']`.
-- [ ] **Step 3: Commit.**
+- [x] **Step 1: Failing unit tests (pure, no DB, no container):** unknown action → deny; unknown resource → deny; role grants → allow; ownership condition; api-key principal limited to the key's own permissions and never the issuer's; `effectiveUser` vs `actor` — the check uses effective, the audit context carries both; `require` throws the 403 Problem with type `…/forbidden` and no reason in the body; **the same test installs a capturing logger and asserts the denial record carries the action, the principal type and the reason** (§6.5 requires the reason as a log and audit event, and the authz gate claims it); a policy version bump invalidates a cached decision. The "unknown action" test casts through `unknown`, since a typed registry would otherwise refuse to compile it — the point is the runtime deny path.
+- [x] **Step 2: Implement.** Deny is the default branch of an exhaustive `switch` over `Principal['type']`.
+- [x] **Step 3: Commit.**
 
 ---
 
-### Task 4: Tenant context — resolved once per request, before any transaction
+### Task 4 ✅ DONE: Tenant context — resolved once per request, before any transaction
 
 **Files:**
-- Create: `libs/core/server/core/src/lib/tenancy/{request-context.storage,current-principal.decorator}.ts` + specs — the auth-agnostic half: the `AsyncLocalStorage` instance, the stored shape, the decorator
+- Create: `libs/core/server/platform/core/src/lib/tenancy/{request-context.storage,current-principal.decorator}.ts` + specs — the auth-agnostic half: the `AsyncLocalStorage` instance, the stored shape, the decorator
 - Create: `apps/core/api/src/app/tenancy/tenant-context.hook.ts` + spec — **in the app**, because it calls `auth.api.*` and `auth` lives in `apps/core/api/src/app/auth/auth.config.ts`. A library cannot import from an app: no tsconfig path exists and the boundary rules forbid it. If a worker later needs the same resolution, move `auth.config.ts` into a `type:data-access` library — decide that in Task 2, where the config is written
-- Create: `libs/core/server/data-access-db/src/lib/transaction/with-request-transaction.ts` + spec
+- Create: `libs/core/server/platform/data-access-db/src/lib/transaction/with-request-transaction.ts` + spec
 - Modify: `docs/contracts/transactions.md`, `docs/upgrades.md`
 
 **Interfaces:**
@@ -119,21 +119,21 @@
 - `db.tenant()` keeps the Phase 2 behaviour: it throws outside a transaction.
 - **A deliberate deviation, recorded as one.** §6.5's auto-wrap prohibition is about the *Prisma extension*; the sentence above it does sanction the accessor opening a short transaction itself. We keep `tenant()` synchronous anyway, because an accessor that sometimes opens a transaction makes two consecutive calls two transactions with no atomicity between them, and nothing at the call site says so. `withRequestTransaction` is the explicit form. Constraint 7 applies: this becomes an entry in `docs/upgrades.md` that **replaces** the older one, and the entry says the spec sentence was read and traded away.
 
-- [ ] **Step 1: Failing tests.** The hook maps api-key / session / neither to the three shapes; the context is visible **inside a Nest guard and inside a service method**, not merely inside the hook (`AsyncLocalStorage.run` in a Fastify hook does not survive into the handler — `enterWith` does, which is what `@fastify/request-context` uses); the api-key branch never consults cookies; `withRequestTransaction` throws with a clear message when there is no request context.
-- [ ] **Step 2: Implement.** Registering `@fastify/request-context` is acceptable if it turns out to carry the storage more reliably than a hand-rolled `enterWith` — decide from the test, not from taste.
-- [ ] **Step 3: Update the contract docs.** `transactions.md` gains `withRequestTransaction`; the `docs/upgrades.md` entry about `tenant()` is **replaced** (today: synchronous, explicit form; signal: a read path where the explicit call is pure ceremony; steps: resolve the stored context inside `tenant()`, return a promise, migrate callers) — not deleted, so the next reader sees the trade rather than assuming it was missed.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Failing tests.** The hook maps api-key / session / neither to the three shapes; the context is visible **inside a Nest guard and inside a service method**, not merely inside the hook (`AsyncLocalStorage.run` in a Fastify hook does not survive into the handler — `enterWith` does, which is what `@fastify/request-context` uses); the api-key branch never consults cookies; `withRequestTransaction` throws with a clear message when there is no request context.
+- [x] **Step 2: Implement.** Registering `@fastify/request-context` is acceptable if it turns out to carry the storage more reliably than a hand-rolled `enterWith` — decide from the test, not from taste.
+- [x] **Step 3: Update the contract docs.** `transactions.md` gains `withRequestTransaction`; the `docs/upgrades.md` entry about `tenant()` is **replaced** (today: synchronous, explicit form; signal: a read path where the explicit call is pure ceremony; steps: resolve the stored context inside `tenant()`, return a promise, migrate callers) — not deleted, so the next reader sees the trade rather than assuming it was missed.
+- [x] **Step 4: Commit.**
 
 ---
 
 ### Task 5: RLS — policies on new reference tables
 
 **Files:**
-- Modify: `libs/core/server/data-access-db/prisma/schema.prisma` — **required**: `migrations.spec.ts` diffs the migrated database against the schema and fails on any difference, so a table created only in SQL breaks the drift check
+- Modify: `libs/core/server/platform/data-access-db/prisma/schema.prisma` — **required**: `migrations.spec.ts` diffs the migrated database against the schema and fails on any difference, so a table created only in SQL breaks the drift check
 - Create: migrations `..._tenant_reference_tables`, `..._rls_policies` (+ `down.sql` each)
-- Create: `libs/core/server/data-access-db/prisma/policies/README.md` (the templates, copied verbatim into migrations)
+- Create: `libs/core/server/platform/data-access-db/prisma/policies/README.md` (the templates, copied verbatim into migrations)
 - Modify: `docs/contracts/tenant-context.md` (write it for real)
-- Modify: `libs/core/server/testing/src/lib/postgres.ts` (a PgBouncer helper)
+- Modify: `libs/core/server/platform/testing/src/lib/postgres.ts` (a PgBouncer helper)
 
 **Interfaces:**
 - Produces: two new reference tables with `ENABLE` + `FORCE ROW LEVEL SECURITY` and the §6.5 policy template using `NULLIF(current_setting(..., true), '')::uuid`:
@@ -157,8 +157,8 @@
 ### Task 6: Prisma Client Extension — the guard
 
 **Files:**
-- Create: `libs/core/server/data-access-db/src/lib/tenancy/{tenant-scoped-models,tenant-guard.extension}.ts` + spec
-- Create: `libs/core/server/data-access-db/tools/list-tenant-models.ts` (beside `migration-history.ts`, so the spec can import it relatively; a root-level `tools/` file belongs to no project and has no path alias)
+- Create: `libs/core/server/platform/data-access-db/src/lib/tenancy/{tenant-scoped-models,tenant-guard.extension}.ts` + spec
+- Create: `libs/core/server/platform/data-access-db/tools/list-tenant-models.ts` (beside `migration-history.ts`, so the spec can import it relatively; a root-level `tools/` file belongs to no project and has no path alias)
 - Modify: `prisma.service.ts`
 
 **Interfaces:**
@@ -175,10 +175,10 @@
 
 **Files:**
 - Create: migration `..._org_settings` (**TENANT_OWNED**, `UNIQUE (org_id, key)`, `value JSONB`, `version INT`)
-- Create: `libs/core/server/core/src/lib/org-settings/setting-registry.ts` (pure Zod map, `type:util`)
-- Create: `libs/core/server/data-access-db/src/lib/org-settings/org-settings.repository.ts` (domain DTOs)
+- Create: `libs/core/server/platform/core/src/lib/org-settings/setting-registry.ts` (pure Zod map, `type:util`)
+- Create: `libs/core/server/platform/data-access-db/src/lib/org-settings/org-settings.repository.ts` (domain DTOs)
 - Create: the service and `IpAllowlistGuard` in `apps/core/api` (an app may depend on both; `type:util` may not reach the database)
-- Modify: `apps/core/api/src/main.ts` and `libs/core/server/core/src/lib/config/env.schema.ts` — `trustProxy: true` trusts **every** hop, so a client-supplied `X-Forwarded-For` does change `request.ip` and the allowlist guard is worth nothing. It becomes configuration: the edge's address or CIDR, defaulting to the loopback edge in development
+- Modify: `apps/core/api/src/main.ts` and `libs/core/server/platform/core/src/lib/config/env.schema.ts` — `trustProxy: true` trusts **every** hop, so a client-supplied `X-Forwarded-For` does change `request.ip` and the allowlist guard is worth nothing. It becomes configuration: the edge's address or CIDR, defaulting to the loopback edge in development
 
 **Interfaces:**
 - Produces: per-key Zod validation (unknown key → 400), `get`/`set` with an optimistic version check (409 on stale), and a guard reading `security.ipAllowlist` against `request.ip` — the value `trustProxy` resolves, never a header parsed by hand.
@@ -238,6 +238,21 @@
 - [ ] **Authz gate:** registry-driven checks, default deny proven, principal types covered, deny reasons in logs and not in bodies.
 - [ ] `pnpm nx reset && pnpm verify && pnpm knip`; `pnpm dev` smoke in vi and en; two independent reviews of the full diff; fix; commit `chore: phase 3 auth, tenancy, authz complete`.
 - [ ] Update `docs/upgrades.md` for every simplification taken (expected: ReBAC provider slot, sessions not in secondary storage, email via Mailpit only, `cross_tenant_admin_role` unused until an admin surface exists, `db.tenant()` staying synchronous, and — since §7 Phase 3 ends with "user CRUD tenant-scoped" — **tenant-scoped member/user CRUD deferred to the organization plugin's own endpoints**: signal, a product needs a member list or a member field the plugin does not expose; steps, extend through the plugin's hooks and `additionalFields`, never a second table).
+
+## What the finished tasks actually produced
+
+| Task | Landed as | What it cost to find out |
+|---|---|---|
+| 0 | ADR recording two measured facts | the harness was a superuser, so a FORCE policy admitting one tenant returned both rows; and the auth adapter is refused inside a transaction |
+| 1 | five database roles, an app_user harness, a boot check | the roles migration must be idempotent (cluster-wide objects, per-database history), and `ALTER DEFAULT PRIVILEGES FOR ROLE` would never have fired |
+| 2 | auth on Prisma with organizations, 2FA, sessions, API keys | the schema generator lags the library by three minors: `account.issuer` was missing and every sign-up returned 500 |
+| 3 | the authz facade, 24 unit tests | — |
+| 4 | request context, `withRequestTransaction`, `/api/whoami` | `enterWith` in an async Fastify hook does not reach the route handler; the continuation must run inside `AsyncLocalStorage.run` |
+
+Two things were also corrected outside the plan: server libraries were grouped
+into `platform/` and `feature/` with `nx g @nx/workspace:move`, and `prisma-down`
+now refuses to overwrite a hand-written rollback script — it had already
+replaced one with an empty skeleton.
 
 ## Task order and why
 

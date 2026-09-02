@@ -110,22 +110,45 @@ libs/
   shared/                # scope:shared
     ui/  api-client-core/  i18n/
   core/
-    server/              # platform:node
-      core/              # config+env, pino, filter RFC 9457, terminus, throttler,
-                         # idempotency, distributed lock, pagination/cursor helpers
-      data-access-db/    # Prisma DUY NHẤT ở đây (+ tenant context, RLS helpers)
-      queue/             # bullmq DUY NHẤT ở đây
-      events/            # domain events + outbox
-      authz/             # facade authz DUY NHẤT — cấm check quyền ngoài đây
-      quota/             # quota engine atomic (platform-infra — 6.7)
-      feature-auth/      # better-auth: orgs, AC, admin, multi-session, api-key
-      feature-users/     # user CRUD mẫu (tenant-scoped)
-      feature-entitlements/  # plans, guard, onPlanChanged, UI (gọi quota infra)
-      feature-flags/     # OpenFeature + in-house provider
-      feature-audit/  feature-webhooks/  feature-storage/  feature-realtime/
-      feature-ai/        # AI SDK provider abstraction, embeddings, RAG demo
-      testing/           # harness, fixtures, factories, Testcontainers setup
+    server/              # platform:node — hai lớp, đúng theo luật ranh giới 3
+      platform/          # hạ tầng: feature nào cũng được import
+        core/            # config+env, pino, filter RFC 9457, terminus, throttler,
+                         # idempotency, distributed lock, pagination/cursor,
+                         # tenant context storage
+        data-access-db/  # Prisma DUY NHẤT ở đây (+ transaction seam, RLS helpers)
+        authz/           # facade authz DUY NHẤT — cấm check quyền ngoài đây
+        testing/         # harness, fixtures, factories, Testcontainers setup
+        queue/           # bullmq DUY NHẤT ở đây
+        events/          # domain events + outbox
+        quota/           # quota engine atomic (6.7)
+      feature/           # nghiệp vụ: KHÔNG import lẫn nhau
+        auth/            # better-auth: orgs, AC, admin, multi-session, api-key
+        users/           # user CRUD mẫu (tenant-scoped) — xem ghi chú dưới
+        entitlements/    # plans, guard, onPlanChanged, UI (gọi quota infra)
+        flags/           # OpenFeature + in-house provider
+        audit/  webhooks/  storage/  realtime/
+        ai/              # AI SDK provider abstraction, embeddings, RAG demo
     web/                 # platform:web — component riêng product app
+
+**Thư mục phản ánh luật ranh giới, không thay thế nó.** `platform/` đúng bằng
+tập hợp thứ một feature được phép phụ thuộc; `feature/` là tập hợp không được
+import lẫn nhau. Tag (`type:util`, `type:data-access`, `type:feature`) vẫn là
+thứ ESLint kiểm tra — thư mục chỉ làm quy tắc đó nhìn thấy được. Một feature
+bị nhiều feature khác cần → chuyển sang `platform/` (đúng như luật 3 đã nói).
+
+**Feature mẫu tenant-scoped: `notes`, không phải `users`.** Bảng `member` do
+plugin organization của better-auth sở hữu (addMember/updateMemberRole/
+removeMember, kèm hook và AC riêng). Một đường ghi thứ hai vào bảng đó sẽ đi
+vòng qua plugin, và cột `version` cho optimistic concurrency sẽ bị mọi lệnh
+ghi của plugin bỏ qua — mất tác dụng. Nên feature mẫu CRUD một bảng
+TENANT_OWNED của chính nó (`notes`), còn thay đổi thành viên đi qua endpoint
+của plugin. Ghi trong upgrades.md kèm tín hiệu để thêm `feature/users` thật
+khi sản phẩm cần trường mà plugin không có.
+
+**Tên project không đổi theo thư mục** (`core-server-core`,
+`core-server-feature-auth`): import đi qua tên package, nên di chuyển thư mục
+không sửa một dòng import nào. Di chuyển bằng `nx g @nx/workspace:move` —
+generator cập nhật project.json, tsconfig references và graph cùng lúc.
 docs/  (superpowers/specs/, adr/, adding-a-language.md, upgrades.md)
 docker-compose.yml       # dev: PG18, Redis, Mailpit, MinIO, grafana/otel-lgtm
 ```
@@ -377,7 +400,7 @@ CREATE POLICY tenant_isolation ON "Item" USING (
 TENANT_OWNED chỉ có nhánh đầu.) Mỗi bảng khai báo có cho phép USER_ONLY hay
 không — generator hỏi tường minh.
 
-**Authz facade** (`libs/core/server/authz`) — contract hoàn chỉnh, không chỉ
+**Authz facade** (`libs/core/server/platform/authz`) — contract hoàn chỉnh, không chỉ
 một hàm:
 
 ```typescript
@@ -864,7 +887,7 @@ thêm máy. HA multi-node ghi upgrades.md.
 
 Unit (Vitest, property-based khi xứng đáng) / Integration (**Testcontainers**
 — PG+Redis thật, cô lập từng suite, song song, không mock Prisma/BullMQ;
-harness trong `libs/core/server/testing`) / API e2e (endpoints, error paths, upload, rate
+harness trong `libs/core/server/platform/testing`) / API e2e (endpoints, error paths, upload, rate
 limit, idempotency, CSRF, api-key) / Web e2e (Playwright: auth, org, CRUD,
 realtime, vi/en) / Contract (drift) / Isolation (negative 2 lớp + **query
 tenant-scoped trần không context phải bị extension THROW — không được trả

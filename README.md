@@ -3,9 +3,16 @@
 Full-stack platform monorepo: **NestJS (Fastify)** + **Next.js (App Router)** on **Nx**,
 built to be reused across products (CRM, ERP, HRM, CMS, AI, e-commerce admin…).
 
-- Architecture spec: [`docs/superpowers/specs/`](docs/superpowers/specs)
-- Upgrade paths for anything deliberately kept light: [`docs/upgrades.md`](docs/upgrades.md)
-- Decision records: [`docs/adr/`](docs/adr)
+**Start here**
+
+| Document | Answers |
+|---|---|
+| [`docs/conventions.md`](docs/conventions.md) | where new code goes, why library imports end in `.js`, how to create and move a library |
+| [`docs/contracts/`](docs/contracts) | the promises the code keeps: errors, pagination, idempotency, transactions, tenancy, authorization, migrations, testing, the API client |
+| [`docs/adr/`](docs/adr) | decisions taken, with the evidence that settled them |
+| [`docs/upgrades.md`](docs/upgrades.md) | everything deliberately kept light, with the signal that says it is time |
+| [`docs/ops/`](docs/ops) | running it: database roles, secrets, checks |
+| [`docs/superpowers/specs/`](docs/superpowers/specs) | the full architecture design |
 
 ## Getting started
 
@@ -49,14 +56,27 @@ Projects are named after their **scope**, never after a role or a framework, so 
 second product or a second frontend never forces a rename.
 
 ```
-apps/core/api        core-api      NestJS + Fastify
-apps/core/web        core-web      Next.js App Router + Tailwind
-apps/core/api-e2e    core-api-e2e  API tests against the built bundle
-apps/core/web-e2e    core-web-e2e  Playwright
-libs/shared/ui       shared-ui     design system
-libs/shared/i18n     shared-i18n   message catalogs
-libs/shared/api-client-core        generated from openapi.json (do not edit)
+apps/core/api                          core-api        NestJS + Fastify
+apps/core/web                          core-web        Next.js App Router + Tailwind
+apps/core/api-e2e                      core-api-e2e    API tests against the built bundle
+apps/core/web-e2e                      core-web-e2e    Playwright
+
+libs/core/server/platform/core         config, logging, errors, rate limiting,
+                                       idempotency, pagination, request context
+libs/core/server/platform/data-access-db   Prisma, the transaction seam, RLS helpers
+libs/core/server/platform/authz        the permission facade
+libs/core/server/platform/testing      Testcontainers harness and factories
+libs/core/server/feature/auth          sessions, organizations, 2FA, API keys
+
+libs/shared/ui                         design system
+libs/shared/i18n                       message catalogs
+libs/shared/api-client-core            generated from openapi.json (do not edit)
 ```
+
+Server libraries sit in two layers. `platform/` is infrastructure any feature
+may depend on; `feature/` holds business capabilities, which may not import
+each other. The folders make the dependency rule visible; ESLint is what
+enforces it.
 
 ## Adding a UI component
 

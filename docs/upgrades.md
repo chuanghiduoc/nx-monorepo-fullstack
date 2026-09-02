@@ -360,9 +360,23 @@ These are deliberate and small, but they are simplifications and so belong here.
 
 ### Organization roles are declared in the app, not generated from the registry
 
-- **Today:** `apps/core/api/src/app/auth/access-control.ts` lists the permission
+- **Today:** `libs/core/server/feature/auth/src/lib/access-control.ts` lists the permission
   statements by hand. Phase 3 Task 5 generates them from the `ActionRegistry`,
   so the permissions better-auth enforces and the actions the authz facade
   knows about cannot drift.
 - **Signal:** Task 5 lands.
 - **Steps:** export the statements from the registry and import them here.
+
+### The tenant-scoped reference feature is `notes`, not `users`
+
+- **Today:** membership lives in the auth library's own `member` table, which
+  its organization plugin owns together with the hooks and access control that
+  guard it. A second write path around the plugin would bypass those, and an
+  optimistic-concurrency column there would be ignored by every plugin write.
+  The reference feature therefore CRUDs a tenant-owned table of its own.
+- **Signal:** a product needs a member list, or a field on membership that the
+  plugin does not expose.
+- **Steps:** extend through the plugin's hooks and `additionalFields`, never a
+  second table. If that proves insufficient, a `feature/users` library owns the
+  extra data keyed by member id, and membership itself still changes only
+  through the plugin.

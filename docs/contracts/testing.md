@@ -63,5 +63,5 @@ graph acyclic while the data-access library's own tests use the harness.
 
 ## Used by
 
-- `libs/core/server/data-access-db/src/lib/{prisma.service,idempotency.store,migrations}.spec.ts`
+- `libs/core/server/platform/data-access-db/src/lib/{prisma.service,idempotency.store,migrations}.spec.ts`
 - `apps/core/api/src/app/demo-items/demo-items.service.spec.ts`

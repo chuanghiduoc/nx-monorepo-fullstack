@@ -4,7 +4,7 @@
 
 **Goal:** Turn `core-api` from a scaffold into a service with a real contract: Prisma on PostgreSQL 18 with UUIDv7, validated config, structured logging, RFC 9457 errors, rate limiting, durable idempotency, a generated type-safe client consumed by `core-web`, and a migration workflow that can be rolled back.
 
-**Architecture:** Everything that more than one feature will need lands in `libs/core/server/core` (platform infrastructure), data access is confined to `libs/core/server/data-access-db`, and the OpenAPI document is a build artifact that drives client generation — never hand-written.
+**Architecture:** Everything that more than one feature will need lands in `libs/core/server/platform/core` (platform infrastructure), data access is confined to `libs/core/server/platform/data-access-db`, and the OpenAPI document is a build artifact that drives client generation — never hand-written.
 
 **Tech Stack:** Prisma 7, PostgreSQL 18, Zod + nestjs-zod, `@nestjs/swagger`, `@hey-api/openapi-ts`, nestjs-pino, `@nestjs/throttler`, `@fastify/helmet`, Scalar, Vitest + Testcontainers.
 
@@ -74,10 +74,10 @@ git add -A && git commit -m "docs(adr): record better-auth on fastify integratio
 ### Task 2: data-access-db library with Prisma 7
 
 **Files:**
-- Create: `libs/core/server/data-access-db/**` (generator)
-- Create: `libs/core/server/data-access-db/prisma/schema.prisma`
-- Create: `libs/core/server/data-access-db/src/lib/prisma.service.ts`
-- Test: `libs/core/server/data-access-db/src/lib/prisma.service.spec.ts`
+- Create: `libs/core/server/platform/data-access-db/**` (generator)
+- Create: `libs/core/server/platform/data-access-db/prisma/schema.prisma`
+- Create: `libs/core/server/platform/data-access-db/src/lib/prisma.service.ts`
+- Test: `libs/core/server/platform/data-access-db/src/lib/prisma.service.spec.ts`
 
 **Interfaces:**
 - Produces: `PrismaService` (a `PrismaClient` subclass with lifecycle hooks) exported from `@org/core-server-data-access-db`; the Prisma schema location for all later models.
@@ -160,9 +160,9 @@ git add -A && git commit -m "feat(data-access-db): prisma 7 on postgres 18 with 
 ### Task 3: core library — validated configuration
 
 **Files:**
-- Create: `libs/core/server/core/**` (generator)
-- Create: `libs/core/server/core/src/lib/config/env.schema.ts`, `config.module.ts`
-- Test: `libs/core/server/core/src/lib/config/env.schema.spec.ts`
+- Create: `libs/core/server/platform/core/**` (generator)
+- Create: `libs/core/server/platform/core/src/lib/config/env.schema.ts`, `config.module.ts`
+- Test: `libs/core/server/platform/core/src/lib/config/env.schema.spec.ts`
 
 **Interfaces:**
 - Produces: `AppConfigModule` (global) and a typed `AppConfig` read from `@org/core-server-core`. Later tasks read `DATABASE_URL`, `REDIS_CRITICAL_URL`, `REDIS_CACHE_URL` through it, never `process.env` directly.
@@ -228,7 +228,7 @@ git add -A && git commit -m "feat(core): fail-fast environment validation with z
 ### Task 4: Structured logging with request ids
 
 **Files:**
-- Modify: `libs/core/server/core/src/lib/logging/*`
+- Modify: `libs/core/server/platform/core/src/lib/logging/*`
 - Modify: `apps/core/api/src/main.ts`, `app.module.ts`
 
 - [ ] **Step 1: Install**
@@ -261,7 +261,7 @@ Expected: the header is present, and the process log line for that request is JS
 ### Task 5: RFC 9457 problem details
 
 **Files:**
-- Create: `libs/core/server/core/src/lib/errors/problem-details.filter.ts`, `problem-details.ts`
+- Create: `libs/core/server/platform/core/src/lib/errors/problem-details.filter.ts`, `problem-details.ts`
 - Test: `.../problem-details.filter.spec.ts`
 - Create: `docs/contracts/problem-details.md` (replaces the scaffold)
 
@@ -286,7 +286,7 @@ Cover: a `NotFoundException` becomes `application/problem+json` with `status: 40
 
 **Files:**
 - Modify: `apps/core/api/src/main.ts`
-- Create: `libs/core/server/core/src/lib/security/origin-check.guard.ts` + spec
+- Create: `libs/core/server/platform/core/src/lib/security/origin-check.guard.ts` + spec
 
 - [ ] **Step 1: Install** `pnpm --filter core-api add @fastify/helmet`
 
@@ -301,7 +301,7 @@ Cover: a `NotFoundException` becomes `application/problem+json` with `status: 40
 ### Task 7: Rate limiting on Redis
 
 **Files:**
-- Modify: `libs/core/server/core` (throttler module wiring)
+- Modify: `libs/core/server/platform/core` (throttler module wiring)
 - Test: integration test with a real Redis container
 
 - [ ] **Step 1: Install** `@nestjs/throttler` and the Redis storage package that its current docs recommend (check the docs; the package name has changed across versions).
@@ -318,7 +318,7 @@ Cover: a `NotFoundException` becomes `application/problem+json` with `status: 40
 
 **Files:**
 - Create: migration for `idempotency_records`
-- Create: `libs/core/server/core/src/lib/idempotency/*` + specs
+- Create: `libs/core/server/platform/core/src/lib/idempotency/*` + specs
 - Create: `docs/contracts/idempotency.md` (replaces scaffold)
 
 **Interfaces:**
@@ -391,7 +391,7 @@ Expected: the demo paths are listed and the `ProblemDetails` schema is present i
 ### Task 11: Cursor pagination helpers
 
 **Files:**
-- Create: `libs/core/server/core/src/lib/pagination/*` + specs
+- Create: `libs/core/server/platform/core/src/lib/pagination/*` + specs
 
 - [ ] **Step 1: Failing unit tests** — `encodeCursor`/`decodeCursor` round-trip a `{ createdAt, id, filterHash, direction }` payload; the encoded value is opaque (base64url, not readable JSON); decoding a cursor whose `filterHash` does not match the current query throws the error that maps to 400; an empty page returns `nextCursor: null`.
 
@@ -406,7 +406,7 @@ Expected: the demo paths are listed and the `ProblemDetails` schema is present i
 ### Task 12: Migration workflow — rollback, drift check, CI
 
 **Files:**
-- Create: `libs/core/server/data-access-db/migrations-rollback/*`
+- Create: `libs/core/server/platform/data-access-db/migrations-rollback/*`
 - Modify: `.github/workflows/ci.yml`
 - Modify: `docs/upgrades.md` if anything is deliberately deferred
 
@@ -424,7 +424,7 @@ Expected: the demo paths are listed and the `ProblemDetails` schema is present i
 
 **Files:**
 - Modify: `apps/core/api` (Scalar route)
-- Create: `libs/core/server/testing/**` (generator) — factories and the Testcontainers harness
+- Create: `libs/core/server/platform/testing/**` (generator) — factories and the Testcontainers harness
 
 - [ ] **Step 1: Serve Scalar from `openapi.json`** at `/docs`, enabled by env (`DOCS_ENABLED`), off by default in production per spec §6.18.
 
@@ -439,7 +439,7 @@ Expected: the demo paths are listed and the `ProblemDetails` schema is present i
 ### Task 14: Transaction ownership — `withTenantTransaction` / `withSystemTransaction`
 
 **Files:**
-- Create: `libs/core/server/data-access-db/src/lib/transaction/*` + specs
+- Create: `libs/core/server/platform/data-access-db/src/lib/transaction/*` + specs
 
 **Interfaces:**
 - Produces: the only sanctioned way to open a transaction. Phase 3 layers RLS GUCs on top of exactly this seam, so it must exist before tenancy work starts.

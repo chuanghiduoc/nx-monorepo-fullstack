@@ -4,7 +4,7 @@ Every error this service returns is an `application/problem+json` document. One
 shape means a client writes one error handler, and a log search finds every
 failure the same way.
 
-Implemented by `ProblemDetailsFilter` in `libs/core/server/core` — the only
+Implemented by `ProblemDetailsFilter` in `libs/core/server/platform/core` — the only
 place that formats an error response.
 
 ## Document shape
@@ -85,7 +85,7 @@ appears.
 
 ## Covered by
 
-- `libs/core/server/core/src/lib/errors/problem-details.spec.ts` — mapping,
+- `libs/core/server/platform/core/src/lib/errors/problem-details.spec.ts` — mapping,
   Zod issues, and the rule that internal messages never leak.
 - `apps/core/api-e2e/src/api.e2e-spec.ts` — the real response: media type,
   members, and `traceId` matching the response header.

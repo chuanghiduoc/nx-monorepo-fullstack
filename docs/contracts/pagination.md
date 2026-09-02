@@ -3,7 +3,7 @@
 Lists return `{ items, nextCursor }`. `nextCursor` is `null` on the last page —
 there is no separate `hasMore` flag to disagree with it.
 
-Implemented by `libs/core/server/core/src/lib/pagination/cursor.ts`; the demo
+Implemented by `libs/core/server/platform/core/src/lib/pagination/cursor.ts`; the demo
 list endpoint is the reference use.
 
 ## Using it
@@ -71,7 +71,7 @@ reproduced against a real database before the column type was changed.
 
 ## Covered by
 
-- `libs/core/server/core/src/lib/pagination/cursor.spec.ts` — round trip,
+- `libs/core/server/platform/core/src/lib/pagination/cursor.spec.ts` — round trip,
   opacity, every malformed shape, filter mismatch, size cap, limit rejection.
 - `apps/core/api/src/app/demo-items/demo-items.service.spec.ts` — against a real
   PostgreSQL 18: pages through more rows than one page holds without repeating
