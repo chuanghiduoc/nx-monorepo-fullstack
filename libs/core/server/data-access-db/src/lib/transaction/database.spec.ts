@@ -143,12 +143,15 @@ describe('Database', () => {
       expect(() => db.system()).toThrow(/no system transaction/i);
     });
 
-    it('do not hand out the wrong kind of client', async () => {
+    it('do not hand out the wrong kind of client, and say which is active', async () => {
+      // The message matters: "no tenant transaction" while a system one is
+      // open sends a reader looking for a missing wrapper instead of the
+      // wrong one.
       await db.withSystemTransaction(async () => {
-        expect(() => db.tenant()).toThrow(/no tenant transaction/i);
+        expect(() => db.tenant()).toThrow(/system transaction is active/i);
       });
       await db.withTenantTransaction(org, async () => {
-        expect(() => db.system()).toThrow(/no system transaction/i);
+        expect(() => db.system()).toThrow(/tenant transaction is active/i);
       });
     });
   });

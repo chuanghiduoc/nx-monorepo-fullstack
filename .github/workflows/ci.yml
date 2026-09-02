@@ -56,6 +56,10 @@ jobs:
         run: |
           pnpm exec nx run core-api:openapi
           pnpm exec nx run shared-api-client-core:generate
+          # --intent-to-add first: `git diff` alone ignores untracked files, so
+          # a newly emitted file (new operation, new plugin output) would slip
+          # through the check that exists to catch exactly that.
+          git add --intent-to-add -- apps/core/api/openapi.json libs/shared/api-client-core/src/generated
           git diff --exit-code -- apps/core/api/openapi.json libs/shared/api-client-core/src/generated
 
       # The atomized `test-ci` / `e2e-ci` targets split suites per file, but Nx

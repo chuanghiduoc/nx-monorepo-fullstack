@@ -3,8 +3,9 @@ import { demoItemsControllerList } from '@workspace/shared-api-client-core';
 /**
  * Renders through the generated client rather than a hand-written fetch.
  *
- * That is what makes the contract real: rename a field in the API's Zod DTO and
- * this page stops compiling, in the same command that builds it.
+ * That is what makes the contract real: rename a field in the API's Zod DTO,
+ * regenerate the client, and this page stops compiling. CI regenerates on
+ * every run, so the break cannot be postponed (docs/contracts/api-client.md).
  */
 export default async function DemoItemsPage() {
   const { data, error } = await demoItemsControllerList();

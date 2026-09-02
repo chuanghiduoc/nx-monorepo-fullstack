@@ -78,9 +78,9 @@ one now.
 - `@hey-api/openapi-ts` is pinned to an exact version. Generated output changes
   between minor releases, and a floating range would turn an unrelated install
   into a drift-check failure.
-- `@hey-api/client-fetch` is a devDependency: the generator copies the client
-  into `src/generated` (`bundle: true`), so nothing imports the package at
-  runtime.
+- The fetch client is copied into `src/generated/client` by the generator, so
+  no `@hey-api/client-fetch` package is imported at runtime — the plugin name
+  in `openapi-ts.config.ts` is what selects it.
 - The `@tanstack/react-query` plugin emits `queryOptions`, not hooks. The caller
   decides between `useQuery`, prefetching and server-side fetching — which
   matters because pages render on the server by default.

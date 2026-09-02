@@ -11,6 +11,11 @@ export default [
           ignoredFiles: [
             '{projectRoot}/eslint.config.{js,cjs,mjs,ts,cts,mts}',
             '{projectRoot}/vitest.config.{js,ts,mjs,mts}',
+            // Read by the Prisma CLI, never bundled: its imports (prisma,
+            // dotenv) are development tooling, not runtime dependencies.
+            // It is a build input so a config change invalidates the cache.
+            '{projectRoot}/prisma7.config.ts',
+            '{projectRoot}/tools/**/*.ts',
           ],
           // Runtime requirements that no source file names directly: the
           // generated Prisma client loads @prisma/client internals, and pg is

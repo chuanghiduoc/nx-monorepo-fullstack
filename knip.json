@@ -42,9 +42,6 @@
     "libs/shared/api-client-core": {
       "entry": [
         "src/generated/**/*.ts"
-      ],
-      "ignoreDependencies": [
-        "@hey-api/client-fetch"
       ]
     },
     "libs/core/server/data-access-db": {

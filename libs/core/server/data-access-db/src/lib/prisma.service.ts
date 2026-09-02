@@ -1,4 +1,9 @@
-import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  type OnModuleDestroy,
+  type OnModuleInit,
+} from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PrismaClient } from '../generated/prisma/client.js';
@@ -14,6 +19,8 @@ const ALLOWED_DURING_TRANSACTION = new Set([
   '$on',
   '$transaction',
   'onModuleInit',
+  'onModuleDestroy',
+  'onApplicationShutdown',
   'constructor',
   'then',
   'logger',
@@ -37,7 +44,10 @@ const ALLOWED_DURING_TRANSACTION = new Set([
  * is therefore ours to configure and ours to close.
  */
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
@@ -58,6 +68,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     // instead of a failure on whichever request happens to need it first.
     await this.$connect();
     this.logger.log('Database connection established');
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    // The pg pool is ours to configure and ours to close (Prisma 7 driver
+    // adapters). Without this, `enableShutdownHooks` leaves sockets open and a
+    // rolling deploy holds connections the new instance needs.
+    await this.$disconnect();
   }
 }
 

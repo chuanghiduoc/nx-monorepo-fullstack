@@ -79,7 +79,10 @@ export class Database {
     const active = activeTransaction();
     if (!active || active.context.kind === 'system') {
       throw new Error(
-        'No tenant transaction is active: wrap the call in withTenantTransaction(context, ...)',
+        active
+          ? 'A system transaction is active; tenant-scoped work cannot join it. ' +
+            'Open a withTenantTransaction(context, ...) instead.'
+          : 'No tenant transaction is active: wrap the call in withTenantTransaction(context, ...)',
       );
     }
     return active.client;
@@ -89,13 +92,18 @@ export class Database {
     const active = activeTransaction();
     if (!active || active.context.kind !== 'system') {
       throw new Error(
-        'No system transaction is active: wrap the call in withSystemTransaction(...)',
+        active
+          ? 'A tenant transaction is active; system work cannot join it. ' +
+            'Open a withSystemTransaction(...) instead.'
+          : 'No system transaction is active: wrap the call in withSystemTransaction(...)',
       );
     }
     return active.client;
   }
 
-  private run<T>(
+  // `async` so a caller's `.catch()` sees the nesting error too: a synchronous
+  // throw from here would escape the promise chain.
+  private async run<T>(
     context: TenantContext,
     work: () => Promise<T>,
     options: TransactionOptions,
@@ -111,6 +119,17 @@ export class Database {
             `${describeTenantContext(active.context)}: different tenant context`,
         );
       }
+
+      // Joining cannot change the isolation level of a transaction that has
+      // already begun; silently running at the weaker level would be the kind
+      // of thing nobody notices until an anomaly appears in production.
+      if (options.isolation) {
+        throw new Error(
+          `Cannot request isolation "${options.isolation}" inside a transaction that is already open; ` +
+            'open the outer transaction with that level instead',
+        );
+      }
+
       return work();
     }
 

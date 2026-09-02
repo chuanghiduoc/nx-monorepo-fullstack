@@ -29,16 +29,14 @@ interface SchemaLike {
  * instead. This check is what turns the next occurrence into a build failure
  * with the property named, rather than a wrong contract in production.
  */
-export function assertNoCollapsedNullables(document: {
-  components?: { schemas?: Record<string, unknown> };
-}): void {
+export function assertNoCollapsedNullables(document: unknown): void {
   const offenders: string[] = [];
 
-  for (const [name, schema] of Object.entries(
-    document.components?.schemas ?? {},
-  )) {
-    walk(schema as SchemaLike, name, offenders);
-  }
+  // The whole document, not just `components.schemas`: inline schemas under
+  // `paths`, `additionalProperties`, `prefixItems` and `$defs` are all places
+  // a nullable can appear, and a guard with a blind spot is worse than none
+  // because it reads as coverage.
+  walk(document, '', offenders);
 
   if (offenders.length > 0) {
     throw new Error(
@@ -49,26 +47,23 @@ export function assertNoCollapsedNullables(document: {
   }
 }
 
-function walk(
-  schema: SchemaLike | undefined,
-  path: string,
-  offenders: string[],
-): void {
-  if (!schema || typeof schema !== 'object') {
+function walk(node: unknown, path: string, offenders: string[]): void {
+  if (!node || typeof node !== 'object') {
     return;
   }
 
-  if (schema[EMPTY_TYPE_MARKER] === true && schema.type === 'array') {
-    offenders.push(path);
+  if (Array.isArray(node)) {
+    node.forEach((item, index) => walk(item, `${path}[${index}]`, offenders));
+    return;
   }
 
-  for (const [key, property] of Object.entries(schema.properties ?? {})) {
-    walk(property, `${path}.${key}`, offenders);
+  const schema = node as SchemaLike & Record<string, unknown>;
+
+  if (schema[EMPTY_TYPE_MARKER] === true && schema.type === 'array') {
+    offenders.push(path || '(root)');
   }
-  walk(schema.items, `${path}[]`, offenders);
-  for (const combinator of ['anyOf', 'oneOf', 'allOf'] as const) {
-    schema[combinator]?.forEach((branch, index) =>
-      walk(branch, `${path}.${combinator}[${index}]`, offenders),
-    );
+
+  for (const [key, value] of Object.entries(schema)) {
+    walk(value, path ? `${path}.${key}` : key, offenders);
   }
 }

@@ -74,10 +74,15 @@ describe('encodeCursor / decodeCursor', () => {
     expect(() => decodeCursor(oversized, filterHash)).toThrowError(/cursor/i);
   });
 
-  it('round-trips a backward cursor', () => {
+  it('refuses a backward cursor while no endpoint pages backwards', () => {
     const backward = { ...payload, direction: 'backward' } as const;
 
-    expect(decodeCursor(encodeCursor(backward), filterHash)).toEqual(backward);
+    // Encoding stays possible so the payload shape does not have to change
+    // when the feature arrives; decoding says no rather than quietly handing
+    // back the forward page.
+    expect(() => decodeCursor(encodeCursor(backward), filterHash)).toThrowError(
+      /backwards is not supported/i,
+    );
   });
 });
 

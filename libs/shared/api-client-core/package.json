@@ -20,7 +20,6 @@
     "tslib": "catalog:"
   },
   "devDependencies": {
-    "@hey-api/client-fetch": "catalog:",
     "@hey-api/openapi-ts": "0.99.0"
   }
 }

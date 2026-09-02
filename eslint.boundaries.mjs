@@ -30,14 +30,19 @@ export const depConstraints = [
   {
     sourceTag: 'platform:web',
     onlyDependOnLibsWithTags: ['platform:web', 'platform:shared'],
+    bannedExternalImports: ORM_PACKAGES,
   },
   {
     sourceTag: 'platform:node',
     onlyDependOnLibsWithTags: ['platform:node', 'platform:shared'],
   },
   {
+    // Also banned here: the generated API client is tagged type:data-access
+    // (it is a data-access library for the frontend), which would otherwise
+    // exempt a browser bundle from the ORM ban.
     sourceTag: 'platform:shared',
     onlyDependOnLibsWithTags: ['platform:shared'],
+    bannedExternalImports: ORM_PACKAGES,
   },
 
   // type: a feature may not import another feature — cross-feature

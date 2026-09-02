@@ -148,6 +148,105 @@ describe('IdempotencyStore', () => {
     await expect(stale).rejects.toThrow(/fence/i);
   });
 
+  it('stores a response with no body', async () => {
+    // Bodies over the cap are stored as null. Prisma's Json? input has no
+    // member for a plain null, so this fails at runtime unless the store maps
+    // it to DbNull — and the failure would leave the key stuck in PROCESSING.
+    const claim = await store.claim({ ...scope, route, key, requestHash });
+    if (claim.outcome !== 'claimed') throw new Error('expected a claim');
+
+    await store.complete({
+      ...scope,
+      route,
+      key,
+      fenceToken: claim.fenceToken,
+      responseStatus: 204,
+      responseBody: null,
+    });
+
+    const replay = await store.claim({ ...scope, route, key, requestHash });
+
+    expect(replay).toEqual({
+      outcome: 'replay',
+      responseStatus: 204,
+      responseBody: null,
+    });
+  });
+
+  it('releases the key when the attempt failed, so a retry may run the work', async () => {
+    const first = await store.claim({ ...scope, route, key, requestHash });
+    if (first.outcome !== 'claimed') throw new Error('expected a claim');
+
+    await store.fail({
+      ...scope,
+      route,
+      key,
+      fenceToken: first.fenceToken,
+      responseStatus: 500,
+    });
+
+    // Without fail(), this would be 'in-progress' for the whole lease.
+    const retry = await store.claim({ ...scope, route, key, requestHash });
+
+    expect(retry.outcome).toBe('claimed');
+  });
+
+  it('does not let a late failure overwrite a stored response', async () => {
+    const claim = await store.claim({ ...scope, route, key, requestHash });
+    if (claim.outcome !== 'claimed') throw new Error('expected a claim');
+
+    await store.complete({
+      ...scope,
+      route,
+      key,
+      fenceToken: claim.fenceToken,
+      responseStatus: 201,
+      responseBody: { id: 'kept' },
+    });
+
+    // Same fence token, so only the state guard stands between a stored
+    // response and losing it.
+    await store.fail({
+      ...scope,
+      route,
+      key,
+      fenceToken: claim.fenceToken,
+      responseStatus: 500,
+    });
+
+    const replay = await store.claim({ ...scope, route, key, requestHash });
+
+    expect(replay).toEqual({
+      outcome: 'replay',
+      responseStatus: 201,
+      responseBody: { id: 'kept' },
+    });
+  });
+
+  it('refuses a completion after the attempt was recorded as failed', async () => {
+    const claim = await store.claim({ ...scope, route, key, requestHash });
+    if (claim.outcome !== 'claimed') throw new Error('expected a claim');
+
+    await store.fail({
+      ...scope,
+      route,
+      key,
+      fenceToken: claim.fenceToken,
+      responseStatus: 500,
+    });
+
+    const late = store.complete({
+      ...scope,
+      route,
+      key,
+      fenceToken: claim.fenceToken,
+      responseStatus: 201,
+      responseBody: { id: 'too-late' },
+    });
+
+    await expect(late).rejects.toThrow(/fence|stale/i);
+  });
+
   it('only one of many simultaneous claims wins', async () => {
     const attempts = await Promise.all(
       Array.from({ length: 8 }, () =>

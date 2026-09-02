@@ -31,6 +31,8 @@ export interface ClaimInput {
   requestHash: string;
   /** Negative values are useful in tests to simulate an expired lease. */
   leaseMs?: number;
+  /** Set by claim() itself; the insert race is retried exactly once. */
+  isRetry?: boolean;
 }
 
 export interface CompleteInput {
@@ -86,9 +88,14 @@ export class IdempotencyStore {
     } catch (error) {
       // Lost the insert race: another request claimed the key between our read
       // and our write. The failed INSERT aborted that transaction, so the
-      // second look runs in a fresh one — and finds the record this time.
-      if (isUniqueViolation(error)) {
-        return this.claim(input);
+      // second look runs in a fresh one — and finds the committed record.
+      //
+      // Exactly one retry: PostgreSQL only raises P2002 after the competing
+      // INSERT has committed, so the row is there on the next read. A second
+      // violation would mean something else is wrong, and looping on it would
+      // spin forever rather than say so.
+      if (isUniqueViolation(error) && !input.isRetry) {
+        return this.claim({ ...input, isRetry: true });
       }
       throw error;
     }
@@ -100,11 +107,24 @@ export class IdempotencyStore {
       const record = await records.findUnique({ where: this.identity(input) });
 
       const updated = await records.updateMany({
-        where: { id: record?.id ?? '', fenceToken: input.fenceToken },
+        // `state` is part of the condition so a late failure cannot overwrite
+        // a stored response, and a second completion cannot overwrite the
+        // first: whichever attempt leaves PROCESSING first wins.
+        where: {
+          id: record?.id ?? '',
+          fenceToken: input.fenceToken,
+          state: STATE.processing,
+        },
         data: {
           state: STATE.completed,
           responseStatus: input.responseStatus,
-          responseBody: input.responseBody as never,
+          // Prisma's Json? input type has no member for a plain `null`;
+          // DbNull is how a JSON column is set to SQL NULL. A cast here would
+          // only hide the runtime rejection.
+          responseBody:
+            input.responseBody === null || input.responseBody === undefined
+              ? Prisma.DbNull
+              : (input.responseBody as Prisma.InputJsonValue),
           completedAt: new Date(),
         },
       });
@@ -117,13 +137,22 @@ export class IdempotencyStore {
     });
   }
 
+  /**
+   * Releases a key after a failed attempt so the next retry may run the work
+   * rather than being told for the length of the lease that it is still in
+   * progress.
+   */
   fail(input: Omit<CompleteInput, 'responseBody'>): Promise<void> {
     return this.db.withSystemTransaction(async () => {
       const records = this.db.system().idempotencyRecord;
       const record = await records.findUnique({ where: this.identity(input) });
 
       await records.updateMany({
-        where: { id: record?.id ?? '', fenceToken: input.fenceToken },
+        where: {
+          id: record?.id ?? '',
+          fenceToken: input.fenceToken,
+          state: STATE.processing,
+        },
         data: {
           state: STATE.failed,
           responseStatus: input.responseStatus,
@@ -168,12 +197,16 @@ export class IdempotencyStore {
       };
     }
 
-    if (existing.leaseUntil > new Date()) {
+    // A recorded failure releases the key immediately: the work did not
+    // happen, so the retry the client is about to send must be allowed to run
+    // rather than be told for the rest of the lease that it is in progress.
+    if (existing.state !== STATE.failed && existing.leaseUntil > new Date()) {
       return { outcome: 'in-progress' };
     }
 
-    // The lease expired. Take it over, but only if nobody else did first — the
-    // conditional update is what makes this safe under concurrency.
+    // Either the attempt failed or its lease expired. Take the key over, but
+    // only if nobody else did first — the conditional update is what makes
+    // this safe under concurrency.
     const reclaimed = await records.updateMany({
       where: { id: existing.id, fenceToken: existing.fenceToken },
       data: {

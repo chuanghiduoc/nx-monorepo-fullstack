@@ -20,6 +20,7 @@ GET /api/v1/demo-items?limit=20&cursor=eyJkaXJlY3Rpb24i...
 | `limit` outside 1–100, or not an integer | `400` — never silently clamped: a caller asking for 10 000 rows and receiving 100 believes it has the whole set |
 | A cursor that was altered, truncated, or made up | `400 The cursor is not valid.` — deliberately without saying why |
 | A cursor produced under different filters or sorting | `400` naming the cause: start again without a cursor |
+| A cursor asking to page backwards | `400` — the payload carries `direction`, but no endpoint pages backwards yet, and returning the forward page would be a wrong answer with a 200 |
 
 ## Keyset, not offset
 

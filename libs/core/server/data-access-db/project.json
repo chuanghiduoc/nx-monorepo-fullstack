@@ -42,6 +42,12 @@
       "dependsOn": [
         "prisma-generate",
         "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production",
+        "{projectRoot}/prisma/schema.prisma",
+        "{projectRoot}/prisma7.config.ts"
       ]
     },
     "test": {

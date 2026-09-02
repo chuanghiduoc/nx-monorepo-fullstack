@@ -249,7 +249,9 @@ These are deliberate and small, but they are simplifications and so belong here.
 
 - **Today:** `core-server-data-access-db:prisma-generate` runs `prisma generate`
   with the schema as its input; `typecheck`, `build`, `test` and `lint` depend
-  on it, so the client can never lag the schema.
+  on it. `build` also lists `schema.prisma` among its own inputs: the generated
+  client is gitignored, so Nx never hashes it, and without that line a schema
+  change was a cache hit that restored a stale `dist`.
 - **Signal:** none expected. If Prisma ships an official Nx plugin, switch.
 
 ### `CREATE INDEX CONCURRENTLY` is not yet automated
@@ -300,3 +302,27 @@ These are deliberate and small, but they are simplifications and so belong here.
   `@nestjs/swagger` stops reading JSON-Schema type arrays as `[Type]`.
 - **Steps:** delete the guard and its spec; keep the constraints, they were
   correct anyway.
+
+### Paging backwards
+
+- **Today:** the cursor payload carries `direction`, `encodeCursor` accepts
+  `backward`, and `decodeCursor` rejects it with 400. No endpoint implements
+  reverse keyset paging; returning the forward page instead would be a wrong
+  answer with a 200.
+- **Signal:** a screen needs a "previous page" that is not simply the browser's
+  history — infinite scroll upwards, or a jump into the middle of a list.
+- **Steps:** flip the comparison (`>` instead of `<`) and the `orderBy`, then
+  reverse the rows before returning them; drop the guard in `decodeCursor` and
+  the row in `docs/contracts/pagination.md`.
+
+### The e2e suite clears rate-limit state before it runs
+
+- **Today:** `apps/core/api-e2e/src/global-setup.ts` deletes the throttler's
+  `:hits` and `:blocked` keys from redis-critical before starting the server.
+  Counters outlive the process under test, so a second run inside the same
+  window began already blocked — and the readiness probe reported the server
+  as never having started.
+- **Signal:** the suite gets its own Redis (Testcontainers, as PostgreSQL
+  already does) or the throttler gets a per-run key prefix.
+- **Steps:** start a Redis container in the harness and point
+  `REDIS_CRITICAL_URL` at it; delete the clearing step.

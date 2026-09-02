@@ -1,43 +1,54 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   UnprocessableEntityException,
   type CallHandler,
   type ExecutionContext,
   type NestInterceptor,
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { from, tap, type Observable } from 'rxjs';
+import { catchError, concatMap, from, map, throwError, type Observable } from 'rxjs';
 
 import { fingerprintRequest, normaliseRoute } from './request-fingerprint.js';
 
 export const IDEMPOTENCY_KEY_HEADER = 'idempotency-key';
 const RETRY_AFTER_SECONDS = 5;
 const MAX_STORED_BODY_BYTES = 64 * 1024;
+const INTERNAL_ERROR_STATUS = 500;
+
+interface IdempotencyIdentity {
+  scopeType: string;
+  scopeId: string;
+  route: string;
+  key: string;
+}
 
 /** The subset of the store this interceptor needs; keeps the lib ORM-agnostic. */
 export interface IdempotencyBackend {
-  claim(input: {
-    scopeType: string;
-    scopeId: string;
-    route: string;
-    key: string;
-    requestHash: string;
-  }): Promise<
+  claim(
+    input: IdempotencyIdentity & { requestHash: string },
+  ): Promise<
     | { outcome: 'claimed'; fenceToken: number }
     | { outcome: 'in-progress' }
     | { outcome: 'replay'; responseStatus: number; responseBody: unknown }
     | { outcome: 'request-mismatch' }
   >;
-  complete(input: {
-    scopeType: string;
-    scopeId: string;
-    route: string;
-    key: string;
-    fenceToken: number;
-    responseStatus: number;
-    responseBody: unknown;
-  }): Promise<void>;
+  complete(
+    input: IdempotencyIdentity & {
+      fenceToken: number;
+      responseStatus: number;
+      responseBody: unknown;
+    },
+  ): Promise<void>;
+  /**
+   * Releases the key after a failed attempt. Without it the record sits in
+   * PROCESSING until the lease expires, and every retry in that window is
+   * answered with 409 instead of being allowed to try again.
+   */
+  fail(
+    input: IdempotencyIdentity & { fenceToken: number; responseStatus: number },
+  ): Promise<void>;
 }
 
 interface IdempotentRequest extends FastifyRequest {
@@ -56,6 +67,7 @@ interface IdempotentRequest extends FastifyRequest {
  */
 @Injectable()
 export class IdempotencyInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(IdempotencyInterceptor.name);
   private readonly store: IdempotencyBackend;
 
   constructor(store: IdempotencyBackend) {
@@ -108,17 +120,52 @@ export class IdempotencyInterceptor implements NestInterceptor {
     const { fenceToken } = claim;
 
     return next.handle().pipe(
-      tap({
-        next: async (body: unknown) => {
-          const status = reply.statusCode;
-          await this.store.complete({
+      // concatMap, not tap: the response must not be sent until the record is
+      // COMPLETED, otherwise an immediate retry races the commit and gets 409
+      // instead of the stored reply. tap would also drop the promise, turning
+      // any rejection into an unhandled rejection — which on Node 24 ends the
+      // process.
+      concatMap((body: unknown) =>
+        from(
+          this.store.complete({
             ...identity,
             fenceToken,
-            responseStatus: status,
+            responseStatus: reply.statusCode,
             responseBody: this.storable(body),
-          });
-        },
-      }),
+          }),
+        ).pipe(
+          catchError((error: unknown) => {
+            // The work succeeded and the client is owed its answer. A stale
+            // fence token means another attempt legitimately took the key over
+            // (its lease had expired) — losing the stored copy is the correct
+            // outcome, not a failed request.
+            this.logger.warn(
+              `Could not record the idempotent result for ${identity.route}: ${describe(error)}`,
+            );
+            return from([undefined]);
+          }),
+          map(() => body),
+        ),
+      ),
+      catchError((error: unknown) =>
+        from(
+          this.store.fail({
+            ...identity,
+            fenceToken,
+            responseStatus: statusOf(error),
+          }),
+        ).pipe(
+          catchError((releaseError: unknown) => {
+            this.logger.warn(
+              `Could not release the idempotency key for ${identity.route}: ${describe(releaseError)}`,
+            );
+            return from([undefined]);
+          }),
+          // The original failure is what the client must see; releasing the
+          // key is bookkeeping and never replaces it.
+          concatMap(() => throwError(() => error)),
+        ),
+      ),
     );
   }
 
@@ -155,4 +202,14 @@ export class IdempotencyInterceptor implements NestInterceptor {
     const value = request.headers[name];
     return typeof value === 'string' && value.length > 0 ? value : undefined;
   }
+}
+
+function statusOf(error: unknown): number {
+  const status = (error as { getStatus?: () => number })?.getStatus?.();
+
+  return typeof status === 'number' ? status : INTERNAL_ERROR_STATUS;
+}
+
+function describe(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

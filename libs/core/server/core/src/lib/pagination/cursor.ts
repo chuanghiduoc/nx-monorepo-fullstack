@@ -38,7 +38,10 @@ export type CursorPayload = z.infer<typeof cursorSchema>;
  * the way back in.
  */
 export function hashPaginationFilter(filter: unknown): string {
-  return createHash('sha256').update(canonicalJson(filter)).digest('hex').slice(0, 16);
+  return createHash('sha256')
+    .update(canonicalJson(filter))
+    .digest('hex')
+    .slice(0, 16);
 }
 
 /**
@@ -51,8 +54,15 @@ export function encodeCursor(payload: CursorPayload): string {
   return Buffer.from(canonicalJson(payload), 'utf8').toString('base64url');
 }
 
-export function decodeCursor(cursor: string, expectedFilterHash: string): CursorPayload {
-  if (cursor.length === 0 || cursor.length > CURSOR_MAX_LENGTH || !BASE64URL.test(cursor)) {
+export function decodeCursor(
+  cursor: string,
+  expectedFilterHash: string,
+): CursorPayload {
+  if (
+    cursor.length === 0 ||
+    cursor.length > CURSOR_MAX_LENGTH ||
+    !BASE64URL.test(cursor)
+  ) {
     throw invalidCursor();
   }
 
@@ -76,6 +86,14 @@ export function decodeCursor(cursor: string, expectedFilterHash: string): Cursor
     );
   }
 
+  // Backward paging is part of the payload shape but no endpoint implements
+  // it. Accepting the cursor and then returning the forward page would give a
+  // caller the wrong rows with a 200; saying so is the only honest answer
+  // until the feature exists (see docs/upgrades.md).
+  if (result.data.direction === 'backward') {
+    throw new BadRequestException('Paging backwards is not supported yet.');
+  }
+
   return result.data;
 }
 
@@ -88,7 +106,11 @@ export function resolvePageLimit(requested?: number): number {
     return DEFAULT_PAGE_LIMIT;
   }
 
-  if (!Number.isInteger(requested) || requested < 1 || requested > MAX_PAGE_LIMIT) {
+  if (
+    !Number.isInteger(requested) ||
+    requested < 1 ||
+    requested > MAX_PAGE_LIMIT
+  ) {
     throw new BadRequestException(
       `limit must be an integer between 1 and ${MAX_PAGE_LIMIT}.`,
     );

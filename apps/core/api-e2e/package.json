@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
+    "ioredis": "catalog:",
     "vitest": "catalog:"
   }
 }

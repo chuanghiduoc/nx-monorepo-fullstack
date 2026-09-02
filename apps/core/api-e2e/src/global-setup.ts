@@ -1,6 +1,8 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { join } from 'node:path';
 
+import { Redis } from 'ioredis';
+
 const API_URL = process.env['API_URL'] ?? 'http://localhost:3000';
 const READY_TIMEOUT_MS = 60_000;
 
@@ -12,6 +14,40 @@ const THROTTLE_TTL_MS = process.env['THROTTLE_TTL_MS'] ?? '30000';
 const POLL_INTERVAL_MS = 250;
 
 let api: ChildProcess | undefined;
+
+/**
+ * Rate-limit counters live in Redis and outlive the process under test, so a
+ * second run inside the same window would start already throttled and every
+ * suite after the rate-limit one would fail. Clearing them here is what makes
+ * the suite repeatable; the alternative — waiting out the window — turns a
+ * 30-second run into a 30-second wait.
+ */
+async function clearRateLimitCounters(): Promise<void> {
+  const url = process.env['REDIS_CRITICAL_URL'] ?? 'redis://localhost:6379';
+  const redis = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 1 });
+
+  try {
+    await redis.connect();
+    // Two kinds of key: the hit counter and the block marker the throttler
+    // writes once a window is exhausted. Clearing only the counter leaves the
+    // block in place, and every request in the next run is answered 429 —
+    // including the readiness probe, which then reports the server as never
+    // having started.
+    const keys = [
+      ...(await redis.keys('*:hits')),
+      ...(await redis.keys('*:blocked')),
+    ];
+    if (keys.length > 0) {
+      await redis.del(...keys);
+    }
+  } catch (error) {
+    // The server will fail to boot for the same reason; let that be the error
+    // the developer reads, not this one.
+    console.warn(`Could not clear rate-limit counters: ${String(error)}`);
+  } finally {
+    redis.disconnect();
+  }
+}
 
 async function waitForApi(): Promise<void> {
   const deadline = Date.now() + READY_TIMEOUT_MS;
@@ -26,7 +62,9 @@ async function waitForApi(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 
-  throw new Error(`core-api did not become ready on ${API_URL} within ${READY_TIMEOUT_MS}ms`);
+  throw new Error(
+    `core-api did not become ready on ${API_URL} within ${READY_TIMEOUT_MS}ms`,
+  );
 }
 
 /**
@@ -38,6 +76,8 @@ async function waitForApi(): Promise<void> {
 export const throttleLimit = Number(THROTTLE_LIMIT);
 
 export async function setup(): Promise<void> {
+  await clearRateLimitCounters();
+
   if (process.env['API_URL']) {
     await waitForApi();
     return;

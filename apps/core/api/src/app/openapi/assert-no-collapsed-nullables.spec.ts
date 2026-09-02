@@ -23,7 +23,7 @@ describe('assertNoCollapsedNullables', () => {
     });
 
     expect(() => assertNoCollapsedNullables(raw)).toThrow(
-      /DemoItemPageDto\.nextCursor/,
+      /components\.schemas\.DemoItemPageDto\.properties\.nextCursor/,
     );
   });
 
@@ -79,7 +79,55 @@ describe('assertNoCollapsedNullables', () => {
     });
 
     expect(() => assertNoCollapsedNullables(raw)).toThrow(
-      /Outer\.list\[\]\.deep, Outer\.either\.anyOf\[0\]\.alt/,
+      /Outer\.properties\.list\.items\.properties\.deep, .*Outer\.properties\.either\.anyOf\[0\]\.properties\.alt/,
+    );
+  });
+
+  it('finds a collapsed nullable in an inline path schema', () => {
+    // components.schemas is not the only place a schema appears: a response
+    // declared inline, a parameter, additionalProperties. A guard with a blind
+    // spot reads as coverage while providing none.
+    const raw = {
+      paths: {
+        '/api/v1/things': {
+          get: {
+            responses: {
+              '200': {
+                content: {
+                  'application/json': {
+                    schema: {
+                      'x-nestjs_zod-empty-type': true,
+                      type: 'array',
+                      items: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    expect(() => assertNoCollapsedNullables(raw)).toThrow(
+      /paths.*things.*get.*responses/,
+    );
+  });
+
+  it('finds one under additionalProperties', () => {
+    const raw = document({
+      Bag: {
+        type: 'object',
+        additionalProperties: {
+          'x-nestjs_zod-empty-type': true,
+          type: 'array',
+          items: { type: 'string' },
+        },
+      },
+    });
+
+    expect(() => assertNoCollapsedNullables(raw)).toThrow(
+      /Bag\.additionalProperties/,
     );
   });
 
