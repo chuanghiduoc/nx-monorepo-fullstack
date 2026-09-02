@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -63,6 +63,18 @@ function main(): void {
     );
 
     const target = join(MIGRATIONS_DIR, name, 'down.sql');
+
+    // Never overwrite. A diff renders a rename as DROP + ADD and cannot
+    // express a REVOKE at all, so the useful down scripts are the ones edited
+    // by hand — and this tool replaced one of them with
+    // "-- This is an empty migration." the first time it was pointed at a
+    // migration that already had one.
+    if (existsSync(target) && !process.argv.includes('--force')) {
+      throw new Error(
+        `${target} already exists. Review it, or pass --force to replace it with the generated skeleton.`,
+      );
+    }
+
     writeFileSync(target, `${header(name)}\n${sql.trimEnd()}\n`);
     console.log(`wrote ${target}`);
   } finally {

@@ -25,6 +25,7 @@ import {
 
 import { AppModule } from './app/app.module';
 import { mountBetterAuth } from './app/auth/auth.handler';
+import { AuthService } from './app/auth/auth.service';
 import { buildOpenApiDocument } from './app/openapi/build-document';
 
 const DEFAULT_PORT = 3000;
@@ -89,7 +90,7 @@ async function bootstrap() {
 
   // better-auth owns /api/auth/* and is mounted on the Fastify instance itself,
   // outside Nest's router (ADR-0002).
-  mountBetterAuth(app);
+  mountBetterAuth(app, app.get(AuthService).instance);
 
   // Interactive docs render the very document the client is generated from.
   // Off in production unless DOCS_ENABLED says otherwise (spec §6.18).

@@ -337,3 +337,32 @@ These are deliberate and small, but they are simplifications and so belong here.
 - **Signal:** a secret manager exists in the deployment.
 - **Steps:** read the password from it in the entrypoint, drop the compose
   init script, and record the rotation procedure in `docs/ops/`.
+
+### The better-auth schema generator lags the library
+
+- **Today:** `@better-auth/cli` is 1.4 while `better-auth` is 1.7, so the
+  generated Prisma schema is missing anything added in between. It cost a 500
+  on every sign-up: 1.7 added `account.issuer`, the generator did not emit it,
+  and Prisma rejected the insert. `auth-schema.spec.ts` now compares the schema
+  against the installed library's own `getAuthTables`, so the next gap is a
+  failing test rather than a broken sign-up.
+- **Signal:** the CLI catches up with the library, or better-auth ships a
+  first-party Prisma generator.
+- **Steps:** regenerate, run the drift spec, and delete whatever hand-written
+  columns it stops flagging.
+
+### API keys are verified server-side only
+
+- **Today:** the plugin's HTTP surface is create/get/list/update/delete. There
+  is no verify endpoint, by design — one would be an oracle for guessing keys.
+  Verification is `auth.api.verifyApiKey`, called by the request hook.
+- **Signal:** none expected.
+
+### Organization roles are declared in the app, not generated from the registry
+
+- **Today:** `apps/core/api/src/app/auth/access-control.ts` lists the permission
+  statements by hand. Phase 3 Task 5 generates them from the `ActionRegistry`,
+  so the permissions better-auth enforces and the actions the authz facade
+  knows about cannot drift.
+- **Signal:** Task 5 lands.
+- **Steps:** export the statements from the registry and import them here.

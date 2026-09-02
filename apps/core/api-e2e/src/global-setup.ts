@@ -106,6 +106,12 @@ export async function setup(): Promise<void> {
         process.env['REDIS_CACHE_URL'] ?? 'redis://localhost:6380',
       THROTTLE_LIMIT: THROTTLE_LIMIT,
       THROTTLE_TTL_MS: THROTTLE_TTL_MS,
+      // Long enough to satisfy the schema; a real deployment reads this from
+      // its secret manager (docs/ops/database-roles.md has the pattern).
+      BETTER_AUTH_SECRET:
+        process.env['BETTER_AUTH_SECRET'] ??
+        'e2e-secret-that-is-at-least-32-characters-long',
+      BETTER_AUTH_URL: process.env['BETTER_AUTH_URL'] ?? API_URL,
     },
   });
 

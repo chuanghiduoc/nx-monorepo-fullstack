@@ -55,6 +55,15 @@ export const envSchema = z.object({
   // rather than defaulted.
   DOCS_ENABLED: z.stringbool().optional(),
 
+  // Signing key for sessions and tokens. No default: a default secret is a
+  // published secret, and better-auth would happily boot with one.
+  BETTER_AUTH_SECRET: z.string().min(32, {
+    message: 'BETTER_AUTH_SECRET must be at least 32 characters',
+  }),
+  // The origin the browser reaches the API on — the edge, not the container.
+  // better-auth derives cookie domains and callback URLs from it.
+  BETTER_AUTH_URL: z.url().default('http://localhost:3000'),
+
   CORS_ORIGINS: z
     .string()
     .default('http://localhost:4200')

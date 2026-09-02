@@ -1,7 +1,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { fromNodeHeaders } from 'better-auth/node';
 
-import { auth } from './auth.config';
+import type { Auth } from './auth.service';
 
 const AUTH_ROUTE = '/api/auth/*';
 const METHODS = ['GET', 'POST'] as const;
@@ -15,7 +15,10 @@ const METHODS = ['GET', 'POST'] as const;
  * wrapper for the one piece of infrastructure everything else authenticates
  * against (ADR-0002).
  */
-export function mountBetterAuth(app: NestFastifyApplication): void {
+export function mountBetterAuth(
+  app: NestFastifyApplication,
+  auth: Auth,
+): void {
   const fastify = app.getHttpAdapter().getInstance();
 
   fastify.route({

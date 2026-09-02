@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 
+import { AuthDatabaseProvider } from './auth/auth-database.js';
 import { DemoItemRepository } from './demo-items/demo-item.repository.js';
 import { IdempotencyStore } from './idempotency.store.js';
 import { PrismaService } from './prisma.service.js';
@@ -14,7 +15,18 @@ import { Database } from './transaction/database.js';
  */
 @Global()
 @Module({
-  providers: [PrismaService, Database, IdempotencyStore, DemoItemRepository],
-  exports: [Database, IdempotencyStore, DemoItemRepository],
+  providers: [
+    PrismaService,
+    Database,
+    IdempotencyStore,
+    DemoItemRepository,
+    AuthDatabaseProvider,
+  ],
+  exports: [
+    Database,
+    IdempotencyStore,
+    DemoItemRepository,
+    AuthDatabaseProvider,
+  ],
 })
 export class DatabaseModule {}

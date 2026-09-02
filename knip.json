@@ -27,11 +27,13 @@
     "apps/core/api": {
       "entry": [
         "src/main.ts",
-        "webpack.config.js"
+        "webpack.config.js",
+        "src/app/auth/access-control.ts"
       ],
       "project": [
         "src/**/*.ts"
-      ]
+      ],
+      "ignoreExportsUsedInFile": true
     },
     "tools/workspace-plugin": {
       "entry": [

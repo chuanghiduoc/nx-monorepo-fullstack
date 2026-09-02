@@ -6,6 +6,7 @@ const validEnv = {
   DATABASE_URL: 'postgresql://user:pass@localhost:5432/app',
   REDIS_CRITICAL_URL: 'redis://localhost:6379',
   REDIS_CACHE_URL: 'redis://localhost:6380',
+  BETTER_AUTH_SECRET: 'a-development-secret-of-at-least-32-chars',
 };
 
 describe('envSchema', () => {
@@ -91,5 +92,24 @@ describe('envSchema', () => {
       'http://localhost:4200',
       'https://app.example.com',
     ]);
+  });
+});
+
+describe('the authentication secret', () => {
+  it('has no default, because a default secret is a published secret', () => {
+    const withoutSecret: Partial<typeof validEnv> = { ...validEnv };
+    delete withoutSecret.BETTER_AUTH_SECRET;
+
+    const result = envSchema.safeParse(withoutSecret);
+
+    expect(result.success).toBe(false);
+    expect(JSON.stringify(result.error?.issues)).toContain('BETTER_AUTH_SECRET');
+  });
+
+  it('refuses a short one, which is a guessable one', () => {
+    const result = envSchema.safeParse({ ...validEnv, BETTER_AUTH_SECRET: 'short' });
+
+    expect(result.success).toBe(false);
+    expect(JSON.stringify(result.error?.issues)).toContain('at least 32');
   });
 });

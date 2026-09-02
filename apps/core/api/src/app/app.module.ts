@@ -7,6 +7,7 @@ import {
 import { DatabaseModule } from '@workspace/core-server-data-access-db';
 
 import { AppController } from './app.controller';
+import { AuthModule } from './auth/auth.module';
 import { DemoItemsModule } from './demo-items/demo-items.module';
 import { AppService } from './app.service';
 
@@ -18,6 +19,7 @@ import { AppService } from './app.service';
     AppLoggerModule,
     AppThrottlerModule,
     DatabaseModule,
+    AuthModule,
     DemoItemsModule,
   ],
   controllers: [AppController],

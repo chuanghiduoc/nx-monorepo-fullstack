@@ -2,6 +2,10 @@
 // goes through Database and the repositories (spec §6.5).
 export { DatabaseModule } from './lib/database.module.js';
 export {
+  AuthDatabaseProvider,
+  type AuthDatabase,
+} from './lib/auth/auth-database.js';
+export {
   Database,
   type IsolationLevel,
   type TransactionOptions,
