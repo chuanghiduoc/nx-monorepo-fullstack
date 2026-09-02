@@ -51,9 +51,12 @@ describe('migration history', () => {
 
     // `migrate diff --from-migrations` replays the history into a shadow
     // database; a second database in the same container is enough.
+    // The owner connection, not app_user: this suite applies and reverses DDL,
+    // and the application role deliberately cannot do that. Using app_user
+    // here would report a permissions error as a broken down script.
     env = {
       ...process.env,
-      DATABASE_URL: database.connectionUri,
+      DATABASE_URL: database.migrationUri,
       SHADOW_DATABASE_URL: await database.createDatabase(SHADOW_DATABASE),
     };
     staging = mkdtempSync(join(tmpdir(), 'migration-history-'));

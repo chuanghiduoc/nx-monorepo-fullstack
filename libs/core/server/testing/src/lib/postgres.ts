@@ -17,9 +17,21 @@ export const POSTGRES_START_TIMEOUT_MS = 180_000;
 const WORKSPACE_ROOT = join(import.meta.dirname, '../../../../../..');
 const dataAccessRoot = join(WORKSPACE_ROOT, 'libs/core/server/data-access-db');
 
+/** The application's role: bound by RLS, no DDL, no BYPASSRLS. */
+const APP_ROLE = 'app_user';
+const APP_PASSWORD = 'app_user';
+
 export interface TestPostgres {
-  /** Connection string for the migrated database. */
+  /**
+   * Connection string for the migrated database **as `app_user`**.
+   *
+   * Not the container's superuser: `FORCE ROW LEVEL SECURITY` binds table
+   * owners and never superusers, so a suite running as one would prove
+   * isolation it does not have (ADR-0003).
+   */
   readonly connectionUri: string;
+  /** Owner connection, for migrations and for setup a policy would block. */
+  readonly migrationUri: string;
   /** Creates an empty sibling database, e.g. a Prisma shadow database. */
   createDatabase(name: string): Promise<string>;
   stop(): Promise<void>;
@@ -41,16 +53,56 @@ export interface TestPostgres {
  */
 export async function startPostgres(): Promise<TestPostgres> {
   const container = await new PostgreSqlContainer(POSTGRES_IMAGE).start();
-  const connectionUri = container.getConnectionUri();
+  const migrationUri = container.getConnectionUri();
+
+  // Migrations run as the owner; the roles they create are NOLOGIN, so the
+  // suite's login is granted here — the same split a deployment makes, where
+  // the password comes from the environment rather than from git.
+  runMigrations(migrationUri);
+  const connectionUri = await grantAppLogin(container, migrationUri);
 
   process.env['DATABASE_URL'] = connectionUri;
-  runMigrations(connectionUri);
 
   return {
     connectionUri,
+    migrationUri,
     createDatabase: (name) => createDatabase(container, name),
     stop: () => container.stop().then(() => undefined),
   };
+}
+
+async function grantAppLogin(
+  container: StartedPostgreSqlContainer,
+  migrationUri: string,
+): Promise<string> {
+  await psql(
+    container,
+    `ALTER ROLE ${APP_ROLE} LOGIN PASSWORD '${APP_PASSWORD}'`,
+  );
+
+  const uri = new URL(migrationUri);
+  uri.username = APP_ROLE;
+  uri.password = APP_PASSWORD;
+  return uri.toString();
+}
+
+async function psql(
+  container: StartedPostgreSqlContainer,
+  sql: string,
+): Promise<void> {
+  const result = await container.exec([
+    'psql',
+    '-U',
+    container.getUsername(),
+    '-d',
+    container.getDatabase(),
+    '-c',
+    sql,
+  ]);
+
+  if (result.exitCode !== 0) {
+    throw new Error(`psql failed (${sql}): ${result.output}`);
+  }
 }
 
 function runMigrations(connectionUri: string): void {
@@ -82,18 +134,9 @@ async function createDatabase(
     throw new Error(`Database name "${name}" is not a plain identifier`);
   }
 
-  const result = await container.exec([
-    'psql',
-    '-U',
-    container.getUsername(),
-    '-d',
-    container.getDatabase(),
-    '-c',
-    `CREATE DATABASE ${name}`,
-  ]);
-  if (result.exitCode !== 0) {
-    throw new Error(`CREATE DATABASE ${name} failed: ${result.output}`);
-  }
+  await psql(container, `CREATE DATABASE ${name}`);
 
+  // The owner connection: a shadow database is Prisma's to reset, and
+  // app_user has no rights there.
   return container.getConnectionUri().replace(/\/[^/?]+(\?|$)/, `/${name}$1`);
 }

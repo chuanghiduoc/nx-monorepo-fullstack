@@ -21,6 +21,13 @@ afterAll(() => database.stop());
 - **A real PostgreSQL 18**, the image docker-compose runs, via Testcontainers.
   Conventions such as `uuidv7()` defaults and `TIMESTAMPTZ(3)` are what the
   database does, so a mock would test nothing.
+- **A connection that row-level security can bind.** `connectionUri` is
+  `app_user`, never the container's superuser: `FORCE ROW LEVEL SECURITY`
+  binds table owners and has never bound superusers or `BYPASSRLS` roles, so a
+  suite running as one would report isolation it does not have. Measured
+  before the change: a `FORCE` policy admitting one tenant returned both rows
+  (ADR-0003). `migrationUri` is the owner connection, for migrations and for
+  setup a policy would otherwise block.
 - **Every migration applied** with `prisma migrate deploy` — the command a
   deployment runs. A test never sees a schema that differs from production's,
   and a migration that fails to apply fails here first.
@@ -30,6 +37,11 @@ afterAll(() => database.stop());
   workspace lock (observed: two of three suites failing at random).
 - **`createDatabase(name)`** for a sibling database in the same container —
   the migration suite uses it as Prisma's shadow database.
+
+Every suite that claims to prove tenant isolation opens with
+`rls-harness.spec.ts`: `current_user` is neither a superuser nor a `BYPASSRLS`
+role, `SET ROLE postgres` fails, and a `FORCE` policy actually hides a row.
+Without that, a green tenancy gate means nothing.
 
 ## Factories
 

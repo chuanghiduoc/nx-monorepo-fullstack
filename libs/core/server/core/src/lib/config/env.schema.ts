@@ -17,6 +17,9 @@ export const envSchema = z.object({
 
   PORT: z.coerce.number().int().positive().max(MAX_PORT).default(DEFAULT_PORT),
 
+  // The application's own connection, as a role bound by row-level security.
+  // Migrations use MIGRATION_DATABASE_URL and are not part of a running
+  // service's configuration (spec §6.17: the app never migrates at boot).
   DATABASE_URL: z
     .string()
     .refine((value) => value.startsWith('postgresql://') || value.startsWith('postgres://'), {

@@ -326,3 +326,14 @@ These are deliberate and small, but they are simplifications and so belong here.
   already does) or the throttler gets a per-run key prefix.
 - **Steps:** start a Redis container in the harness and point
   `REDIS_CRITICAL_URL` at it; delete the clearing step.
+
+### Database role passwords are granted outside the migration
+
+- **Today:** the roles migration creates `app_user` and the rest as `NOLOGIN`
+  with no password — a credential in git is a credential leaked.
+  `tools/postgres/10-dev-logins.sh` grants the development login when the
+  container initialises; the test harness grants its own; production does it
+  out of band.
+- **Signal:** a secret manager exists in the deployment.
+- **Steps:** read the password from it in the entrypoint, drop the compose
+  init script, and record the rotation procedure in `docs/ops/`.

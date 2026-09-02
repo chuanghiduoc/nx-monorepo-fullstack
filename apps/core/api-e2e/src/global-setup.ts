@@ -94,9 +94,12 @@ export async function setup(): Promise<void> {
       HOST: '127.0.0.1',
       // core-api validates its configuration at boot (AppConfigModule), so the
       // suite must supply what a running service would have.
+      // app_user, not the owner: the service under test must run with the
+      // rights it will have in production, which is what makes an RLS policy
+      // mean anything (ADR-0003).
       DATABASE_URL:
         process.env['DATABASE_URL'] ??
-        'postgresql://postgres:postgres@localhost:5432/app',
+        'postgresql://app_user:app_user@localhost:5432/app',
       REDIS_CRITICAL_URL:
         process.env['REDIS_CRITICAL_URL'] ?? 'redis://localhost:6379',
       REDIS_CACHE_URL:

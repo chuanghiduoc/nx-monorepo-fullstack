@@ -9,7 +9,10 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Migrations need DDL, which app_user deliberately does not have. Falls
+    // back to DATABASE_URL so a single-role setup (CI, a throwaway container)
+    // still works without extra configuration.
+    url: process.env["MIGRATION_DATABASE_URL"] ?? process.env["DATABASE_URL"],
     // Required by `prisma migrate diff --from-migrations`, which the migration
     // drift check runs: Prisma replays the migration history into a throwaway
     // database and compares the result with the schema.

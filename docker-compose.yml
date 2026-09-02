@@ -15,6 +15,10 @@ services:
       # postgres:18+ expects a single mount at /var/lib/postgresql and places the
       # cluster in a versioned subdirectory, so pg_upgrade --link can work later.
       - pgdata:/var/lib/postgresql
+      # Grants the dev login to the NOLOGIN roles the migration creates. The
+      # roles carry no password in git; this file is the development-only
+      # equivalent of the step an operator runs once in production.
+      - ./tools/postgres/10-dev-logins.sh:/docker-entrypoint-initdb.d/10-dev-logins.sh:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres -d app']
       interval: 5s
