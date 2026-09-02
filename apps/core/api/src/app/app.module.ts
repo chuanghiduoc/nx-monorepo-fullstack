@@ -4,6 +4,7 @@ import {
   AppLoggerModule,
   AppThrottlerModule,
 } from '@workspace/core-server-core';
+import { DatabaseModule } from '@workspace/core-server-data-access-db';
 
 import { AppController } from './app.controller';
 import { DemoItemsModule } from './demo-items/demo-items.module';
@@ -16,6 +17,7 @@ import { AppService } from './app.service';
     AppConfigModule.forRoot(),
     AppLoggerModule,
     AppThrottlerModule,
+    DatabaseModule,
     DemoItemsModule,
   ],
   controllers: [AppController],

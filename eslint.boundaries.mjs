@@ -5,6 +5,15 @@
  * project that needs to adjust one option would otherwise have to restate the
  * whole matrix — and the copies would drift. Projects import this instead.
  */
+/**
+ * Spec §4 rule 5: the ORM lives in data-access-db and nowhere else. Every
+ * constraint whose source is not a data-access library bans the Prisma
+ * packages, so a feature that reaches for `@prisma/client` fails lint rather
+ * than review. The root client itself is not exported (see the library's
+ * index), so this closes the only other door.
+ */
+const ORM_PACKAGES = ['@prisma/*', 'prisma'];
+
 export const depConstraints = [
   // scope: a product scope reaches only itself and shared.
   {
@@ -36,10 +45,12 @@ export const depConstraints = [
   {
     sourceTag: 'type:util',
     onlyDependOnLibsWithTags: ['type:util'],
+    bannedExternalImports: ORM_PACKAGES,
   },
   {
     sourceTag: 'type:ui',
     onlyDependOnLibsWithTags: ['type:ui', 'type:util'],
+    bannedExternalImports: ORM_PACKAGES,
   },
   {
     sourceTag: 'type:data-access',
@@ -48,6 +59,7 @@ export const depConstraints = [
   {
     sourceTag: 'type:feature',
     onlyDependOnLibsWithTags: ['type:ui', 'type:data-access', 'type:util'],
+    bannedExternalImports: ORM_PACKAGES,
   },
   {
     sourceTag: 'type:app',
@@ -57,15 +69,14 @@ export const depConstraints = [
       'type:data-access',
       'type:util',
     ],
+    bannedExternalImports: ORM_PACKAGES,
   },
 ];
 
 /**
- * Phase 2+ placeholder for spec §4 rules 5 and 5b: Prisma may only be imported
- * inside data-access-db, BullMQ only inside the queue facade, the AWS SDK only
- * inside feature-storage. `@nx/enforce-module-boundaries` supports this through
- * `bannedExternalImports` on the matching constraint — add it to the relevant
- * entry above as each library appears, rather than relying on review.
+ * Spec §4 rule 5 continues as each library appears: BullMQ only inside the
+ * queue facade, the AWS SDK only inside feature-storage — add to the banned
+ * lists above the same way ORM_PACKAGES is, rather than relying on review.
  */
 
 /** Import paths every project is allowed to use regardless of tags. */

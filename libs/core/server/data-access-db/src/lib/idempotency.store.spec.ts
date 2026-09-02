@@ -7,6 +7,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { IdempotencyStore } from './idempotency.store.js';
 import { PrismaService } from './prisma.service.js';
+import { Database } from './transaction/database.js';
 
 const scope = { scopeType: 'USER', scopeId: 'user-1' } as const;
 const route = 'POST:/api/v1/demo-items';
@@ -22,7 +23,7 @@ describe('IdempotencyStore', () => {
     database = await startPostgres();
     prisma = new PrismaService();
     await prisma.$connect();
-    store = new IdempotencyStore(prisma);
+    store = new IdempotencyStore(new Database(prisma));
   }, POSTGRES_START_TIMEOUT_MS);
 
   afterAll(async () => {

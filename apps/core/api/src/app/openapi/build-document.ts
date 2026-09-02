@@ -1,5 +1,9 @@
 import type { INestApplication } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule, type OpenAPIObject } from '@nestjs/swagger';
+import {
+  DocumentBuilder,
+  SwaggerModule,
+  type OpenAPIObject,
+} from '@nestjs/swagger';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 
 const API_VERSION = '1.0.0';

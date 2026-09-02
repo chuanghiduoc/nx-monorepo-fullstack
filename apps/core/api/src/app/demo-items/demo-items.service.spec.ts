@@ -1,4 +1,8 @@
-import { PrismaService } from '@workspace/core-server-data-access-db';
+import { Test, type TestingModule } from '@nestjs/testing';
+import {
+  Database,
+  DatabaseModule,
+} from '@workspace/core-server-data-access-db';
 import {
   POSTGRES_START_TIMEOUT_MS,
   demoItemFactory,
@@ -11,31 +15,42 @@ import { DemoItemsService } from './demo-items.service.js';
 
 describe('DemoItemsService pagination', () => {
   let database: TestPostgres;
-  let prisma: PrismaService;
+  let moduleRef: TestingModule;
+  let db: Database;
   let service: DemoItemsService;
 
   beforeAll(async () => {
     database = await startPostgres();
-    prisma = new PrismaService();
-    await prisma.$connect();
-    service = new DemoItemsService(prisma);
+
+    // Wired the way the application wires it: the root client stays inside
+    // DatabaseModule, and this test never sees it.
+    moduleRef = await Test.createTestingModule({
+      imports: [DatabaseModule],
+      providers: [DemoItemsService],
+    }).compile();
+    await moduleRef.init();
+
+    db = moduleRef.get(Database);
+    service = moduleRef.get(DemoItemsService);
   }, POSTGRES_START_TIMEOUT_MS);
 
   afterAll(async () => {
-    await prisma?.$disconnect();
+    await moduleRef?.close();
     await database?.stop();
   });
 
   beforeEach(async () => {
-    await prisma.demoItem.deleteMany();
+    await db.withSystemTransaction(() => db.system().demoItem.deleteMany());
   });
 
   async function seed(count: number): Promise<void> {
     // Written in one statement so several rows land in the same millisecond —
     // which is exactly the case a naive keyset query gets wrong.
-    await prisma.demoItem.createMany({
-      data: demoItemFactory.buildList(count),
-    });
+    await db.withSystemTransaction(() =>
+      db
+        .system()
+        .demoItem.createMany({ data: demoItemFactory.buildList(count) }),
+    );
   }
 
   async function readAllPages(limit: number): Promise<string[]> {

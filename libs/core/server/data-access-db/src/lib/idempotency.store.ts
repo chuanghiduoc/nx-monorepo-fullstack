@@ -1,8 +1,19 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { PrismaService } from './prisma.service.js';
+import { Prisma } from '../generated/prisma/client.js';
+import { Database } from './transaction/database.js';
 
 const DEFAULT_LEASE_MS = 30_000;
+
+/** Prisma's error code for a unique constraint violation. */
+const UNIQUE_VIOLATION = 'P2002';
+
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === UNIQUE_VIOLATION
+  );
+}
 
 const STATE = {
   processing: 'PROCESSING',
@@ -54,42 +65,95 @@ export type ClaimResult =
  * prove the first attempt died. The fence token is what makes that safe: a
  * zombie attempt waking up with an old token cannot overwrite the result of the
  * attempt that legitimately owns the key now.
+ *
+ * Records are SYSTEM data (spec §6.5): they belong to no tenant, and the
+ * interceptor claims a key before any tenant transaction exists, so every
+ * method runs in its own short system transaction.
  */
 @Injectable()
 export class IdempotencyStore {
-  private readonly prisma: PrismaService;
+  private readonly db: Database;
 
-  // Declared with @Inject rather than relying on emitted parameter metadata:
-  // the constructor takes a plain parameter (parameter properties are not
-  // supported by the type stripper the tests run under), so Nest has nothing
-  // to infer from.
-  constructor(@Inject(PrismaService) prisma: PrismaService) {
-    this.prisma = prisma;
+  constructor(@Inject(Database) db: Database) {
+    this.db = db;
   }
 
   async claim(input: ClaimInput): Promise<ClaimResult> {
-    const leaseUntil = new Date(Date.now() + (input.leaseMs ?? DEFAULT_LEASE_MS));
+    try {
+      return await this.db.withSystemTransaction(() =>
+        this.claimInTransaction(input),
+      );
+    } catch (error) {
+      // Lost the insert race: another request claimed the key between our read
+      // and our write. The failed INSERT aborted that transaction, so the
+      // second look runs in a fresh one — and finds the record this time.
+      if (isUniqueViolation(error)) {
+        return this.claim(input);
+      }
+      throw error;
+    }
+  }
+
+  complete(input: CompleteInput): Promise<void> {
+    return this.db.withSystemTransaction(async () => {
+      const records = this.db.system().idempotencyRecord;
+      const record = await records.findUnique({ where: this.identity(input) });
+
+      const updated = await records.updateMany({
+        where: { id: record?.id ?? '', fenceToken: input.fenceToken },
+        data: {
+          state: STATE.completed,
+          responseStatus: input.responseStatus,
+          responseBody: input.responseBody as never,
+          completedAt: new Date(),
+        },
+      });
+
+      if (updated.count === 0) {
+        throw new Error(
+          `Idempotency fence token ${input.fenceToken} is stale; another attempt owns this key`,
+        );
+      }
+    });
+  }
+
+  fail(input: Omit<CompleteInput, 'responseBody'>): Promise<void> {
+    return this.db.withSystemTransaction(async () => {
+      const records = this.db.system().idempotencyRecord;
+      const record = await records.findUnique({ where: this.identity(input) });
+
+      await records.updateMany({
+        where: { id: record?.id ?? '', fenceToken: input.fenceToken },
+        data: {
+          state: STATE.failed,
+          responseStatus: input.responseStatus,
+          completedAt: new Date(),
+        },
+      });
+    });
+  }
+
+  private async claimInTransaction(input: ClaimInput): Promise<ClaimResult> {
+    const records = this.db.system().idempotencyRecord;
+    const leaseUntil = new Date(
+      Date.now() + (input.leaseMs ?? DEFAULT_LEASE_MS),
+    );
     const where = this.identity(input);
 
-    const existing = await this.prisma.idempotencyRecord.findUnique({ where });
+    const existing = await records.findUnique({ where });
 
     if (!existing) {
-      try {
-        const created = await this.prisma.idempotencyRecord.create({
-          data: {
-            ...where.scopeType_scopeId_route_idempotencyKey,
-            requestHash: input.requestHash,
-            state: STATE.processing,
-            leaseUntil,
-          },
-        });
+      // May throw P2002 when another request inserts first; claim() retries.
+      const created = await records.create({
+        data: {
+          ...where.scopeType_scopeId_route_idempotencyKey,
+          requestHash: input.requestHash,
+          state: STATE.processing,
+          leaseUntil,
+        },
+      });
 
-        return { outcome: 'claimed', fenceToken: created.fenceToken };
-      } catch {
-        // Another request inserted between the read and the write; fall through
-        // and treat it as if we had seen it in the first place.
-        return this.claim({ ...input, leaseMs: input.leaseMs });
-      }
+      return { outcome: 'claimed', fenceToken: created.fenceToken };
     }
 
     if (existing.requestHash !== input.requestHash) {
@@ -110,7 +174,7 @@ export class IdempotencyStore {
 
     // The lease expired. Take it over, but only if nobody else did first — the
     // conditional update is what makes this safe under concurrency.
-    const reclaimed = await this.prisma.idempotencyRecord.updateMany({
+    const reclaimed = await records.updateMany({
       where: { id: existing.id, fenceToken: existing.fenceToken },
       data: {
         fenceToken: existing.fenceToken + 1,
@@ -125,41 +189,6 @@ export class IdempotencyStore {
     }
 
     return { outcome: 'claimed', fenceToken: existing.fenceToken + 1 };
-  }
-
-  async complete(input: CompleteInput): Promise<void> {
-    const where = this.identity(input);
-    const record = await this.prisma.idempotencyRecord.findUnique({ where });
-
-    const updated = await this.prisma.idempotencyRecord.updateMany({
-      where: { id: record?.id ?? '', fenceToken: input.fenceToken },
-      data: {
-        state: STATE.completed,
-        responseStatus: input.responseStatus,
-        responseBody: input.responseBody as never,
-        completedAt: new Date(),
-      },
-    });
-
-    if (updated.count === 0) {
-      throw new Error(
-        `Idempotency fence token ${input.fenceToken} is stale; another attempt owns this key`,
-      );
-    }
-  }
-
-  async fail(input: Omit<CompleteInput, 'responseBody'>): Promise<void> {
-    const where = this.identity(input);
-    const record = await this.prisma.idempotencyRecord.findUnique({ where });
-
-    await this.prisma.idempotencyRecord.updateMany({
-      where: { id: record?.id ?? '', fenceToken: input.fenceToken },
-      data: {
-        state: STATE.failed,
-        responseStatus: input.responseStatus,
-        completedAt: new Date(),
-      },
-    });
   }
 
   private identity(input: {

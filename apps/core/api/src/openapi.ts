@@ -2,7 +2,10 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 
 import { AppModule } from './app/app.module';
 import { buildOpenApiDocument } from './app/openapi/build-document';

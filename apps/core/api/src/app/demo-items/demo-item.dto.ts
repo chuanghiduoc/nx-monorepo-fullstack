@@ -35,6 +35,8 @@ const demoItemPageSchema = z.object({
 });
 
 export class CreateDemoItemDto extends createZodDto(createDemoItemSchema) {}
-export class ListDemoItemsQueryDto extends createZodDto(listDemoItemsQuerySchema) {}
+export class ListDemoItemsQueryDto extends createZodDto(
+  listDemoItemsQuerySchema,
+) {}
 export class DemoItemDto extends createZodDto(demoItemSchema) {}
 export class DemoItemPageDto extends createZodDto(demoItemPageSchema) {}

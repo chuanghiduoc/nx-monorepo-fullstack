@@ -14,7 +14,9 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  trustedOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:4200').split(','),
+  trustedOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:4200').split(
+    ',',
+  ),
   advanced: {
     // Behind Caddy (spec §6.18) the app sees the proxy, not the client. Fastify
     // must be told to trust the forwarded headers for secure cookies to work.

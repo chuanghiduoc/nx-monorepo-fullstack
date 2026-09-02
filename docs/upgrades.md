@@ -278,3 +278,13 @@ These are deliberate and small, but they are simplifications and so belong here.
   script, or the page is served from a static host instead.
 - **Steps:** switch the route CSP to `'nonce-…'` via `@fastify/helmet`'s
   `enableCSPNonces`, drop `'unsafe-inline'`, keep the e2e assertion.
+
+### `db.tenant()` throws outside a transaction instead of opening one
+
+- **Today:** the accessor only returns the transaction in flight. Repositories
+  open a short transaction themselves when none is active, so callers never
+  notice.
+- **Signal:** Phase 3's request-scoped tenant context exists, and a read path
+  wants `db.tenant()` to open a short transaction from it implicitly.
+- **Steps:** resolve the context from the request store inside `tenant()` and
+  call `withTenantTransaction` — one implementation, no extension magic.
