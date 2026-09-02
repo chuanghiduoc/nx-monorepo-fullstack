@@ -66,6 +66,9 @@ catalog:
   'ioredis': '^6.0.0'
   '@tanstack/react-query': '^5.102.8'
   '@hey-api/client-fetch': '^0.13.1'
+  'fishery': '^2.4.0'
+  '@faker-js/faker': '^10.6.0'
+  '@scalar/fastify-api-reference': '^1.67.0'
 
 # @nestjs/platform-fastify pins fastify 5.11.x while @fastify/helmet requires
 # 5.12.x. Two copies means two sets of FastifyInstance types, and a plugin

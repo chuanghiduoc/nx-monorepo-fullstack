@@ -1,5 +1,5 @@
 {
-  "name": "@workspace/core-server-data-access-db",
+  "name": "@workspace/core-server-testing",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -16,16 +16,12 @@
     }
   },
   "dependencies": {
-    "@nestjs/common": "catalog:",
-    "@prisma/adapter-pg": "catalog:",
-    "@prisma/client": "catalog:",
-    "pg": "catalog:",
+    "@faker-js/faker": "catalog:",
+    "@testcontainers/postgresql": "catalog:",
+    "fishery": "catalog:",
     "tslib": "catalog:"
   },
   "devDependencies": {
-    "@workspace/core-server-testing": "workspace:*",
-    "dotenv": "catalog:",
-    "prisma": "catalog:",
-    "tsx": "catalog:"
+    "prisma": "catalog:"
   }
 }

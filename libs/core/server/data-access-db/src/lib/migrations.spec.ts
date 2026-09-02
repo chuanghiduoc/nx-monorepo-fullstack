@@ -10,9 +10,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from '@testcontainers/postgresql';
+  POSTGRES_START_TIMEOUT_MS,
+  startPostgres,
+  type TestPostgres,
+} from '@workspace/core-server-testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import {
@@ -21,7 +22,6 @@ import {
   stageHistory,
 } from '../../tools/migration-history.js';
 
-const CONTAINER_START_TIMEOUT_MS = 180_000;
 const SUITE_TIMEOUT_MS = 300_000;
 const SHADOW_DATABASE = 'shadow';
 const libraryRoot = join(import.meta.dirname, '..', '..');
@@ -40,38 +40,28 @@ const DIFF_FOUND = 2;
  * review comment.
  */
 describe('migration history', () => {
-  let container: StartedPostgreSqlContainer;
+  let database: TestPostgres;
   let env: NodeJS.ProcessEnv;
   let staging: string;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer('postgres:18-alpine').start();
+    // The harness has already run migrate deploy; the suite walks the
+    // history back from that state and forward again.
+    database = await startPostgres();
 
     // `migrate diff --from-migrations` replays the history into a shadow
     // database; a second database in the same container is enough.
-    await container.exec([
-      'psql',
-      '-U',
-      container.getUsername(),
-      '-d',
-      container.getDatabase(),
-      '-c',
-      `CREATE DATABASE ${SHADOW_DATABASE}`,
-    ]);
-
     env = {
       ...process.env,
-      DATABASE_URL: container.getConnectionUri(),
-      SHADOW_DATABASE_URL: container
-        .getConnectionUri()
-        .replace(/\/[^/?]+(\?|$)/, `/${SHADOW_DATABASE}$1`),
+      DATABASE_URL: database.connectionUri,
+      SHADOW_DATABASE_URL: await database.createDatabase(SHADOW_DATABASE),
     };
     staging = mkdtempSync(join(tmpdir(), 'migration-history-'));
-  }, CONTAINER_START_TIMEOUT_MS);
+  }, POSTGRES_START_TIMEOUT_MS);
 
   afterAll(async () => {
-    rmSync(staging, { recursive: true, force: true });
-    await container?.stop();
+    if (staging) rmSync(staging, { recursive: true, force: true });
+    await database?.stop();
   });
 
   function prisma(args: string[]): { status: number; stdout: string } {

@@ -10,6 +10,7 @@ import { ZodValidationPipe } from 'nestjs-zod';
 
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
+import ScalarApiReference from '@scalar/fastify-api-reference';
 
 import { IdempotencyStore } from '@workspace/core-server-data-access-db';
 
@@ -24,9 +25,11 @@ import {
 
 import { AppModule } from './app/app.module';
 import { mountBetterAuth } from './app/auth/auth.handler';
+import { buildOpenApiDocument } from './app/openapi/build-document';
 
 const DEFAULT_PORT = 3000;
 const GLOBAL_PREFIX = 'api';
+const DOCS_PATH = '/docs';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -45,8 +48,13 @@ async function bootstrap() {
 
   // Security headers first: they must apply to every response, including errors.
   await app.register(helmet, {
-    // The API serves JSON, never HTML, so a restrictive CSP costs nothing.
-    contentSecurityPolicy: { directives: { defaultSrc: ["'none'"] } },
+    // The API serves JSON, never HTML, so the strictest CSP costs nothing.
+    // useDefaults: false, because helmet's defaults include style-src
+    // 'unsafe-inline' — meaningless for JSON, and a false signal in an audit.
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] },
+    },
   });
 
   await app.register(cors, {
@@ -66,7 +74,9 @@ async function bootstrap() {
 
   // Retries of a mutation that carries an Idempotency-Key replay the first
   // result instead of doing the work twice.
-  app.useGlobalInterceptors(new IdempotencyInterceptor(app.get(IdempotencyStore)));
+  app.useGlobalInterceptors(
+    new IdempotencyInterceptor(app.get(IdempotencyStore)),
+  );
 
   // Echo the id so a caller can quote it when reporting a problem.
   app
@@ -81,20 +91,62 @@ async function bootstrap() {
   // outside Nest's router (ADR-0002).
   mountBetterAuth(app);
 
+  // Interactive docs render the very document the client is generated from.
+  // Off in production unless DOCS_ENABLED says otherwise (spec §6.18).
+  if (config.get('DOCS_ENABLED') ?? !config.isProduction) {
+    await app.register(ScalarApiReference, {
+      routePrefix: DOCS_PATH,
+      // No external fonts, so the page works with a CSP that names only
+      // ourselves — and inside an air-gapped network.
+      configuration: {
+        content: buildOpenApiDocument(app),
+        withDefaultFonts: false,
+      },
+      hooks: {
+        // The API-wide CSP is default-src 'none'. The docs page runs a bundled
+        // script and an inline bootstrap, so its own routes — and only those —
+        // get a policy that allows them; @fastify/helmet lets a reply replace
+        // the headers the global hook already set.
+        onRequest: (_request, reply, done) => {
+          reply.helmet({
+            contentSecurityPolicy: {
+              useDefaults: false,
+              directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                imgSrc: ["'self'", 'data:'],
+                fontSrc: ["'self'", 'data:'],
+                connectSrc: ["'self'"],
+                frameAncestors: ["'none'"],
+              },
+            },
+          });
+          done();
+        },
+      },
+    });
+  }
+
   const configuredPort = Number(process.env.PORT);
-  const port = Number.isInteger(configuredPort) && configuredPort > 0
-    ? configuredPort
-    : DEFAULT_PORT;
+  const port =
+    Number.isInteger(configuredPort) && configuredPort > 0
+      ? configuredPort
+      : DEFAULT_PORT;
 
   // Lets Nest run onModuleDestroy/onApplicationShutdown handlers on SIGTERM,
   // which the worker's graceful drain (Phase 4) and rolling deploys depend on.
   app.enableShutdownHooks();
   // Containers need 0.0.0.0 to accept traffic from outside the container; a
   // developer machine should not put the API on the local network.
-  const host = process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
+  const host =
+    process.env.HOST ??
+    (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
   await app.listen(port, host);
 
-  Logger.log(`🚀 core-api is running on http://localhost:${port}/${GLOBAL_PREFIX}`);
+  Logger.log(
+    `🚀 core-api is running on http://localhost:${port}/${GLOBAL_PREFIX}`,
+  );
 }
 
 bootstrap().catch((error) => {

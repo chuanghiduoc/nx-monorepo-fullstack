@@ -1,42 +1,29 @@
-import { execFileSync } from 'node:child_process';
-import { join } from 'node:path';
-
 import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from '@testcontainers/postgresql';
+  POSTGRES_START_TIMEOUT_MS,
+  startPostgres,
+  type TestPostgres,
+} from '@workspace/core-server-testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { PrismaService } from './prisma.service.js';
 
-const CONTAINER_START_TIMEOUT_MS = 180_000;
 const UUID_VERSION_POSITION = 14;
-const libraryRoot = join(import.meta.dirname, '..', '..');
 
 describe('PrismaService against a real PostgreSQL 18', () => {
-  let container: StartedPostgreSqlContainer;
+  let database: TestPostgres;
   let prisma: PrismaService;
 
   beforeAll(async () => {
     // The whole point of these conventions is what the database does, so the
     // test uses a database rather than a mock.
-    container = await new PostgreSqlContainer('postgres:18-alpine').start();
-    process.env['DATABASE_URL'] = container.getConnectionUri();
-
-    execFileSync('pnpm', ['exec', 'prisma', 'migrate', 'deploy'], {
-      cwd: libraryRoot,
-      env: { ...process.env, DATABASE_URL: container.getConnectionUri() },
-      stdio: 'pipe',
-      shell: process.platform === 'win32',
-    });
-
+    database = await startPostgres();
     prisma = new PrismaService();
     await prisma.$connect();
-  }, CONTAINER_START_TIMEOUT_MS);
+  }, POSTGRES_START_TIMEOUT_MS);
 
   afterAll(async () => {
     await prisma?.$disconnect();
-    await container?.stop();
+    await database?.stop();
   });
 
   it('lets the database generate the primary key', async () => {

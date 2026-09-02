@@ -10,6 +10,7 @@
     "@nestjs/platform-fastify": "catalog:",
     "@nestjs/swagger": "catalog:",
     "@opentelemetry/api": "catalog:",
+    "@scalar/fastify-api-reference": "catalog:",
     "@workspace/core-server-core": "workspace:*",
     "@workspace/core-server-data-access-db": "workspace:*",
     "better-auth": "catalog:",
@@ -24,7 +25,7 @@
   },
   "devDependencies": {
     "@nestjs/testing": "catalog:",
-    "@testcontainers/postgresql": "catalog:",
+    "@workspace/core-server-testing": "workspace:*",
     "tsx": "catalog:"
   }
 }

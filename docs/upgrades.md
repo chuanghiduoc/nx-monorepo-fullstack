@@ -268,3 +268,13 @@ These are deliberate and small, but they are simplifications and so belong here.
 - **Signal:** Prisma adds first-class down migrations.
 - **Steps:** replace the two-step in `docs/contracts/migrations.md` and in
   `migrations.spec.ts` with the command.
+
+### The docs page allows inline scripts
+
+- **Today:** `/docs` (Scalar) gets its own CSP with `script-src 'self'
+  'unsafe-inline'` because the page bootstraps with an inline `<script>`.
+  Every other route keeps `default-src 'none'`; an e2e test checks both.
+- **Signal:** Scalar's Fastify plugin exposes a nonce for the bootstrap
+  script, or the page is served from a static host instead.
+- **Steps:** switch the route CSP to `'nonce-…'` via `@fastify/helmet`'s
+  `enableCSPNonces`, drop `'unsafe-inline'`, keep the e2e assertion.

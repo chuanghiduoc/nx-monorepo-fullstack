@@ -46,6 +46,12 @@ export const envSchema = z.object({
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
     .default('info'),
 
+  // Interactive API docs (spec §6.18): on wherever a developer runs the
+  // service, off in production unless someone turns it on deliberately.
+  // Absent means "decide from NODE_ENV", which is why this is optional
+  // rather than defaulted.
+  DOCS_ENABLED: z.stringbool().optional(),
+
   CORS_ORIGINS: z
     .string()
     .default('http://localhost:4200')

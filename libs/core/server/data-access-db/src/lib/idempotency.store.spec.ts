@@ -1,17 +1,12 @@
-import { execFileSync } from 'node:child_process';
-import { join } from 'node:path';
-
 import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from '@testcontainers/postgresql';
+  POSTGRES_START_TIMEOUT_MS,
+  startPostgres,
+  type TestPostgres,
+} from '@workspace/core-server-testing';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { IdempotencyStore } from './idempotency.store.js';
 import { PrismaService } from './prisma.service.js';
-
-const CONTAINER_START_TIMEOUT_MS = 180_000;
-const libraryRoot = join(import.meta.dirname, '..', '..');
 
 const scope = { scopeType: 'USER', scopeId: 'user-1' } as const;
 const route = 'POST:/api/v1/demo-items';
@@ -19,29 +14,20 @@ const key = 'idem-key-1';
 const requestHash = 'hash-of-the-body';
 
 describe('IdempotencyStore', () => {
-  let container: StartedPostgreSqlContainer;
+  let database: TestPostgres;
   let prisma: PrismaService;
   let store: IdempotencyStore;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer('postgres:18-alpine').start();
-    process.env['DATABASE_URL'] = container.getConnectionUri();
-
-    execFileSync('pnpm', ['exec', 'prisma', 'migrate', 'deploy'], {
-      cwd: libraryRoot,
-      env: { ...process.env, DATABASE_URL: container.getConnectionUri() },
-      stdio: 'pipe',
-      shell: process.platform === 'win32',
-    });
-
+    database = await startPostgres();
     prisma = new PrismaService();
     await prisma.$connect();
     store = new IdempotencyStore(prisma);
-  }, CONTAINER_START_TIMEOUT_MS);
+  }, POSTGRES_START_TIMEOUT_MS);
 
   afterAll(async () => {
     await prisma?.$disconnect();
-    await container?.stop();
+    await database?.stop();
   });
 
   beforeEach(async () => {
@@ -121,7 +107,11 @@ describe('IdempotencyStore', () => {
 
   it('gives the reclaiming attempt a higher fence token', async () => {
     const first = await store.claim({
-      ...scope, route, key, requestHash, leaseMs: -1000,
+      ...scope,
+      route,
+      key,
+      requestHash,
+      leaseMs: -1000,
     });
     if (first.outcome !== 'claimed') throw new Error('expected a claim');
 
@@ -133,7 +123,11 @@ describe('IdempotencyStore', () => {
 
   it('refuses a completion from an attempt whose lease was taken away', async () => {
     const first = await store.claim({
-      ...scope, route, key, requestHash, leaseMs: -1000,
+      ...scope,
+      route,
+      key,
+      requestHash,
+      leaseMs: -1000,
     });
     if (first.outcome !== 'claimed') throw new Error('expected a claim');
 

@@ -3,13 +3,11 @@ import { join } from 'node:path';
 
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { cleanupOpenApiDoc } from 'nestjs-zod';
 
 import { AppModule } from './app/app.module';
+import { buildOpenApiDocument } from './app/openapi/build-document';
 
 const OUTPUT_FILE = 'openapi.json';
-const API_VERSION = '1.0.0';
 
 /**
  * Emits the OpenAPI document and exits.
@@ -29,19 +27,7 @@ async function emit(): Promise<void> {
   );
   app.setGlobalPrefix('api');
 
-  const config = new DocumentBuilder()
-    .setTitle('core-api')
-    .setDescription(
-      'Errors follow RFC 9457 (application/problem+json); see docs/contracts/problem-details.md.',
-    )
-    .setVersion(API_VERSION)
-    .addCookieAuth('better-auth.session_token')
-    .addApiKey({ type: 'apiKey', name: 'x-api-key', in: 'header' }, 'api-key')
-    .build();
-
-  // nestjs-zod v5 post-processes the document instead of patching the swagger
-  // module: the Zod DTOs become proper OpenAPI schemas here.
-  const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));
+  const document = buildOpenApiDocument(app);
 
   writeFileSync(
     join(__dirname, '..', OUTPUT_FILE),

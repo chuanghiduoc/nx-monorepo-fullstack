@@ -36,6 +36,9 @@
     },
     {
       "path": "../../../libs/core/server/core/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/testing/tsconfig.lib.json"
     }
   ]
 }

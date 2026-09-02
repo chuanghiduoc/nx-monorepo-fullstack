@@ -139,7 +139,9 @@ describe('demo items (the reference feature)', () => {
     const response = await create(`item-${Date.now()}`);
 
     expect(response.status).toBe(201);
-    expect(response.headers.get('location')).toMatch(/^\/api\/v1\/demo-items\//);
+    expect(response.headers.get('location')).toMatch(
+      /^\/api\/v1\/demo-items\//,
+    );
   });
 
   it('lets the database mint a version 7 uuid', async () => {
@@ -152,7 +154,10 @@ describe('demo items (the reference feature)', () => {
 
   it('returns a page shaped {items, nextCursor}', async () => {
     const response = await fetch(`${API_URL}/api/v1/demo-items`);
-    const page = (await response.json()) as { items: unknown[]; nextCursor: unknown };
+    const page = (await response.json()) as {
+      items: unknown[];
+      nextCursor: unknown;
+    };
 
     expect(Array.isArray(page.items)).toBe(true);
     expect(page).toHaveProperty('nextCursor');
@@ -279,5 +284,47 @@ describe('rate limiting', () => {
     // Still limited from the previous test; the window has not elapsed.
     expect(response.status).toBe(429);
     expect(Number(response.headers.get('retry-after'))).toBeGreaterThan(0);
+  });
+});
+
+describe('API docs', () => {
+  it('serves the interactive reference outside the /api prefix', async () => {
+    const response = await fetch(`${API_URL}/docs`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    await expect(response.text()).resolves.toContain(
+      'Scalar.createApiReference',
+    );
+  });
+
+  it('serves the same document the client is generated from', async () => {
+    const response = await fetch(`${API_URL}/docs/openapi.json`);
+
+    expect(response.status).toBe(200);
+    const document = (await response.json()) as {
+      info: { title: string };
+      paths: object;
+    };
+    expect(document.info.title).toBe('core-api');
+    expect(Object.keys(document.paths)).toContain('/api/v1/demo-items');
+  });
+
+  it('relaxes the API-wide CSP only for the docs pages', async () => {
+    // The API's CSP is default-src 'none' (it serves JSON). The docs page runs
+    // a bundled script and an inline bootstrap, so its CSP must allow those,
+    // and no other route may inherit the relaxation.
+    const docs = await fetch(`${API_URL}/docs`);
+    const api = await fetch(`${API_URL}/api`);
+
+    expect(docs.headers.get('content-security-policy')).toContain(
+      "script-src 'self' 'unsafe-inline'",
+    );
+    expect(api.headers.get('content-security-policy')).toContain(
+      "default-src 'none'",
+    );
+    expect(api.headers.get('content-security-policy')).not.toContain(
+      'unsafe-inline',
+    );
   });
 });

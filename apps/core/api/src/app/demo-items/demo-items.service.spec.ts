@@ -1,52 +1,29 @@
-import { execFileSync } from 'node:child_process';
-import { join } from 'node:path';
-
-import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from '@testcontainers/postgresql';
 import { PrismaService } from '@workspace/core-server-data-access-db';
+import {
+  POSTGRES_START_TIMEOUT_MS,
+  demoItemFactory,
+  startPostgres,
+  type TestPostgres,
+} from '@workspace/core-server-testing';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { DemoItemsService } from './demo-items.service.js';
 
-const CONTAINER_START_TIMEOUT_MS = 180_000;
-
-// Six levels up from src/app/demo-items is the workspace root. `__dirname`
-// rather than `import.meta`: this app compiles to CommonJS, and Vitest
-// provides both.
-const workspaceRoot = join(__dirname, '../../../../../..');
-
 describe('DemoItemsService pagination', () => {
-  let container: StartedPostgreSqlContainer;
+  let database: TestPostgres;
   let prisma: PrismaService;
   let service: DemoItemsService;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer('postgres:18-alpine').start();
-    process.env['DATABASE_URL'] = container.getConnectionUri();
-
-    // Through the Nx target rather than the prisma binary: migrations belong to
-    // the data-access library, and this app does not depend on prisma itself.
-    execFileSync(
-      'pnpm',
-      ['nx', 'run', 'core-server-data-access-db:prisma-migrate-deploy'],
-      {
-        cwd: workspaceRoot,
-        env: { ...process.env, DATABASE_URL: container.getConnectionUri() },
-        stdio: 'pipe',
-        shell: process.platform === 'win32',
-      },
-    );
-
+    database = await startPostgres();
     prisma = new PrismaService();
     await prisma.$connect();
     service = new DemoItemsService(prisma);
-  }, CONTAINER_START_TIMEOUT_MS);
+  }, POSTGRES_START_TIMEOUT_MS);
 
   afterAll(async () => {
     await prisma?.$disconnect();
-    await container?.stop();
+    await database?.stop();
   });
 
   beforeEach(async () => {
@@ -57,9 +34,7 @@ describe('DemoItemsService pagination', () => {
     // Written in one statement so several rows land in the same millisecond —
     // which is exactly the case a naive keyset query gets wrong.
     await prisma.demoItem.createMany({
-      data: Array.from({ length: count }, (_, index) => ({
-        title: `item-${String(index).padStart(3, '0')}`,
-      })),
+      data: demoItemFactory.buildList(count),
     });
   }
 
