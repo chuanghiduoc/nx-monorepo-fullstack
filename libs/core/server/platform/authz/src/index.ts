@@ -5,6 +5,7 @@ export {
   type Action,
   type ParsedAction,
 } from './lib/action-registry.js';
+export { AuthzModule } from './lib/authz.module.js';
 export {
   AuthzService,
   type AuthorizationContext,

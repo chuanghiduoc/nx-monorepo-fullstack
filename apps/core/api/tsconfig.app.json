@@ -32,10 +32,16 @@
   ],
   "references": [
     {
+      "path": "../../../libs/core/server/feature/notes/tsconfig.lib.json"
+    },
+    {
       "path": "../../../libs/core/server/platform/data-access-db/tsconfig.lib.json"
     },
     {
       "path": "../../../libs/core/server/platform/core/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/platform/authz/tsconfig.lib.json"
     },
     {
       "path": "../../../libs/core/server/platform/testing/tsconfig.lib.json"

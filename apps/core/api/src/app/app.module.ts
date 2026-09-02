@@ -6,7 +6,12 @@ import {
 } from '@workspace/core-server-core';
 import { DatabaseModule } from '@workspace/core-server-data-access-db';
 
-import { AuthModule } from '@workspace/core-server-feature-auth';
+import { AuthzModule } from '@workspace/core-server-authz';
+import {
+  AuthModule,
+  rolePermissions,
+} from '@workspace/core-server-feature-auth';
+import { NotesModule } from '@workspace/core-server-feature-notes';
 
 import { APP_GUARD } from '@nestjs/core';
 
@@ -25,6 +30,10 @@ import { AppService } from './app.service';
     AppThrottlerModule,
     DatabaseModule,
     AuthModule,
+    // The role definitions live with authentication, which is where an
+    // organization's roles are administered; the facade evaluates them.
+    AuthzModule.forRoot(rolePermissions),
+    NotesModule,
     DemoItemsModule,
   ],
   controllers: [AppController, WhoamiController],

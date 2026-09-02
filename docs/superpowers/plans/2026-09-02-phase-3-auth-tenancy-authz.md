@@ -188,7 +188,7 @@
 
 ---
 
-### Task 8: Reference feature — tenant-scoped CRUD
+### Task 8 ✅ DONE: Reference feature — tenant-scoped CRUD
 
 **Files:**
 - Create: `libs/core/server/feature-notes` via the workspace generator (`type:feature`), and the notes repository in `data-access-db`

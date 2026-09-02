@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { AppControllerGetDataData, AppControllerGetDataResponses, DemoItemsControllerCreateData, DemoItemsControllerCreateResponses, DemoItemsControllerListData, DemoItemsControllerListResponses } from './types.gen.js';
+import type { AppControllerGetDataData, AppControllerGetDataResponses, DemoItemsControllerCreateData, DemoItemsControllerCreateResponses, DemoItemsControllerListData, DemoItemsControllerListResponses, NotesControllerCreateData, NotesControllerCreateResponses, NotesControllerFindData, NotesControllerFindResponses, NotesControllerListData, NotesControllerListResponses, NotesControllerRemoveData, NotesControllerRemoveResponses, NotesControllerUpdateData, NotesControllerUpdateResponses, WhoamiControllerWhoamiData, WhoamiControllerWhoamiResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -19,6 +19,32 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 };
 
 export const appControllerGetData = <ThrowOnError extends boolean = false>(options?: Options<AppControllerGetDataData, ThrowOnError>): RequestResult<AppControllerGetDataResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AppControllerGetDataResponses, unknown, ThrowOnError>({ url: '/api', ...options });
+
+export const whoamiControllerWhoami = <ThrowOnError extends boolean = false>(options?: Options<WhoamiControllerWhoamiData, ThrowOnError>): RequestResult<WhoamiControllerWhoamiResponses, unknown, ThrowOnError> => (options?.client ?? client).get<WhoamiControllerWhoamiResponses, unknown, ThrowOnError>({ url: '/api/whoami', ...options });
+
+export const notesControllerList = <ThrowOnError extends boolean = false>(options?: Options<NotesControllerListData, ThrowOnError>): RequestResult<NotesControllerListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<NotesControllerListResponses, unknown, ThrowOnError>({ url: '/api/v1/notes', ...options });
+
+export const notesControllerCreate = <ThrowOnError extends boolean = false>(options: Options<NotesControllerCreateData, ThrowOnError>): RequestResult<NotesControllerCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<NotesControllerCreateResponses, unknown, ThrowOnError>({
+    url: '/api/v1/notes',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const notesControllerRemove = <ThrowOnError extends boolean = false>(options: Options<NotesControllerRemoveData, ThrowOnError>): RequestResult<NotesControllerRemoveResponses, unknown, ThrowOnError> => (options.client ?? client).delete<NotesControllerRemoveResponses, unknown, ThrowOnError>({ url: '/api/v1/notes/{id}', ...options });
+
+export const notesControllerFind = <ThrowOnError extends boolean = false>(options: Options<NotesControllerFindData, ThrowOnError>): RequestResult<NotesControllerFindResponses, unknown, ThrowOnError> => (options.client ?? client).get<NotesControllerFindResponses, unknown, ThrowOnError>({ url: '/api/v1/notes/{id}', ...options });
+
+export const notesControllerUpdate = <ThrowOnError extends boolean = false>(options: Options<NotesControllerUpdateData, ThrowOnError>): RequestResult<NotesControllerUpdateResponses, unknown, ThrowOnError> => (options.client ?? client).patch<NotesControllerUpdateResponses, unknown, ThrowOnError>({
+    url: '/api/v1/notes/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 export const demoItemsControllerList = <ThrowOnError extends boolean = false>(options?: Options<DemoItemsControllerListData, ThrowOnError>): RequestResult<DemoItemsControllerListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<DemoItemsControllerListResponses, unknown, ThrowOnError>({ url: '/api/v1/demo-items', ...options });
 

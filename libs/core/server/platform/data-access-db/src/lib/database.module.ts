@@ -3,6 +3,7 @@ import { Global, Module } from '@nestjs/common';
 import { AuthDatabaseProvider } from './auth/auth-database.js';
 import { DemoItemRepository } from './demo-items/demo-item.repository.js';
 import { IdempotencyStore } from './idempotency.store.js';
+import { NoteRepository } from './notes/note.repository.js';
 import { OrgSettingsRepository } from './org-settings/org-settings.repository.js';
 import { PrismaService } from './prisma.service.js';
 import { Database } from './transaction/database.js';
@@ -22,6 +23,7 @@ import { Database } from './transaction/database.js';
     IdempotencyStore,
     DemoItemRepository,
     OrgSettingsRepository,
+    NoteRepository,
     AuthDatabaseProvider,
   ],
   exports: [
@@ -29,6 +31,7 @@ import { Database } from './transaction/database.js';
     IdempotencyStore,
     DemoItemRepository,
     OrgSettingsRepository,
+    NoteRepository,
     AuthDatabaseProvider,
   ],
 })

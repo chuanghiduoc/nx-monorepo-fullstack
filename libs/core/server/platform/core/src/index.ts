@@ -30,6 +30,7 @@ export {
   normaliseRoute,
 } from './lib/idempotency/request-fingerprint.js';
 export { canonicalJson } from './lib/serialisation/canonical-json.js';
+export { CurrentPrincipal } from './lib/tenancy/current-principal.decorator.js';
 export {
   currentRequestContext,
   runRequestInContext,

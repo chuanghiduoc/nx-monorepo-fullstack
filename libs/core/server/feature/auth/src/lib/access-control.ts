@@ -47,3 +47,22 @@ export const member = ac.newRole({
 });
 
 export const roles = { owner, admin, member };
+
+/**
+ * The same role definitions, in the shape the authorization facade evaluates.
+ *
+ * Derived rather than written twice: the facade and the auth library must
+ * agree about what a role grants, and two lists would disagree the first time
+ * one of them changed.
+ */
+export const rolePermissions: Record<string, Record<string, string[]>> =
+  Object.fromEntries(
+    Object.entries(roles).map(([name, role]) => [
+      name,
+      Object.fromEntries(
+        Object.entries(role.statements as Record<string, readonly string[]>).map(
+          ([resource, verbs]) => [resource, [...verbs]],
+        ),
+      ),
+    ]),
+  );

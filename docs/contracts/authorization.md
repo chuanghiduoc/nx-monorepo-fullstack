@@ -4,11 +4,11 @@ One facade answers every permission question. Business code calls `require`;
 nothing re-implements `if (!can) throw`, so every denial has the same status,
 the same body and the same log record.
 
-**Not yet on a request path.** The facade exists and is proven in isolation,
-but no module provides it and no route calls it, so nothing is authorised by
-it today. Principals also carry an empty role list until the reference feature
-populates them. Both land together — a facade wired in before anything grants
-a role would deny every request.
+It is on the request path. `/api/v1/notes` calls `require` before every
+operation, principals carry the roles of the membership in the active
+organization, and the application provides the facade with the role
+definitions the auth library administers — one list, so the two cannot
+disagree about what a role grants.
 
 ```ts
 authz.require(principal, 'note.update', { orgId, resourceOwnerId });

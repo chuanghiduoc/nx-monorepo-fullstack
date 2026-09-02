@@ -118,8 +118,38 @@ async function resolveSession(
     // being impersonated, the audit trail keeps both.
     actorId: session.session.impersonatedBy ?? undefined,
     orgId,
-    roles: [],
+    // Roles are membership of the *active* organization, not of the account.
+    // The same person is often an owner in one organization and a member in
+    // another, and a permission granted in one means nothing in the other.
+    roles: orgId ? await rolesInActiveOrganization(auth, headers) : [],
   };
+}
+
+/**
+ * The roles the active membership carries.
+ *
+ * A membership row holds them as one comma-separated string, which is how
+ * better-auth stores a member with more than one role.
+ */
+async function rolesInActiveOrganization(
+  auth: Auth,
+  headers: Headers,
+): Promise<string[]> {
+  try {
+    const member = await auth.api.getActiveMember({ headers });
+
+    return typeof member?.role === 'string'
+      ? member.role
+          .split(',')
+          .map((role) => role.trim())
+          .filter(Boolean)
+      : [];
+  } catch {
+    // No membership, or the organization went away between the session being
+    // issued and this request. Either way the answer is no roles, which the
+    // facade turns into a refusal rather than an accident.
+    return [];
+  }
 }
 
 /**

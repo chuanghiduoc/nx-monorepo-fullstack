@@ -4,6 +4,38 @@ export type ClientOptions = {
     baseUrl: string;
 };
 
+export type NotePageDto = {
+    items: Array<{
+        id: string;
+        title: string;
+        body: string;
+        version: number;
+        createdAt: string;
+        updatedAt: string;
+    }>;
+    nextCursor: string | null;
+};
+
+export type NoteDto = {
+    id: string;
+    title: string;
+    body: string;
+    version: number;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type CreateNoteDto = {
+    title: string;
+    body?: string;
+};
+
+export type UpdateNoteDto = {
+    title?: string;
+    body?: string;
+    version: number;
+};
+
 export type DemoItemPageDto = {
     items: Array<{
         id: string;
@@ -35,6 +67,91 @@ export type AppControllerGetDataData = {
 export type AppControllerGetDataResponses = {
     200: unknown;
 };
+
+export type WhoamiControllerWhoamiData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/whoami';
+};
+
+export type WhoamiControllerWhoamiResponses = {
+    200: unknown;
+};
+
+export type NotesControllerListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        cursor?: string;
+        limit?: number;
+    };
+    url: '/api/v1/notes';
+};
+
+export type NotesControllerListResponses = {
+    200: NotePageDto;
+};
+
+export type NotesControllerListResponse = NotesControllerListResponses[keyof NotesControllerListResponses];
+
+export type NotesControllerCreateData = {
+    body: CreateNoteDto;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notes';
+};
+
+export type NotesControllerCreateResponses = {
+    201: NoteDto;
+};
+
+export type NotesControllerCreateResponse = NotesControllerCreateResponses[keyof NotesControllerCreateResponses];
+
+export type NotesControllerRemoveData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/notes/{id}';
+};
+
+export type NotesControllerRemoveResponses = {
+    204: void;
+};
+
+export type NotesControllerRemoveResponse = NotesControllerRemoveResponses[keyof NotesControllerRemoveResponses];
+
+export type NotesControllerFindData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/notes/{id}';
+};
+
+export type NotesControllerFindResponses = {
+    200: NoteDto;
+};
+
+export type NotesControllerFindResponse = NotesControllerFindResponses[keyof NotesControllerFindResponses];
+
+export type NotesControllerUpdateData = {
+    body: UpdateNoteDto;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/notes/{id}';
+};
+
+export type NotesControllerUpdateResponses = {
+    200: NoteDto;
+};
+
+export type NotesControllerUpdateResponse = NotesControllerUpdateResponses[keyof NotesControllerUpdateResponses];
 
 export type DemoItemsControllerListData = {
     body?: never;

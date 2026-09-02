@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen.js';
-import { appControllerGetData, demoItemsControllerCreate, demoItemsControllerList, type Options } from '../sdk.gen.js';
-import type { AppControllerGetDataData, DemoItemsControllerCreateData, DemoItemsControllerCreateResponse, DemoItemsControllerListData, DemoItemsControllerListResponse } from '../types.gen.js';
+import { appControllerGetData, demoItemsControllerCreate, demoItemsControllerList, notesControllerCreate, notesControllerFind, notesControllerList, notesControllerRemove, notesControllerUpdate, type Options, whoamiControllerWhoami } from '../sdk.gen.js';
+import type { AppControllerGetDataData, DemoItemsControllerCreateData, DemoItemsControllerCreateResponse, DemoItemsControllerListData, DemoItemsControllerListResponse, NotesControllerCreateData, NotesControllerCreateResponse, NotesControllerFindData, NotesControllerFindResponse, NotesControllerListData, NotesControllerListResponse, NotesControllerRemoveData, NotesControllerRemoveResponse, NotesControllerUpdateData, NotesControllerUpdateResponse, WhoamiControllerWhoamiData } from '../types.gen.js';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -54,11 +54,11 @@ export const appControllerGetDataOptions = (options?: Options<AppControllerGetDa
     queryKey: appControllerGetDataQueryKey(options)
 });
 
-export const demoItemsControllerListQueryKey = (options?: Options<DemoItemsControllerListData>) => createQueryKey('demoItemsControllerList', options);
+export const whoamiControllerWhoamiQueryKey = (options?: Options<WhoamiControllerWhoamiData>) => createQueryKey('whoamiControllerWhoami', options);
 
-export const demoItemsControllerListOptions = (options?: Options<DemoItemsControllerListData>) => queryOptions<DemoItemsControllerListResponse, DefaultError, DemoItemsControllerListResponse, ReturnType<typeof demoItemsControllerListQueryKey>>({
+export const whoamiControllerWhoamiOptions = (options?: Options<WhoamiControllerWhoamiData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof whoamiControllerWhoamiQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
-        const { data } = await demoItemsControllerList({
+        const { data } = await whoamiControllerWhoami({
             ...options,
             ...queryKey[0],
             signal,
@@ -66,7 +66,22 @@ export const demoItemsControllerListOptions = (options?: Options<DemoItemsContro
         });
         return data;
     },
-    queryKey: demoItemsControllerListQueryKey(options)
+    queryKey: whoamiControllerWhoamiQueryKey(options)
+});
+
+export const notesControllerListQueryKey = (options?: Options<NotesControllerListData>) => createQueryKey('notesControllerList', options);
+
+export const notesControllerListOptions = (options?: Options<NotesControllerListData>) => queryOptions<NotesControllerListResponse, DefaultError, NotesControllerListResponse, ReturnType<typeof notesControllerListQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await notesControllerList({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: notesControllerListQueryKey(options)
 });
 
 const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
@@ -97,6 +112,105 @@ const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'hea
     }
     return params as unknown as typeof page;
 };
+
+export const notesControllerListInfiniteQueryKey = (options?: Options<NotesControllerListData>): QueryKey<Options<NotesControllerListData>> => createQueryKey('notesControllerList', options, true);
+
+export const notesControllerListInfiniteOptions = (options?: Options<NotesControllerListData>) => {
+    const opts = infiniteQueryOptions<NotesControllerListResponse, DefaultError, InfiniteData<NotesControllerListResponse>, QueryKey<Options<NotesControllerListData>>, string | Pick<QueryKey<Options<NotesControllerListData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<NotesControllerListData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    cursor: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await notesControllerList({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: notesControllerListInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const notesControllerCreateMutation = (options?: Partial<Options<NotesControllerCreateData>>): UseMutationOptions<NotesControllerCreateResponse, DefaultError, Options<NotesControllerCreateData>> => {
+    const mutationOptions: UseMutationOptions<NotesControllerCreateResponse, DefaultError, Options<NotesControllerCreateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await notesControllerCreate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const notesControllerRemoveMutation = (options?: Partial<Options<NotesControllerRemoveData>>): UseMutationOptions<NotesControllerRemoveResponse, DefaultError, Options<NotesControllerRemoveData>> => {
+    const mutationOptions: UseMutationOptions<NotesControllerRemoveResponse, DefaultError, Options<NotesControllerRemoveData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await notesControllerRemove({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const notesControllerFindQueryKey = (options: Options<NotesControllerFindData>) => createQueryKey('notesControllerFind', options);
+
+export const notesControllerFindOptions = (options: Options<NotesControllerFindData>) => queryOptions<NotesControllerFindResponse, DefaultError, NotesControllerFindResponse, ReturnType<typeof notesControllerFindQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await notesControllerFind({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: notesControllerFindQueryKey(options)
+});
+
+export const notesControllerUpdateMutation = (options?: Partial<Options<NotesControllerUpdateData>>): UseMutationOptions<NotesControllerUpdateResponse, DefaultError, Options<NotesControllerUpdateData>> => {
+    const mutationOptions: UseMutationOptions<NotesControllerUpdateResponse, DefaultError, Options<NotesControllerUpdateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await notesControllerUpdate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const demoItemsControllerListQueryKey = (options?: Options<DemoItemsControllerListData>) => createQueryKey('demoItemsControllerList', options);
+
+export const demoItemsControllerListOptions = (options?: Options<DemoItemsControllerListData>) => queryOptions<DemoItemsControllerListResponse, DefaultError, DemoItemsControllerListResponse, ReturnType<typeof demoItemsControllerListQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await demoItemsControllerList({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: demoItemsControllerListQueryKey(options)
+});
 
 export const demoItemsControllerListInfiniteQueryKey = (options?: Options<DemoItemsControllerListData>): QueryKey<Options<DemoItemsControllerListData>> => createQueryKey('demoItemsControllerList', options, true);
 

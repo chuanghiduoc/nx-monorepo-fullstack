@@ -6,4 +6,9 @@ export {
   mountTenantContext,
 } from './lib/tenant-context.hook.js';
 export { authOptions } from './lib/auth.options.js';
-export { ac, roles, statements } from './lib/access-control.js';
+export {
+  ac,
+  rolePermissions,
+  roles,
+  statements,
+} from './lib/access-control.js';
