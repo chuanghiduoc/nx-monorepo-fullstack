@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@workspace/core-server-testing": "workspace:*",
+    "better-auth": "catalog:",
     "dotenv": "catalog:",
     "prisma": "catalog:",
     "tsx": "catalog:"
