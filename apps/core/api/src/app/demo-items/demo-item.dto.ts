@@ -31,7 +31,11 @@ const listDemoItemsQuerySchema = z.object({
 const demoItemPageSchema = z.object({
   items: z.array(demoItemSchema),
   /** `null` means there is nothing after this page — no separate flag. */
-  nextCursor: z.string().nullable(),
+  // The length bound is real (see CURSOR_MAX_LENGTH) and it is also what
+  // makes Zod emit `anyOf` here rather than `type: ["string", "null"]`, which
+  // @nestjs/swagger misreads as an array. The emitter refuses the latter;
+  // see openapi/assert-no-collapsed-nullables.ts.
+  nextCursor: z.string().max(CURSOR_MAX_LENGTH).nullable(),
 });
 
 export class CreateDemoItemDto extends createZodDto(createDemoItemSchema) {}

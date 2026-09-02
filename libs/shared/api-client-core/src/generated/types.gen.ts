@@ -11,7 +11,7 @@ export type DemoItemPageDto = {
         createdAt: string;
         updatedAt: string;
     }>;
-    nextCursor: Array<string>;
+    nextCursor: string | null;
 };
 
 export type CreateDemoItemDto = {

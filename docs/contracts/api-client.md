@@ -53,6 +53,23 @@ The path is written as `./src/client-config.js`: the generator copies the string
 into the emitted import verbatim, and a `.ts` extension there is a TS5097 error
 under our module resolution.
 
+## A pitfall the emitter now refuses
+
+Zod 4 emits a *bare* nullable primitive (`z.string().nullable()`) as JSON
+Schema `type: ["string", "null"]`. `@nestjs/swagger` reads that as its legacy
+"array of types" form and rewrites it to `type: "array", items: { type:
+"string" }` — silently, before `cleanupOpenApiDoc` runs. The generated client
+believed `nextCursor` was a list of strings, and nothing failed: the runtime
+never validates responses against the document.
+
+Give the branch a constraint or description — `z.string().max(n).nullable()`
+— and Zod emits `anyOf`, which every layer understands. The emitter
+(`assert-no-collapsed-nullables.ts`) inspects the raw document for the marker
+nestjs-zod leaves behind and fails the build naming the property, so the next
+occurrence is a red build rather than a wrong contract. Found by reading the
+generated types during the Phase 2 gate, not by a test — which is why there is
+one now.
+
 ## Rules
 
 - `src/generated` is never edited by hand, and never linted — it is typechecked,

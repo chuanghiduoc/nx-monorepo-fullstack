@@ -288,3 +288,15 @@ These are deliberate and small, but they are simplifications and so belong here.
   wants `db.tenant()` to open a short transaction from it implicitly.
 - **Steps:** resolve the context from the request store inside `tenant()` and
   call `withTenantTransaction` — one implementation, no extension magic.
+
+### Nullable fields must carry a constraint or description
+
+- **Today:** `z.string().nullable()` collapses to `type: ["string","null"]`,
+  which `@nestjs/swagger` turns into an array. The emitter refuses such a
+  document (`assert-no-collapsed-nullables.ts`); the fix is
+  `z.string().max(n).nullable()` or a `.describe()`, which yields `anyOf`.
+- **Signal:** nestjs-zod handles Zod 4.5's `type` arrays itself (watch its
+  releases; the marker it uses is `x-nestjs_zod-empty-type`), or
+  `@nestjs/swagger` stops reading JSON-Schema type arrays as `[Type]`.
+- **Steps:** delete the guard and its spec; keep the constraints, they were
+  correct anyway.

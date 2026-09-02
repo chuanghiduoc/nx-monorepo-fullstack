@@ -46,20 +46,22 @@ jobs:
       - run: pnpm exec playwright install --with-deps
       - uses: nrwl/nx-set-shas@v5
 
-      # The atomized `test-ci` / `e2e-ci` targets split suites per file, but Nx
-      # refuses to run them without Nx Cloud. Switch to them in the same commit
-      # that enables `nx connect` (see docs/upgrades.md).
-      - run: pnpm exec nx affected -t lint typecheck test build e2e
-
       # The OpenAPI document and the generated client are committed so that a
       # contract change shows up in review. Regenerating them here proves the
       # committed copies still match the code that produces them — otherwise the
       # frontend would typecheck against a contract the API no longer serves.
+      # It runs before the build so that everything downstream — the client
+      # library's emitted types included — is derived from the current contract.
       - name: Check API contract is not stale
         run: |
           pnpm exec nx run core-api:openapi
           pnpm exec nx run shared-api-client-core:generate
           git diff --exit-code -- apps/core/api/openapi.json libs/shared/api-client-core/src/generated
+
+      # The atomized `test-ci` / `e2e-ci` targets split suites per file, but Nx
+      # refuses to run them without Nx Cloud. Switch to them in the same commit
+      # that enables `nx connect` (see docs/upgrades.md).
+      - run: pnpm exec nx affected -t lint typecheck test build e2e
 
       # Dead code and unused dependencies are cheap to catch here and expensive later.
       - run: pnpm knip
