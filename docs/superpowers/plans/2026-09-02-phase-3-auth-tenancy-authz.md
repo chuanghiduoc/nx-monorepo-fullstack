@@ -42,9 +42,11 @@
 
 **Files:**
 - Modify: `libs/core/server/testing/src/lib/postgres.ts`
-- Modify: `apps/core/api-e2e/src/global-setup.ts`
-- Create: migration `..._database_roles` (+ `down.sql`)
-- Modify: `docker-compose.yml` (init SQL granting the dev login), `.env.example`
+- Modify: `apps/core/api-e2e/src/global-setup.ts`, `libs/core/server/data-access-db/src/lib/migrations.spec.ts`
+- Create: migration `..._database_roles` (+ `down.sql`), `tools/postgres/10-dev-logins.sh`
+- Modify: `docker-compose.yml`, `.env.example`, `libs/core/server/data-access-db/prisma7.config.ts`
+- Modify: `docs/contracts/testing.md` — one line naming the rule: schema commands take `migrationUri`, application and isolation assertions take `connectionUri`
+- Create: `docs/ops/database-roles.md` — the production `ALTER ROLE ... LOGIN PASSWORD` step and where the secret comes from
 
 **Interfaces:**
 - Produces: `startPostgres()` returning `{ connectionUri (app_user), migrationUri (owner), createDatabase, stop }`, with `DATABASE_URL` set to the **app_user** URI. Roles `app_user`, `worker_user`, `erasure_role`, `migration_role`, `cross_tenant_admin_role` exist with explicit `GRANT`/`REVOKE`.
@@ -54,9 +56,11 @@
   - `DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_user') THEN CREATE ROLE app_user NOLOGIN; END IF; END $$;` — the migration replays into the shadow database in the same cluster, so a plain `CREATE ROLE` fails the second time.
   - `down.sql` does `REVOKE ALL` and `DROP OWNED BY` **in the current database** and does not `DROP ROLE` (state why: other databases in the cluster may still grant to it).
   - No password in the migration. `LOGIN PASSWORD` is granted by the compose init script for dev and by a documented step in `docs/ops/` for production.
-  - `ALTER DEFAULT PRIVILEGES FOR ROLE migration_role IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user;` so a future table is not silently unreadable.
-- [ ] **Step 3: Make the guard test pass** by switching the harness to `app_user`, keeping `migrationUri` for `migrate deploy`. Run the whole existing suite: every Phase 2 test must still pass against the restricted role — that is the real check that the grants are right.
-- [ ] **Step 4: Commit.**
+  - `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user;` — **without** `FOR ROLE migration_role`. Default privileges apply only to objects created by the named role, and migrations run as the owner, so the `FOR ROLE` form would never fire and a table added in Task 5 or 7 would be silently unreadable — which reads exactly like RLS working.
+  - A test that makes the two forms distinguishable: create a table through `migrationUri`, then assert `app_user` can `SELECT` from it with no explicit grant.
+- [ ] **Step 3: Make the guard test pass** by switching the harness to `app_user`, keeping `migrationUri` for `migrate deploy`. Run the whole existing suite: every Phase 2 test must still pass against the restricted role — that is the real check that the grants are right. `migrations.spec.ts` moves to `migrationUri`: as `app_user` it can run neither `migrate deploy` nor `db execute`.
+- [ ] **Step 4: Fail loudly on a stale volume.** The compose init script runs only on an empty data directory, so a developer carrying a Phase 2 volume gets `password authentication failed for user "app_user"` from `pnpm dev` with nothing pointing at the fix. The API's boot check names the remedy (`docker compose down -v`); `docs/ops/database-roles.md` covers production.
+- [ ] **Step 5: Commit.**
 
 ---
 
@@ -73,8 +77,8 @@
 - `authDatabase` is exported from data-access-db and is the proxied root client — the one sanctioned adapter seam. It throws if used inside a transaction, which is the behaviour Task 0 recorded and the rule the whole phase depends on.
 - All better-auth tables are class **AUTH**: no RLS, `app_user` gets CRUD. A user must list every membership before any organization is active, and the adapter runs without GUCs. Their isolation is better-auth's own access control, and the threat model records that.
 
-- [ ] **Step 1: Docs first.** better-auth: adapters/prisma, concepts/cli, concepts/database (`generateId`), plugins organization / admin / two-factor / multi-session / api-key. Record installed versions.
-- [ ] **Step 2: Install** with `pnpm --filter core-api add`, catalog the ranges.
+- [ ] **Step 1: Docs first, and record the api-key facts.** better-auth 1.7.2's export map has organization, admin, two-factor and multi-session but **no `./plugins/api-key`** (verified against the installed package). API keys are the separate package `@better-auth/api-key` (1.7.2 on npm). Record: the package, its version, and **the exact option name** that stops a key from authenticating session routes — `enableSessionForAPIKeys` is what this plan expects, and it appears nowhere in the installed tree. Write Step 4's assertion against the name you read. Assuming an option name is how `nextCursor` shipped as an array for two commits.
+- [ ] **Step 2: Install** with `pnpm --filter core-api add better-auth @better-auth/api-key`, catalog the ranges.
 - [ ] **Step 3: Generate the schema, do not write it.** `pnpm dlx @better-auth/cli@latest generate --adapter prisma --dialect postgresql` against a **plugins-only config file** (the real `auth.config.ts` imports the data-access adapter and the CJS client, which the CLI loader may not resolve). Merge into `schema.prisma` with `@map`/`@@map` to snake_case, `@db.Uuid` ids defaulting to `uuidv7()`, `@db.Timestamptz(3)`. Then `prisma migrate dev --create-only`, review, generate `down.sql`.
 - [ ] **Step 4: Failing e2e (api-e2e).** Sign-up, sign-in, `get-session`, sign-out; 2FA enable → verify → sign-in requires a code; multi-session list/revoke; org create → invite → accept → `activeOrganizationId` on the session; admin ban → sign-in refused; impersonate → session carries `impersonatedBy`. API keys, both directions:
   - opt-in route + valid `x-api-key` → 200;
@@ -96,7 +100,7 @@
 - Produces: `Principal` (`{ type: 'user' | 'apiKey' | 'system', id, actorId?, orgId?, roles[], statements }`) — defined here because Task 4 resolves it; `ActionRegistry` (typed `<resource>.<verb>`, versioned, and the single source that *generates* better-auth's `createAccessControl` statements); `authz.can/require/canAny/canAll`; `ForbiddenProblem` (403 Problem Details, deny reason logged and never returned).
 - **No database access.** Evaluation runs against the principal and the role definitions in memory. That is what makes it safe to call from inside a transaction, and it is the direct consequence of Task 0.
 
-- [ ] **Step 1: Failing unit tests (pure, no DB, no container):** unknown action → deny; unknown resource → deny; role grants → allow; ownership condition; api-key principal limited to the key's own permissions and never the issuer's; `effectiveUser` vs `actor` — the check uses effective, the audit context carries both; `require` throws the 403 Problem with type `…/forbidden` and no reason in the body; a policy version bump invalidates a cached decision. The "unknown action" test casts through `unknown`, since a typed registry would otherwise refuse to compile it — the point is the runtime deny path.
+- [ ] **Step 1: Failing unit tests (pure, no DB, no container):** unknown action → deny; unknown resource → deny; role grants → allow; ownership condition; api-key principal limited to the key's own permissions and never the issuer's; `effectiveUser` vs `actor` — the check uses effective, the audit context carries both; `require` throws the 403 Problem with type `…/forbidden` and no reason in the body; **the same test installs a capturing logger and asserts the denial record carries the action, the principal type and the reason** (§6.5 requires the reason as a log and audit event, and the authz gate claims it); a policy version bump invalidates a cached decision. The "unknown action" test casts through `unknown`, since a typed registry would otherwise refuse to compile it — the point is the runtime deny path.
 - [ ] **Step 2: Implement.** Deny is the default branch of an exhaustive `switch` over `Principal['type']`.
 - [ ] **Step 3: Commit.**
 
@@ -105,17 +109,19 @@
 ### Task 4: Tenant context — resolved once per request, before any transaction
 
 **Files:**
-- Create: `libs/core/server/core/src/lib/tenancy/{request-context.storage,tenant-context.hook,current-principal.decorator}.ts` + specs
+- Create: `libs/core/server/core/src/lib/tenancy/{request-context.storage,current-principal.decorator}.ts` + specs — the auth-agnostic half: the `AsyncLocalStorage` instance, the stored shape, the decorator
+- Create: `apps/core/api/src/app/tenancy/tenant-context.hook.ts` + spec — **in the app**, because it calls `auth.api.*` and `auth` lives in `apps/core/api/src/app/auth/auth.config.ts`. A library cannot import from an app: no tsconfig path exists and the boundary rules forbid it. If a worker later needs the same resolution, move `auth.config.ts` into a `type:data-access` library — decide that in Task 2, where the config is written
 - Create: `libs/core/server/data-access-db/src/lib/transaction/with-request-transaction.ts` + spec
 - Modify: `docs/contracts/transactions.md`, `docs/upgrades.md`
 
 **Interfaces:**
 - Produces: a Fastify `onRequest` hook that resolves the `Principal` **and** the `TenantContext` — from `x-api-key` via `auth.api.verifyApiKey`, otherwise from the session via `auth.api.getSession`, otherwise unauthenticated — and stores them with `storage.enterWith(...)`. `Database.withRequestTransaction(work)` reads the stored `TenantContext` and delegates to `withTenantTransaction`.
-- `db.tenant()` keeps the Phase 2 behaviour: it throws outside a transaction. It is synchronous, and making it open one would be the auto-wrap the spec forbids (§6.5) — two consecutive calls would silently become two transactions.
+- `db.tenant()` keeps the Phase 2 behaviour: it throws outside a transaction.
+- **A deliberate deviation, recorded as one.** §6.5's auto-wrap prohibition is about the *Prisma extension*; the sentence above it does sanction the accessor opening a short transaction itself. We keep `tenant()` synchronous anyway, because an accessor that sometimes opens a transaction makes two consecutive calls two transactions with no atomicity between them, and nothing at the call site says so. `withRequestTransaction` is the explicit form. Constraint 7 applies: this becomes an entry in `docs/upgrades.md` that **replaces** the older one, and the entry says the spec sentence was read and traded away.
 
 - [ ] **Step 1: Failing tests.** The hook maps api-key / session / neither to the three shapes; the context is visible **inside a Nest guard and inside a service method**, not merely inside the hook (`AsyncLocalStorage.run` in a Fastify hook does not survive into the handler — `enterWith` does, which is what `@fastify/request-context` uses); the api-key branch never consults cookies; `withRequestTransaction` throws with a clear message when there is no request context.
 - [ ] **Step 2: Implement.** Registering `@fastify/request-context` is acceptable if it turns out to carry the storage more reliably than a hand-rolled `enterWith` — decide from the test, not from taste.
-- [ ] **Step 3: Update the contract docs** (the `tenant()` upgrades entry is replaced by this design; `transactions.md` gains `withRequestTransaction`).
+- [ ] **Step 3: Update the contract docs.** `transactions.md` gains `withRequestTransaction`; the `docs/upgrades.md` entry about `tenant()` is **replaced** (today: synchronous, explicit form; signal: a read path where the explicit call is pure ceremony; steps: resolve the stored context inside `tenant()`, return a promise, migrate callers) — not deleted, so the next reader sees the trade rather than assuming it was missed.
 - [ ] **Step 4: Commit.**
 
 ---
@@ -123,13 +129,16 @@
 ### Task 5: RLS — policies on new reference tables
 
 **Files:**
+- Modify: `libs/core/server/data-access-db/prisma/schema.prisma` — **required**: `migrations.spec.ts` diffs the migrated database against the schema and fails on any difference, so a table created only in SQL breaks the drift check
 - Create: migrations `..._tenant_reference_tables`, `..._rls_policies` (+ `down.sql` each)
 - Create: `libs/core/server/data-access-db/prisma/policies/README.md` (the templates, copied verbatim into migrations)
 - Modify: `docs/contracts/tenant-context.md` (write it for real)
 - Modify: `libs/core/server/testing/src/lib/postgres.ts` (a PgBouncer helper)
 
 **Interfaces:**
-- Produces: two new reference tables — `notes` (**TENANT_OWNED**: `org_id NOT NULL`) and `bookmarks` (**TENANT_OPTIONAL**: `org_id NULL`, `user_id NOT NULL`) — with `ENABLE` + `FORCE ROW LEVEL SECURITY` and the §6.5 policy template using `NULLIF(current_setting(..., true), '')::uuid`.
+- Produces: two new reference tables with `ENABLE` + `FORCE ROW LEVEL SECURITY` and the §6.5 policy template using `NULLIF(current_setting(..., true), '')::uuid`:
+  - `notes` (**TENANT_OWNED**): uuidv7 id, `org_id NOT NULL @db.Uuid`, `title`, `body`, `version INT NOT NULL DEFAULT 1` (§6.17 requires optimistic concurrency on every mutable aggregate, and Task 8 returns 409 from it), `created_at`/`updated_at` `@db.Timestamptz(3)`, index `(org_id, created_at DESC, id DESC)` — the one Step 2's EXPLAIN asserts on — and the class comment Task 6's script reads.
+  - `bookmarks` (**TENANT_OPTIONAL**): `org_id NULL`, `user_id NOT NULL`, same conventions.
 - **`demo_items` stays GLOBAL.** It is the reference for the global pattern, it is read by an unauthenticated page and by four e2e suites through `withSystemTransaction`, and giving it an `org_id` would need a seed organization inside a migration — which §6.17 forbids.
 
 - [ ] **Step 1: Access-pattern note** (Database Workflow Step 0, one page): the queries these tables serve, expected volume, and why every index leads with `org_id` (RLS adds that predicate to every plan).
@@ -149,15 +158,16 @@
 
 **Files:**
 - Create: `libs/core/server/data-access-db/src/lib/tenancy/{tenant-scoped-models,tenant-guard.extension}.ts` + spec
-- Create: `tools/list-tenant-models.ts` (reads the class comments in `schema.prisma`)
+- Create: `libs/core/server/data-access-db/tools/list-tenant-models.ts` (beside `migration-history.ts`, so the spec can import it relatively; a root-level `tools/` file belongs to no project and has no path alias)
 - Modify: `prisma.service.ts`
 
 **Interfaces:**
 - Produces: `TENANT_SCOPED_MODELS`, generated from the schema's class comments by a script and committed, with a test that fails when the file and the schema disagree; an extension that throws `NoTenantContextError` when an operation on a tenant-scoped model runs with `activeTransaction()?.context.kind === 'system'` or with no transaction. It **does not** open transactions and **does not** inject `where`: RLS is the boundary, the extension exists so a developer sees a stack trace instead of an empty list.
 
-- [ ] **Step 1: Failing tests** — a tenant-scoped `findMany` inside `withSystemTransaction` throws; inside `withTenantTransaction` it passes; a GLOBAL model inside a system transaction passes; `$queryRaw` is not guarded (documented: raw SQL is the author's responsibility, and RLS still applies); the Phase 2 root-client refusal still fires after `$extends`.
-- [ ] **Step 2: Implement** with `$extends({ query: { $allModels: { $allOperations } } })`.
-- [ ] **Step 3: Commit.**
+- [ ] **Step 1: Failing tests** — a tenant-scoped `findMany` inside `withSystemTransaction` throws; inside `withTenantTransaction` it passes; a GLOBAL model inside a system transaction passes; `$queryRaw` is not guarded (documented: raw SQL is the author's responsibility, and RLS still applies); an **unclassified model is a hard error**, never a default, because §6.5 says nothing is inferred. Add the missing class comments to the two existing models in the same step (`DemoItem` → GLOBAL, `IdempotencyRecord` → SYSTEM).
+- [ ] **Step 2: Implement** with `$extends({ query: { $allModels: { $allOperations } } })`. **`$extends` returns a new client**, so applying it to anything other than what `Database` opens transactions on has no effect: `PrismaService` stays the Nest provider (keeping the lifecycle hooks and the root proxy) and gains a `readonly client = guardRootClient(this).$extends(tenantGuard)` built once in the constructor; `Database` opens transactions on `prisma.client`. Making `PrismaService` *be* the `$extends` result would drop the class methods Nest calls, so `onModuleInit`/`onModuleDestroy` would never run and the pool would neither open eagerly nor close.
+- [ ] **Step 3: Prove the seam survived it** — the root-client refusal test still fires, and `onModuleDestroy` still closes the pool.
+- [ ] **Step 4: Commit.**
 
 ---
 
@@ -168,11 +178,12 @@
 - Create: `libs/core/server/core/src/lib/org-settings/setting-registry.ts` (pure Zod map, `type:util`)
 - Create: `libs/core/server/data-access-db/src/lib/org-settings/org-settings.repository.ts` (domain DTOs)
 - Create: the service and `IpAllowlistGuard` in `apps/core/api` (an app may depend on both; `type:util` may not reach the database)
+- Modify: `apps/core/api/src/main.ts` and `libs/core/server/core/src/lib/config/env.schema.ts` — `trustProxy: true` trusts **every** hop, so a client-supplied `X-Forwarded-For` does change `request.ip` and the allowlist guard is worth nothing. It becomes configuration: the edge's address or CIDR, defaulting to the loopback edge in development
 
 **Interfaces:**
 - Produces: per-key Zod validation (unknown key → 400), `get`/`set` with an optimistic version check (409 on stale), and a guard reading `security.ipAllowlist` against `request.ip` — the value `trustProxy` resolves, never a header parsed by hand.
 
-- [ ] **Step 1: Failing tests** — validation per key; stale write → 409 Problem; empty allowlist → allow; IP outside → 403; IPv6 and CIDR boundaries; a spoofed `X-Forwarded-For` from an untrusted hop does not change `request.ip`.
+- [ ] **Step 1: Failing tests** — validation per key; stale write → 409 Problem; empty allowlist → allow; IP outside → 403; IPv6 and CIDR boundaries; a spoofed `X-Forwarded-For` from an **untrusted** hop does not change `request.ip`, while the same header from the configured edge does (Task 2 Step 6 asserts that direction; both must hold under one configuration).
 - [ ] **Step 2: Implement, green. Commit.**
 
 ---
@@ -180,7 +191,7 @@
 ### Task 8: Reference feature — tenant-scoped CRUD
 
 **Files:**
-- Create: `libs/core/server/feature-notes` via the workspace generator (`type:feature`)
+- Create: `libs/core/server/feature-notes` via the workspace generator (`type:feature`), and the notes repository in `data-access-db`
 - Modify: `apps/core/api` (mount), `apps/core/api/openapi.json` + generated client (drift check)
 
 **Interfaces:**
@@ -195,7 +206,7 @@
 ### Task 9: Web — auth screens, org switcher, device sessions, forms, i18n
 
 **Files:**
-- Create: `apps/core/web/src/app/(auth)/{sign-in,sign-up,two-factor}/page.tsx`, `src/app/(app)/settings/{organizations,devices}/page.tsx`, `src/proxy.ts`, `messages/{vi,en}.json`
+- Create: `apps/core/web/src/app/(auth)/{sign-in,sign-up,two-factor}/page.tsx`, `src/app/(app)/{notes,settings/organizations,settings/devices}/page.tsx`, `src/proxy.ts`, `messages/{vi,en}.json`
 - Create: `libs/shared/contracts` (`type:util`, `platform:shared`) — the Zod schemas both the API DTOs and the forms import
 - Modify: `libs/shared/ui` (form primitives via `shadcn add form`), `libs/shared/i18n` (retag `platform:web`, since next-intl is Next-only), `docs/contracts/api-client.md` (the chain now starts in `libs/shared/contracts`)
 
@@ -226,7 +237,7 @@
 - [ ] **Tenancy gate:** the `rolsuper`/`rolbypassrls` guard test green (so isolation is being tested at all); Task 5's isolation tests green **without** the guard extension; the extension's throw test green; PgBouncer green; `EXPLAIN` recorded on realistic volume.
 - [ ] **Authz gate:** registry-driven checks, default deny proven, principal types covered, deny reasons in logs and not in bodies.
 - [ ] `pnpm nx reset && pnpm verify && pnpm knip`; `pnpm dev` smoke in vi and en; two independent reviews of the full diff; fix; commit `chore: phase 3 auth, tenancy, authz complete`.
-- [ ] Update `docs/upgrades.md` for every simplification taken (expected: ReBAC provider slot, sessions not in secondary storage, email via Mailpit only, `cross_tenant_admin_role` unused until an admin surface exists).
+- [ ] Update `docs/upgrades.md` for every simplification taken (expected: ReBAC provider slot, sessions not in secondary storage, email via Mailpit only, `cross_tenant_admin_role` unused until an admin surface exists, `db.tenant()` staying synchronous, and — since §7 Phase 3 ends with "user CRUD tenant-scoped" — **tenant-scoped member/user CRUD deferred to the organization plugin's own endpoints**: signal, a product needs a member list or a member field the plugin does not expose; steps, extend through the plugin's hooks and `additionalFields`, never a second table).
 
 ## Task order and why
 

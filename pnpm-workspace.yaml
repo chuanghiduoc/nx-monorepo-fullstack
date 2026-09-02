@@ -68,6 +68,7 @@ catalog:
   'fishery': '^2.4.0'
   '@faker-js/faker': '^10.6.0'
   '@scalar/fastify-api-reference': '^1.67.0'
+  '@types/pg': '^8.23.1'
 
 # @nestjs/platform-fastify pins fastify 5.11.x while @fastify/helmet requires
 # 5.12.x. Two copies means two sets of FastifyInstance types, and a plugin

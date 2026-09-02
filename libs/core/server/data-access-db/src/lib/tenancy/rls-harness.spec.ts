@@ -1,3 +1,5 @@
+import { Client as PgClient } from 'pg';
+
 import {
   POSTGRES_START_TIMEOUT_MS,
   startPostgres,
@@ -55,6 +57,29 @@ describe('the test connection can be bound by row-level security', () => {
     );
 
     await expect(escalated).rejects.toThrow();
+  });
+
+  it('can read a table created by a later migration without an explicit grant', async () => {
+    // Default privileges apply only to objects created *by* the role they name.
+    // Migrations run as the owner, so `ALTER DEFAULT PRIVILEGES FOR ROLE
+    // migration_role` would never fire and every table added after this point
+    // would be invisible to app_user — which reads exactly like RLS working.
+    const owner = new PgClient({ connectionString: postgres.migrationUri });
+    await owner.connect();
+    try {
+      await owner.query('CREATE TABLE grant_probe (id int)');
+      await owner.query('INSERT INTO grant_probe VALUES (1)');
+    } finally {
+      await owner.end();
+    }
+
+    const rows = await db.withSystemTransaction(() =>
+      db
+        .system()
+        .$queryRawUnsafe<{ id: number }[]>('SELECT id FROM grant_probe'),
+    );
+
+    expect(rows).toEqual([{ id: 1 }]);
   });
 
   it('is actually held by a FORCE policy', async () => {

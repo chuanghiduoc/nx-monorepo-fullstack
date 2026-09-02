@@ -149,7 +149,14 @@ async function bootstrap() {
   );
 }
 
-bootstrap().catch((error) => {
-  Logger.error('core-api failed to start', error);
+bootstrap().catch((error: unknown) => {
+  // The message, not just the stack: Nest's Logger treats a second argument as
+  // a stack trace, so passing the error object alone prints a failure with no
+  // reason — and the reason is the only useful part of a boot failure.
+  const reason = error instanceof Error ? error.message : String(error);
+  Logger.error(`core-api failed to start: ${reason}`);
+  if (error instanceof Error && error.stack) {
+    Logger.error(error.stack);
+  }
   process.exitCode = 1;
 });

@@ -46,8 +46,7 @@
     },
     "libs/core/server/data-access-db": {
       "ignoreDependencies": [
-        "@prisma/client",
-        "pg"
+        "@prisma/client"
       ],
       "entry": [
         "prisma7.config.ts"

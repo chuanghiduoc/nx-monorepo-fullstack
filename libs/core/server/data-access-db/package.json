@@ -23,6 +23,7 @@
     "tslib": "catalog:"
   },
   "devDependencies": {
+    "@types/pg": "catalog:",
     "@workspace/core-server-testing": "workspace:*",
     "dotenv": "catalog:",
     "prisma": "catalog:",

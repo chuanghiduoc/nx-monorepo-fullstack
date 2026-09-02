@@ -67,7 +67,36 @@ export class PrismaService
     // Connecting eagerly turns an unreachable database into a boot failure
     // instead of a failure on whichever request happens to need it first.
     await this.$connect();
+    await this.refuseUnboundConnection();
     this.logger.log('Database connection established');
+  }
+
+  /**
+   * Refuses to serve traffic on a connection that row-level security cannot
+   * bind.
+   *
+   * `FORCE ROW LEVEL SECURITY` binds table owners, never superusers or
+   * `BYPASSRLS` roles: connected as one, every tenant policy would be
+   * advisory and nothing would say so. Phase 3 depends on this, so it is a
+   * boot condition rather than a review item.
+   */
+  private async refuseUnboundConnection(): Promise<void> {
+    const [role] = await this.$queryRaw<
+      { name: string; isSuper: boolean; bypasses: boolean }[]
+    >`
+      SELECT current_user AS name,
+             rolsuper AS "isSuper",
+             rolbypassrls AS bypasses
+      FROM pg_roles WHERE rolname = current_user`;
+
+    if (role?.isSuper || role?.bypasses) {
+      throw new Error(
+        `The database connection uses "${role.name}", which row-level security cannot bind ` +
+          '(superuser or BYPASSRLS). Point DATABASE_URL at app_user. ' +
+          'If the role has no login, the database volume predates the roles migration: ' +
+          'run `docker compose down -v` and start again, or see docs/ops/database-roles.md.',
+      );
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
