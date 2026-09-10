@@ -54,6 +54,11 @@ const workerRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
  * The shim `exec`s node, so the child really is the worker. Which is what the
  * comment on the suite already claimed: started the way a container starts it,
  * where `tini` runs `node main.js` with nothing in between.
+ *
+ * Reaching it by path is also why `tsx` is listed under `ignoreDependencies`
+ * for this project in knip.json: knip reads the literal `'tsx'` that used to be
+ * an argument here, and a path it builds cannot be followed. The dependency is
+ * as used as it ever was — this file is the use.
  */
 const tsxBin = join(
   workerRoot,

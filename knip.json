@@ -45,6 +45,9 @@
       ],
       "project": [
         "src/**/*.ts"
+      ],
+      "ignoreDependencies": [
+        "tsx"
       ]
     },
     "tools/workspace-plugin": {
