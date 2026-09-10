@@ -64,3 +64,11 @@ libs/**/.agents/
 libs/**/.claude/
 libs/**/.windsurf/
 libs/**/skills-lock.json
+
+# Local configuration. The `*.example` files are the tracked templates; the
+# files they are copied to hold whatever this machine actually uses, including
+# real secrets, and must never be committed.
+.env
+.env.*
+!.env.example
+!.env.prod.example

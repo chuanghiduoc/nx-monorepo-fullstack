@@ -3,19 +3,32 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
+    "@better-auth/api-key": "catalog:",
+    "@hookform/resolvers": "catalog:",
+    "@tanstack/react-query": "catalog:",
     "@workspace/shared-api-client-core": "workspace:*",
+    "@workspace/shared-contracts": "workspace:*",
+    "@workspace/shared-i18n": "workspace:*",
     "@workspace/shared-ui": "workspace:*",
+    "better-auth": "catalog:",
+    "lucide-react": "catalog:",
     "next": "catalog:",
+    "next-intl": "catalog:",
+    "next-themes": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "react-hook-form": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "catalog:",
     "@testing-library/react": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "jsdom": "catalog:",
     "postcss": "catalog:",
     "shadcn": "catalog:",
     "tailwindcss": "catalog:",
-    "tw-animate-css": "catalog:"
+    "tw-animate-css": "catalog:",
+    "vitest": "catalog:"
   }
 }

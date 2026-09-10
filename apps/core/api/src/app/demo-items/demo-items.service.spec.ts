@@ -25,7 +25,7 @@ describe('DemoItemsService pagination', () => {
     // Wired the way the application wires it: the root client stays inside
     // DatabaseModule, and this test never sees it.
     moduleRef = await Test.createTestingModule({
-      imports: [DatabaseModule],
+      imports: [DatabaseModule.forRoot('DATABASE_URL', 'DATABASE_POOL_MAX')],
       providers: [DemoItemsService],
     }).compile();
     await moduleRef.init();

@@ -21,7 +21,7 @@ describe('IdempotencyStore', () => {
 
   beforeAll(async () => {
     database = await startPostgres();
-    prisma = new PrismaService();
+    prisma = new PrismaService('DATABASE_URL', 'DATABASE_POOL_MAX');
     await prisma.$connect();
     store = new IdempotencyStore(new Database(prisma));
   }, POSTGRES_START_TIMEOUT_MS);

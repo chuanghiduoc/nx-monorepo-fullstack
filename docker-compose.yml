@@ -1,10 +1,13 @@
 name: nx-monorepo-fullstack
 
 # Development infrastructure only — the apps themselves run from the Nx dev servers.
-# Production compose (Caddy, hardened images, migration entry) lands in Phase 6.
+# The production-shaped run is docker-compose.prod.yml, which builds images.
 services:
   postgres:
-    image: postgres:18-alpine
+    # PostgreSQL 18.6 with pgvector, not `postgres:18-alpine`: measured, the
+    # Alpine image has no `vector` extension at all, and the AI schema creates
+    # one. Same server version, Debian base, larger image.
+    image: pgvector/pgvector:pg18
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -24,8 +27,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      # Without a start period every probe during initialisation counts against
+      # `retries`, and a first start — initdb, the init script, then a restart —
+      # takes longer than ten of them on a cold machine. The container is then
+      # marked unhealthy and everything that waits on it aborts, on a database
+      # that goes on to become healthy seconds later.
+      start_period: 60s
 
-  # Queue, quota, rate limiting, locks and idempotency acceleration (spec §3).
+  # Queue, quota, rate limiting, locks and idempotency acceleration.
   # BullMQ requires noeviction: evicting a key here would silently drop jobs.
   redis-critical:
     image: redis:8-alpine

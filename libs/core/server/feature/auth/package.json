@@ -24,6 +24,10 @@
     "@workspace/core-server-data-access-db": "workspace:*",
     "better-auth": "catalog:",
     "fastify": "catalog:",
+    "ioredis": "catalog:",
     "tslib": "catalog:"
+  },
+  "devDependencies": {
+    "testcontainers": "catalog:"
   }
 }

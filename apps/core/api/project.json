@@ -105,6 +105,28 @@
       "dependsOn": [
         "^build"
       ]
+    },
+    "docker:build": {
+      "//": "Declared rather than inferred. `@nx/docker` infers `docker build .` with the project directory as the context, and these Dockerfiles need the workspace root: the lockfile, the catalog and every library they import live there. Measured \u2014 the inferred target was `{\"cwd\": \"apps/core/api\", \"command\": \"docker build .\"}`, which cannot see any of it. The tag matches the plugin's own naming so the inferred `docker:run` still finds the image this builds.",
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{workspaceRoot}",
+        "command": "docker build -f apps/core/api/Dockerfile -t apps-core-api ."
+      }
+    },
+    "openapi-check": {
+      "//": "Regenerates the OpenAPI document and the client, then fails if either moved. This existed only in CI, and the gap was not theoretical: the committed document sat at five paths while the API served sixteen \u2014 eleven routes from webhooks, erasure, files, realtime and the assistant were missing from the contract and from the generated client, and `pnpm verify` said nothing for two phases. A check that only runs on a push is a check that lets the thing it guards rot locally.",
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{workspaceRoot}",
+        "parallel": false,
+        "commands": [
+          "nx run core-api:openapi",
+          "nx run shared-api-client-core:generate",
+          "git add --intent-to-add -- apps/core/api/openapi.json libs/shared/api-client-core/src/generated",
+          "git diff --exit-code -- apps/core/api/openapi.json libs/shared/api-client-core/src/generated"
+        ]
+      }
     }
   }
 }

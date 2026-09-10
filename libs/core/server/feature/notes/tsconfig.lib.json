@@ -12,6 +12,15 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
+      "path": "../../../../shared/contracts/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/realtime/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/events/tsconfig.lib.json"
+    },
+    {
       "path": "../../platform/data-access-db/tsconfig.lib.json"
     },
     {

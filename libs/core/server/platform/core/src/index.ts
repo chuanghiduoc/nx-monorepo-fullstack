@@ -1,5 +1,25 @@
-export { AppConfig, AppConfigModule } from './lib/config/config.module.js';
-export { envSchema, type AppEnv } from './lib/config/env.schema.js';
+export {
+  AppConfig,
+  AppConfigModule,
+  BaseConfig,
+  WorkerConfig,
+} from './lib/config/config.module.js';
+export {
+  baseEnvSchema,
+  envSchema,
+  workerEnvSchema,
+  type AppEnv,
+  type BaseEnv,
+  type WorkerEnv,
+} from './lib/config/env.schema.js';
+export { DeadlineError, withDeadline } from './lib/deadline.js';
+export {
+  closeRedis,
+  flushOutput,
+  reportBootFailure,
+  stopOnSignal,
+  type StopOnSignalOptions,
+} from './lib/shutdown.js';
 export { AppLoggerModule } from './lib/logging/logging.module.js';
 export { REDACTED_PATHS, REDACTION_CENSOR } from './lib/logging/redaction.js';
 export {
@@ -24,7 +44,15 @@ export {
   type SettingValue,
 } from './lib/org-settings/setting-registry.js';
 export { OriginCheckGuard } from './lib/security/origin-check.guard.js';
-export { AppThrottlerModule } from './lib/security/throttler.module.js';
+export {
+  SIGNED_REQUEST,
+  SignedRequest,
+} from './lib/security/signed-request.decorator.js';
+export {
+  AppThrottlerModule,
+  ThrottlerStorageModule,
+} from './lib/security/throttler.module.js';
+export { ThrottlerRedisStorage } from './lib/security/throttler-storage.js';
 export {
   fingerprintRequest,
   normaliseRoute,
@@ -45,9 +73,6 @@ export {
   type TenantScopedContext,
 } from './lib/tenancy/tenant-context.js';
 export {
-  CURSOR_MAX_LENGTH,
-  DEFAULT_PAGE_LIMIT,
-  MAX_PAGE_LIMIT,
   decodeCursor,
   encodeCursor,
   hashPaginationFilter,

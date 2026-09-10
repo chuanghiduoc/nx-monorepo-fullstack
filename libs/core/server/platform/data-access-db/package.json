@@ -20,11 +20,13 @@
     "@prisma/adapter-pg": "catalog:",
     "@prisma/client": "catalog:",
     "@workspace/core-server-core": "workspace:*",
+    "@workspace/core-server-observability": "workspace:*",
     "pg": "catalog:",
     "tslib": "catalog:"
   },
   "devDependencies": {
     "@types/pg": "catalog:",
+    "@workspace/core-server-queue": "workspace:*",
     "@workspace/core-server-testing": "workspace:*",
     "dotenv": "catalog:",
     "prisma": "catalog:",

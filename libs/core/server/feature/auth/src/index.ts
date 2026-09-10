@@ -4,8 +4,14 @@ export { mountBetterAuth } from './lib/auth.handler.js';
 export {
   API_KEY_HEADER,
   mountTenantContext,
+  principalFromHeaders,
 } from './lib/tenant-context.hook.js';
-export { authOptions } from './lib/auth.options.js';
+export {
+  SCHEMA_GENERATION_TUNING,
+  authOptionsFor,
+  type AuthOptions,
+  type AuthTuning,
+} from './lib/auth.options.js';
 export {
   ac,
   rolePermissions,

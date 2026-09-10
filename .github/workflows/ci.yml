@@ -79,7 +79,7 @@ jobs:
       - run: pnpm exec nx fix-ci
         if: always()
 
-  # PR-stage security gate (spec §3). Image scanning, SBOM, SLSA provenance and
+  # PR-stage security gate. Image scanning, SBOM, SLSA provenance and
   # signing run in the release workflow instead, once images exist.
   secrets-scan:
     runs-on: ubuntu-latest

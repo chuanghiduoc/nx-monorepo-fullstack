@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client/index.js';
-import type { AppControllerGetDataData, AppControllerGetDataResponses, DemoItemsControllerCreateData, DemoItemsControllerCreateResponses, DemoItemsControllerListData, DemoItemsControllerListResponses, NotesControllerCreateData, NotesControllerCreateResponses, NotesControllerFindData, NotesControllerFindResponses, NotesControllerListData, NotesControllerListResponses, NotesControllerRemoveData, NotesControllerRemoveResponses, NotesControllerUpdateData, NotesControllerUpdateResponses, WhoamiControllerWhoamiData, WhoamiControllerWhoamiResponses } from './types.gen.js';
+import type { AiControllerAskData, AiControllerAskResponses, AiControllerIngestData, AiControllerIngestResponses, AiControllerListData, AiControllerListResponses, AiControllerRemoveData, AiControllerRemoveResponses, AppControllerGetDataData, AppControllerGetDataResponses, DemoItemsControllerCreateData, DemoItemsControllerCreateResponses, DemoItemsControllerListData, DemoItemsControllerListResponses, FilesControllerCompleteData, FilesControllerCompleteResponses, FilesControllerDownloadData, FilesControllerDownloadResponses, FilesControllerListData, FilesControllerListResponses, FilesControllerRemoveData, FilesControllerRemoveResponses, FilesControllerRequestUploadData, FilesControllerRequestUploadResponses, NotesControllerCreateData, NotesControllerCreateResponses, NotesControllerFindData, NotesControllerFindResponses, NotesControllerListData, NotesControllerListResponses, NotesControllerRemoveData, NotesControllerRemoveResponses, NotesControllerUpdateData, NotesControllerUpdateResponses, PrivacyControllerCancelData, PrivacyControllerCancelResponses, PrivacyControllerRequestData, PrivacyControllerRequestResponses, PrivacyControllerStatusData, PrivacyControllerStatusResponses, RealtimeControllerStreamData, RealtimeControllerStreamResponses, WebhooksControllerCreateData, WebhooksControllerCreateResponses, WebhooksControllerListData, WebhooksControllerListResponses, WebhooksControllerRemoveData, WebhooksControllerRemoveResponses, WebhooksControllerUpdateData, WebhooksControllerUpdateResponses, WhoamiControllerWhoamiData, WhoamiControllerWhoamiResponses } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -21,6 +21,23 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 export const appControllerGetData = <ThrowOnError extends boolean = false>(options?: Options<AppControllerGetDataData, ThrowOnError>): RequestResult<AppControllerGetDataResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AppControllerGetDataResponses, unknown, ThrowOnError>({ url: '/api', ...options });
 
 export const whoamiControllerWhoami = <ThrowOnError extends boolean = false>(options?: Options<WhoamiControllerWhoamiData, ThrowOnError>): RequestResult<WhoamiControllerWhoamiResponses, unknown, ThrowOnError> => (options?.client ?? client).get<WhoamiControllerWhoamiResponses, unknown, ThrowOnError>({ url: '/api/whoami', ...options });
+
+export const realtimeControllerStream = <ThrowOnError extends boolean = false>(options?: Options<RealtimeControllerStreamData, ThrowOnError>): RequestResult<RealtimeControllerStreamResponses, unknown, ThrowOnError> => (options?.client ?? client).get<RealtimeControllerStreamResponses, unknown, ThrowOnError>({ url: '/api/v1/realtime/stream', ...options });
+
+export const aiControllerList = <ThrowOnError extends boolean = false>(options?: Options<AiControllerListData, ThrowOnError>): RequestResult<AiControllerListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AiControllerListResponses, unknown, ThrowOnError>({ url: '/api/v1/ai/documents', ...options });
+
+export const aiControllerIngest = <ThrowOnError extends boolean = false>(options: Options<AiControllerIngestData, ThrowOnError>): RequestResult<AiControllerIngestResponses, unknown, ThrowOnError> => (options.client ?? client).post<AiControllerIngestResponses, unknown, ThrowOnError>({
+    url: '/api/v1/ai/documents',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const aiControllerRemove = <ThrowOnError extends boolean = false>(options: Options<AiControllerRemoveData, ThrowOnError>): RequestResult<AiControllerRemoveResponses, unknown, ThrowOnError> => (options.client ?? client).delete<AiControllerRemoveResponses, unknown, ThrowOnError>({ url: '/api/v1/ai/documents/{id}', ...options });
+
+export const aiControllerAsk = <ThrowOnError extends boolean = false>(options: Options<AiControllerAskData, ThrowOnError>): RequestResult<AiControllerAskResponses, unknown, ThrowOnError> => (options.client ?? client).get<AiControllerAskResponses, unknown, ThrowOnError>({ url: '/api/v1/ai/ask', ...options });
 
 export const notesControllerList = <ThrowOnError extends boolean = false>(options?: Options<NotesControllerListData, ThrowOnError>): RequestResult<NotesControllerListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<NotesControllerListResponses, unknown, ThrowOnError>({ url: '/api/v1/notes', ...options });
 
@@ -45,6 +62,58 @@ export const notesControllerUpdate = <ThrowOnError extends boolean = false>(opti
         ...options.headers
     }
 });
+
+export const privacyControllerCancel = <ThrowOnError extends boolean = false>(options?: Options<PrivacyControllerCancelData, ThrowOnError>): RequestResult<PrivacyControllerCancelResponses, unknown, ThrowOnError> => (options?.client ?? client).delete<PrivacyControllerCancelResponses, unknown, ThrowOnError>({ url: '/api/v1/me/erasure', ...options });
+
+export const privacyControllerStatus = <ThrowOnError extends boolean = false>(options?: Options<PrivacyControllerStatusData, ThrowOnError>): RequestResult<PrivacyControllerStatusResponses, unknown, ThrowOnError> => (options?.client ?? client).get<PrivacyControllerStatusResponses, unknown, ThrowOnError>({ url: '/api/v1/me/erasure', ...options });
+
+export const privacyControllerRequest = <ThrowOnError extends boolean = false>(options?: Options<PrivacyControllerRequestData, ThrowOnError>): RequestResult<PrivacyControllerRequestResponses, unknown, ThrowOnError> => (options?.client ?? client).post<PrivacyControllerRequestResponses, unknown, ThrowOnError>({ url: '/api/v1/me/erasure', ...options });
+
+export const webhooksControllerList = <ThrowOnError extends boolean = false>(options?: Options<WebhooksControllerListData, ThrowOnError>): RequestResult<WebhooksControllerListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<WebhooksControllerListResponses, unknown, ThrowOnError>({ url: '/api/v1/webhooks', ...options });
+
+export const webhooksControllerCreate = <ThrowOnError extends boolean = false>(options: Options<WebhooksControllerCreateData, ThrowOnError>): RequestResult<WebhooksControllerCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<WebhooksControllerCreateResponses, unknown, ThrowOnError>({
+    url: '/api/v1/webhooks',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const webhooksControllerRemove = <ThrowOnError extends boolean = false>(options: Options<WebhooksControllerRemoveData, ThrowOnError>): RequestResult<WebhooksControllerRemoveResponses, unknown, ThrowOnError> => (options.client ?? client).delete<WebhooksControllerRemoveResponses, unknown, ThrowOnError>({ url: '/api/v1/webhooks/{id}', ...options });
+
+export const webhooksControllerUpdate = <ThrowOnError extends boolean = false>(options: Options<WebhooksControllerUpdateData, ThrowOnError>): RequestResult<WebhooksControllerUpdateResponses, unknown, ThrowOnError> => (options.client ?? client).patch<WebhooksControllerUpdateResponses, unknown, ThrowOnError>({
+    url: '/api/v1/webhooks/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const filesControllerList = <ThrowOnError extends boolean = false>(options?: Options<FilesControllerListData, ThrowOnError>): RequestResult<FilesControllerListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<FilesControllerListResponses, unknown, ThrowOnError>({ url: '/api/v1/files', ...options });
+
+export const filesControllerRequestUpload = <ThrowOnError extends boolean = false>(options: Options<FilesControllerRequestUploadData, ThrowOnError>): RequestResult<FilesControllerRequestUploadResponses, unknown, ThrowOnError> => (options.client ?? client).post<FilesControllerRequestUploadResponses, unknown, ThrowOnError>({
+    url: '/api/v1/files',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const filesControllerComplete = <ThrowOnError extends boolean = false>(options: Options<FilesControllerCompleteData, ThrowOnError>): RequestResult<FilesControllerCompleteResponses, unknown, ThrowOnError> => (options.client ?? client).post<FilesControllerCompleteResponses, unknown, ThrowOnError>({
+    url: '/api/v1/files/{id}/complete',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const filesControllerDownload = <ThrowOnError extends boolean = false>(options: Options<FilesControllerDownloadData, ThrowOnError>): RequestResult<FilesControllerDownloadResponses, unknown, ThrowOnError> => (options.client ?? client).get<FilesControllerDownloadResponses, unknown, ThrowOnError>({ url: '/api/v1/files/{id}/download', ...options });
+
+export const filesControllerRemove = <ThrowOnError extends boolean = false>(options: Options<FilesControllerRemoveData, ThrowOnError>): RequestResult<FilesControllerRemoveResponses, unknown, ThrowOnError> => (options.client ?? client).delete<FilesControllerRemoveResponses, unknown, ThrowOnError>({ url: '/api/v1/files/{id}', ...options });
 
 export const demoItemsControllerList = <ThrowOnError extends boolean = false>(options?: Options<DemoItemsControllerListData, ThrowOnError>): RequestResult<DemoItemsControllerListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<DemoItemsControllerListResponses, unknown, ThrowOnError>({ url: '/api/v1/demo-items', ...options });
 

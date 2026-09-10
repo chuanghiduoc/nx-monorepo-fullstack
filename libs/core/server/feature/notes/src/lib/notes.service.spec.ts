@@ -1,6 +1,11 @@
 import { NotFoundException } from '@nestjs/common';
 import { AuthzService, type Principal } from '@workspace/core-server-authz';
-import type { NoteRepository } from '@workspace/core-server-data-access-db';
+import { RealtimeBus } from '@workspace/core-server-realtime';
+import type {
+  Database,
+  NoteRepository,
+  OutboxRepository,
+} from '@workspace/core-server-data-access-db';
 import { describe, expect, it, vi } from 'vitest';
 
 import { NotesService } from './notes.service.js';
@@ -10,6 +15,15 @@ const ORG = '0199a1b2-0000-7000-8000-00000000000a';
 const rolePermissions = {
   member: { note: ['create', 'read', 'update', 'delete'] },
   observer: { note: ['read'] },
+};
+
+const aNote = {
+  id: '0199a1b2-0000-7000-8000-0000000000cc',
+  title: 'x',
+  body: '',
+  version: 1,
+  createdAt: '2026-09-02T00:00:00.000Z',
+  updatedAt: '2026-09-02T00:00:00.000Z',
 };
 
 const member = (roles: string[]): Principal =>
@@ -33,9 +47,25 @@ const memberWithoutOrganisation = (roles: string[]): Principal =>
  * after the work has been done is not a permission at all.
  */
 function serviceWith(repository: Partial<NoteRepository>) {
+  // The transaction runs the callback as-is: what these tests are about is the
+  // order of the checks, and a real transaction would only add a database.
+  // The outbox is a spy for the same reason — that the event is written inside
+  // the transaction is proven against a real PostgreSQL in the outbox's suite.
+  const db = {
+    withRequestTransaction: <T>(work: () => Promise<T>) => work(),
+  } as unknown as Database;
+  const outbox = { append: vi.fn() } as unknown as OutboxRepository;
+  // Realtime is a spy too. It is best-effort by construction — a failure here
+  // must not fail the write — and what that promise is worth is measured
+  // against a real Redis in the bus's own suite.
+  const realtime = { publish: vi.fn() } as unknown as RealtimeBus;
+
   return new NotesService(
     repository as NoteRepository,
     new AuthzService(rolePermissions),
+    db,
+    outbox,
+    realtime,
   );
 }
 
@@ -61,7 +91,10 @@ describe('permission comes before work', () => {
   });
 
   it('allows what the role grants', async () => {
-    const create = vi.fn().mockResolvedValue({ id: 'n1' });
+    // A whole note, because the service now describes what it created in the
+    // event it appends. A stub with only an id passed while proving that the
+    // description was never built.
+    const create = vi.fn().mockResolvedValue(aNote);
     const notes = serviceWith({ create });
 
     await notes.create(member(['member']), { title: 'x', body: '' });

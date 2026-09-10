@@ -3,15 +3,26 @@ import type { ExecutionContext } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 
 import { OriginCheckGuard } from './origin-check.guard.js';
+import { SIGNED_REQUEST } from './signed-request.decorator.js';
 
 const ALLOWED = ['http://localhost:4200', 'https://app.example.com'];
 
-function contextFor(request: {
-  method: string;
-  headers: Record<string, string | undefined>;
-}): ExecutionContext {
+/** A handler with no metadata on it, which is the ordinary case. */
+function plainHandler(): void {
+  // Nothing: the guard only ever reads metadata off it.
+}
+
+function contextFor(
+  request: {
+    method: string;
+    headers: Record<string, string | undefined>;
+  },
+  handler: () => void = plainHandler,
+): ExecutionContext {
   return {
     switchToHttp: () => ({ getRequest: () => request }),
+    getHandler: () => handler,
+    getClass: () => class Controller {},
   } as unknown as ExecutionContext;
 }
 
@@ -74,4 +85,38 @@ describe('OriginCheckGuard', () => {
 
     expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });
+
+  it('lets a signed route through with neither origin nor api key', () => {
+    // A signed upload URL is reached by a server with no `Origin` at all, and
+    // by a browser form from wherever the page happens to be. There is no
+    // cookie for a cross-site page to borrow, so the check would refuse the
+    // legitimate callers and stop nothing.
+    const context = contextFor({ method: 'PUT', headers: {} }, signedHandler);
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
+  it('lets a signed route through from an origin that is not allowed', () => {
+    const context = contextFor(
+      { method: 'POST', headers: { origin: 'https://somebodys-app.example' } },
+      signedHandler,
+    );
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
+  it('still refuses the same request without the marker', () => {
+    // The negative control: what makes the two tests above prove anything is
+    // that the identical request is refused when the route is not marked.
+    expect(() =>
+      guard.canActivate(contextFor({ method: 'PUT', headers: {} })),
+    ).toThrow(ForbiddenException);
+  });
 });
+
+/** A handler carrying the marker the decorator sets. */
+function signedHandler(): void {
+  // Nothing: the metadata below is the whole of it.
+}
+
+Reflect.defineMetadata(SIGNED_REQUEST, true, signedHandler);

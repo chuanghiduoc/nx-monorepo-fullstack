@@ -17,7 +17,7 @@ describe('PrismaService against a real PostgreSQL 18', () => {
     // The whole point of these conventions is what the database does, so the
     // test uses a database rather than a mock.
     database = await startPostgres();
-    prisma = new PrismaService();
+    prisma = new PrismaService('DATABASE_URL', 'DATABASE_POOL_MAX');
     await prisma.$connect();
   }, POSTGRES_START_TIMEOUT_MS);
 
@@ -68,7 +68,7 @@ describe('PrismaService against a real PostgreSQL 18', () => {
     const original = process.env['DATABASE_URL'];
     delete process.env['DATABASE_URL'];
 
-    expect(() => new PrismaService()).toThrow(/DATABASE_URL/);
+    expect(() => new PrismaService('DATABASE_URL', 'DATABASE_POOL_MAX')).toThrow(/DATABASE_URL/);
 
     process.env['DATABASE_URL'] = original;
   });

@@ -22,6 +22,7 @@
     "@nestjs/core": "catalog:",
     "@nestjs/throttler": "catalog:",
     "@workspace/core-server-authz": "workspace:*",
+    "@workspace/shared-contracts": "workspace:*",
     "fastify": "catalog:",
     "ioredis": "catalog:",
     "nestjs-pino": "catalog:",

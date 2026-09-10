@@ -1,0 +1,14 @@
+{
+  "name": "core-server-queue",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/core/server/platform/queue/src",
+  "projectType": "library",
+  "tags": [
+    "scope:core",
+    "platform:node",
+    "type:data-access",
+    "driver:queue"
+  ],
+  "// targets": "to see all targets run: nx show project core-server-queue --web",
+  "targets": {}
+}

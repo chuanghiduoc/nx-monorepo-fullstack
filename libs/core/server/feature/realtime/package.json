@@ -1,0 +1,34 @@
+{
+  "name": "@workspace/core-server-feature-realtime",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@workspace/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@nestjs/common": "catalog:",
+    "@nestjs/platform-socket.io": "catalog:",
+    "@nestjs/swagger": "catalog:",
+    "@nestjs/websockets": "catalog:",
+    "@socket.io/redis-adapter": "catalog:",
+    "@workspace/core-server-authz": "workspace:*",
+    "@workspace/core-server-core": "workspace:*",
+    "@workspace/core-server-realtime": "workspace:*",
+    "ioredis": "catalog:",
+    "nestjs-zod": "catalog:",
+    "rxjs": "catalog:",
+    "socket.io": "catalog:",
+    "tslib": "catalog:",
+    "zod": "catalog:"
+  }
+}

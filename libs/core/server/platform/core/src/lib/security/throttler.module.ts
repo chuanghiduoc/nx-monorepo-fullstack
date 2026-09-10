@@ -1,10 +1,31 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
-import { Redis } from 'ioredis';
 
 import { AppConfig } from '../config/config.module.js';
+import { ThrottlerRedisStorage } from './throttler-storage.js';
+
+/**
+ * The rate limiter's Redis, owned by the container.
+ *
+ * A module of its own so that the storage is a **provider** rather than a
+ * value built inside `forRootAsync`'s factory. Nest calls lifecycle hooks on
+ * providers it constructed; an object a factory returned is not one, so
+ * `onApplicationShutdown` would never run and the connection would stay open —
+ * which is the bug this shape exists to prevent, not a stylistic preference.
+ */
+@Module({
+  providers: [
+    {
+      provide: ThrottlerRedisStorage,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig) =>
+        new ThrottlerRedisStorage(config.get('REDIS_CRITICAL_URL')),
+    },
+  ],
+  exports: [ThrottlerRedisStorage],
+})
+export class ThrottlerStorageModule {}
 
 /**
  * Rate limiting backed by Redis.
@@ -20,17 +41,16 @@ import { AppConfig } from '../config/config.module.js';
 @Module({
   imports: [
     ThrottlerModule.forRootAsync({
-      inject: [AppConfig],
-      useFactory: (config: AppConfig) => ({
+      imports: [ThrottlerStorageModule],
+      inject: [AppConfig, ThrottlerRedisStorage],
+      useFactory: (config: AppConfig, storage: ThrottlerRedisStorage) => ({
         throttlers: [
           {
             ttl: config.get('THROTTLE_TTL_MS'),
             limit: config.get('THROTTLE_LIMIT'),
           },
         ],
-        storage: new ThrottlerStorageRedisService(
-          new Redis(config.get('REDIS_CRITICAL_URL')),
-        ),
+        storage,
       }),
     }),
   ],

@@ -179,6 +179,55 @@ Entries are grouped by what triggers them, not by technology.
 - **Steps:** partition delivery by `aggregate_id` and have consumers reject
   events whose `aggregate_version` is older than the one they last processed.
 
+### Sliding quota windows
+
+- **Signal:** an entitlement genuinely needs "N per rolling 30 days" rather
+  than "N per calendar month". Today `QuotaWindow` offers `daily`, `monthly`
+  and `lifetime`, and deliberately does not offer `sliding` — a counter row
+  keyed by a window start cannot express one, and a name that silently
+  delivered a fixed window instead would be worse than not having it.
+- **Steps:** a sliding limit needs the individual consumption events inside the
+  trailing period, so it is a second table and a second mechanism, not a new
+  member of the enum. Keep the counter for the fixed windows; do not try to
+  make one table serve both.
+
+### Per-tenant quota window boundaries
+
+- **Signal:** a customer says their month ends at the wrong time. Windows are
+  computed in UTC, so a tenant in UTC+7 rolls over at 07:00 local.
+- **Steps:** the boundary would come from the tenant's IANA zone, which makes
+  `window_start` depend on a column in another table and on a DST rule — and a
+  zone changed mid-month moves a boundary underneath counters that already
+  exist. Decide what happens to those counters *before* writing the code; that
+  decision is the whole of the work.
+
+### FAST quota in Redis
+
+- **Signal:** a measured p99 on the quota check above budget, or quota checks
+  taking a visible share of transaction time. Not before — the STRICT path is
+  one statement inside a transaction the request was opening anyway.
+- **Steps:** Redis becomes the enforcement authority for the soft classes only
+  (rate limiting, spam), with the database as durable accounting to reconcile
+  against. Say plainly which class a given entitlement is: the two cannot share
+  a transaction, so "fast and strict" is not on offer.
+
+### Reading and ageing the audit trail
+
+- **Signal:** somebody needs to *read* `audit_records`, or the table has grown
+  past what one relation serves comfortably. Neither is true yet: nothing holds
+  `SELECT` on it but the worker that writes it, and there is no retention at
+  all.
+- **Steps, in the order they become necessary:**
+  - a read route, which decides which tenants a support role may see and grants
+    `cross_tenant_admin_role` accordingly — today it is revoked precisely so
+    that decision cannot happen by default privilege;
+  - `PARTITION BY RANGE (occurred_at)`, because that is the column every query
+    would filter on and the one a drop-a-partition policy would use;
+  - an erasure path that clears `actor_id` and redacts `detail` while keeping
+    the row. A delete is not the answer — a trail with holes in it is not a
+    trail — and `erasure_role` holds no privilege here, so it grants itself
+    exactly the columns it touches when it arrives.
+
 ---
 
 ## Phase 1 simplifications
@@ -195,9 +244,11 @@ These are deliberate and small, but they are simplifications and so belong here.
 ### Unused Nest optional integrations are ignored at build time
 
 - **Today:** an `IgnorePlugin` entry keeps class-validator, microservices,
-  websockets and the Fastify static/view plugins out of the bundle.
-- **Signal:** a phase starts using one of them — realtime in Phase 5 needs
-  `@nestjs/websockets`.
+  `platform-express`, the Fastify static/view plugins, `pg-native`,
+  `@valkey/valkey-glide` and `ws`'s two native accelerators out of the bundle.
+  `@nestjs/websockets` **left this list** when realtime arrived, which is the
+  move described below actually happening.
+- **Signal:** a phase starts using one of them.
 - **Steps:** install the package and remove it from the regex in the same
   commit, otherwise the runtime failure looks exactly like a missing install.
 
@@ -414,3 +465,192 @@ These are deliberate and small, but they are simplifications and so belong here.
 - **Signal:** the schema ships alongside the bundle for another reason.
 - **Steps:** read it at startup and delete the generator, keeping the drift
   test as a boot check.
+
+---
+
+## Phase 5 simplifications — storage, realtime, the assistant
+
+### The production compose stores files on the API's own disk
+
+- **Today:** `docker-compose.prod.yml` ships `STORAGE_DRIVER=local` with a named
+  volume shared by the API and the worker. A presigned S3 URL is signed for a
+  *hostname*, and on one host the API and a browser cannot agree on one — a URL
+  signed for `minio:9000` is refused when used from `localhost:9000`, and the
+  reverse. Publishing the port does not fix it and routing through the edge does
+  not either, because SigV4 signs the `Host` header.
+- **Cost, stated:** **one API replica.** The objects live on its disk.
+- **Signal:** a second API replica, or a host that can lose its disk.
+- **Steps:** set `STORAGE_DRIVER=s3` and point `S3_*` at a managed store whose
+  hostname is the same from both sides. The driver is the same either way —
+  that is what the storage suite proves by running one set of assertions against
+  both.
+
+### Realtime is best effort and stores nothing
+
+- **Today:** Redis Pub/Sub. A message published while a browser is between
+  reconnects is gone, and nothing tells it so. The outbox stays the durable path.
+- **Signal:** a notification that has to survive a reconnect — an unread badge,
+  an approval waiting for somebody.
+- **Steps:** a `notifications` table and a fetch on connect. **Not** a durable
+  queue in front of the bus: the delivery guarantee a browser can honour is
+  "ask again when you come back", and anything else is machinery pretending.
+
+### The Socket.IO Redis adapter is installed but is not what fans out
+
+- **Today:** the bus delivers locally (`server.local.to(room)`), so the adapter
+  is not doing that job. It is there because the next thing anybody writes is
+  `server.to(room).emit(...)` in their own code, which without it quietly
+  reaches one replica's sockets.
+- **Signal:** nothing. This is the safe arrangement.
+- **Steps:** if the adapter is ever removed, `RealtimeBus.publish` becomes the
+  only legal way to emit, and that has to be enforced by review — there is no
+  lint rule for it.
+
+### The RAG demo is a demo
+
+- **Today:** fixed 1,200-character chunks with a 150-character overlap,
+  characters rather than tokens, no respect for headings or sentences; a plain
+  similarity search with no reranking, no query rewriting, and no evaluation of
+  whether any of it helps.
+- **Signal:** somebody asks whether the answers are any good, and nothing can
+  answer that.
+- **Steps:** in this order — an evaluation set first, because every change below
+  it is unmeasurable without one; then structural chunking, then a reranker,
+  then query rewriting. Adding them in the other order is how a retrieval stack
+  gets slower and nobody can say whether it got better.
+
+### The embedding dimension is fixed at 1536 by a migration
+
+- **Today:** `vector(1536)`, which is what `text-embedding-3-small` produces.
+  The number is in the migration, in `EMBEDDING_DIMENSIONS`, and in the
+  contract.
+- **Signal:** a better or cheaper embedding model with a different dimension.
+- **Steps:** a migration for the column **and** a re-embed of everything already
+  stored. There is no way to do one without the other, which is why the number
+  is not a setting.
+
+### The AI token ceiling is soft
+
+- **Today:** the ceiling is read before the call and the tokens are recorded
+  after it, so work already in flight can carry an organization past its limit.
+- **Signal:** a tenant whose overshoot costs real money.
+- **Steps:** a reservation of an *estimate* before the call and a reconciliation
+  after — which trades "can overshoot" for "can refuse work that would have
+  fit", and needs a per-purpose estimate to be worth having.
+
+### Vector search has no per-tenant partitioning
+
+- **Today:** one HNSW index over every organization's passages, with row-level
+  security filtering afterwards.
+- **Signal:** enough passages that a search reads far more of the index than it
+  returns.
+- **Steps:** pgvector's iterative index scans first, because it is a setting;
+  partitioning by organization only if that is not enough.
+
+---
+
+## Phase 6 simplifications — observability and operations
+
+### Tracing is instrumented by hand
+
+- **Today:** spans at four boundaries — an HTTP request, an enqueue, a consume,
+  and whatever a feature adds explicitly. There is no span for an outbound HTTP
+  call, a Redis round trip, or an individual SQL statement.
+- **Why:** `@opentelemetry/auto-instrumentations-node` patches `Module._load`,
+  and both applications are bundled into one file with
+  `externalDependencies: 'none'` — there are no module boundaries left to patch.
+- **Signal:** following a real problem needs a boundary that is not covered.
+- **Steps:** another explicit span at that boundary. **Not** a return to
+  auto-instrumentation, which would mean giving up the single-file image; and
+  not adding the package "just in case", because it produces a working SDK and
+  no spans, which is worse than none.
+
+### The worker serves no metrics
+
+- **Today:** everything scrapable is read from the database or from Redis by the
+  API. The worker traces but publishes no Prometheus text, because giving it an
+  HTTP surface would undo the reason it has none.
+- **Signal:** a number only the worker knows that cannot be derived from
+  storage — a per-job timing histogram, say.
+- **Steps:** OTLP metrics pushed from the worker to the same collector that
+  takes its traces. Prometheus text stays the API's.
+
+### `backup_age_seconds` trusts whoever writes the key
+
+- **Today:** `backup.sh` writes `app:backup:last-completed` to the queue's Redis
+  on its way out, and the collector reads it on every scrape. That instance is
+  the one checked at boot for `noeviction`, so a cache cannot throw the key away
+  — a backup age that vanished would read as "no backup has ever run", which is
+  the alarm the metric exists to raise, raised for the wrong reason.
+  With no key the series is **absent rather than zero**: a gauge at zero reads
+  as "a backup finished just now", the one direction this must never be wrong
+  in. Alert on `absent(backup_age_seconds)`.
+- **Signal:** backups start being taken by something other than this script — a
+  managed snapshot, a sidecar — and nothing writes the key.
+- **Steps:** whatever takes the backup writes the key, or the metric reports on
+  a backup nobody is taking. There is no way to detect that from inside the
+  API, which is why it is written down here rather than guarded in code.
+
+### `@nx/docker` builds the images; it does not publish them
+
+- **Today:** the plugin is installed and `nx docker:build core-api` works from
+  anywhere in the workspace, for all three images. Its inferred target is
+  **overridden** in each project: `@nx/docker` infers `docker build .` with the
+  project directory as the context, and these Dockerfiles need the workspace
+  root — measured, the inferred options were
+  `{"cwd": "apps/core/api", "command": "docker build ."}`, which cannot see the
+  lockfile, the catalog or any library.
+- **Not used:** its `nx-release-publish` target. Publishing here is not a
+  publish step — it is build, scan the *same bytes*, fail on a fixable HIGH,
+  produce an SBOM, push, attest provenance, sign, and verify the signature the
+  pipeline just made. That sequence lives in `.github/workflows/release.yml`
+  because most of it has no meaning outside a CI run with an OIDC identity.
+- **Signal:** `nx release` grows the ability to run those steps between version
+  and publish, or the pipeline stops needing to scan before pushing.
+- **Steps:** move the publish to `nx release publish`, keep the scan gate ahead
+  of it, and delete the duplicated tagging from the workflow.
+
+### The release workflow's identity is GitHub's
+
+- **Today:** build, Trivy scan, SBOM, provenance and a keyless Cosign signature
+  on a `v*` tag. Every step was exercised by hand against a real registry — a
+  push, `cosign sign`, `cosign verify`, `cosign attest`,
+  `cosign verify-attestation` — using a generated key pair.
+- **Not exercised:** keyless signing and SLSA provenance, both of which need the
+  runner's OIDC token. Only GitHub can issue it.
+- **Signal:** the first tag.
+- **Steps:** push it, then run the three verification commands in
+  `docs/ops/production.md` against what came out. If they fail, the pipeline
+  produced files rather than guarantees.
+
+### Base images are pinned by digest, and then patched
+
+- **Today:** `FROM node:24.19.0-alpine@sha256:…`, and the runtime stages then
+  `apk upgrade libcrypto3 libssl3`, because the Node image ships an OpenSSL with
+  a fixable HIGH that Alpine has already patched and the image has not been
+  rebuilt with.
+- **Cost, stated:** the image is no longer purely a function of its digest — two
+  builds a week apart can carry different OpenSSL builds.
+- **Signal:** the Node image is rebuilt with the fix.
+- **Steps:** move the digest and drop the `apk upgrade`. Renovate moves the
+  digest; the scan is what says whether the upgrade line is still needed.
+
+### npm is deleted from the runtime images
+
+- **Today:** `rm -rf /usr/local/lib/node_modules/npm` in every runtime stage.
+  Nothing there runs a package manager, and npm's vendored tree was eight of the
+  ten findings in the first Trivy run.
+- **Signal:** something in an image genuinely needs to install a package at
+  runtime — which would be worth arguing about before it is worth allowing.
+- **Steps:** put it back and pin the findings instead, knowing that is a
+  standing exception rather than a fix.
+
+### Recovery has no point-in-time restore
+
+- **Today:** `pg_dump` on a schedule. The RPO is the backup interval, measured
+  by a drill rather than asserted.
+- **Signal:** an RPO measured in minutes rather than hours.
+- **Steps:** WAL archiving with WAL-G or pgBackRest, and a different restore
+  procedure — the one in `tools/scripts/restore.sh` restores a dump and knows
+  nothing about a WAL timeline. Listed under **Operations** above as well; this
+  entry exists so the drill's numbers point at it.

@@ -1,0 +1,30 @@
+{
+  "name": "@workspace/core-server-queue",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@workspace/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@nestjs/common": "catalog:",
+    "@workspace/core-server-core": "workspace:*",
+    "@workspace/core-server-observability": "workspace:*",
+    "bullmq": "catalog:",
+    "ioredis": "catalog:",
+    "tslib": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "testcontainers": "catalog:"
+  }
+}

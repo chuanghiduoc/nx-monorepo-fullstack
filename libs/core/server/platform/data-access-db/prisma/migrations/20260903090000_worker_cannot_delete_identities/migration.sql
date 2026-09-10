@@ -1,0 +1,16 @@
+-- The worker has no business deleting a person, and until now it could.
+--
+-- The roles migration's `ALTER DEFAULT PRIVILEGES` hands every new table full
+-- DML to both application roles, and `user` and `organization` were created by
+-- the better-auth migration under exactly that default. Nothing revoked it
+-- afterwards, so `worker_user` — the role every outbox consumer connects as —
+-- could delete any account in the system.
+--
+-- Found by a test that ran `DELETE FROM "user"` as `worker_user` and expected
+-- to be refused. It was not.
+--
+-- `app_user` keeps it: better-auth's own admin and organization plugins issue
+-- deletes through the request path, and revoking it here would break them
+-- without replacing them. The route that makes soft delete the only way in is
+-- what should take it away, and it does not exist yet.
+REVOKE DELETE ON "user", "organization" FROM worker_user;

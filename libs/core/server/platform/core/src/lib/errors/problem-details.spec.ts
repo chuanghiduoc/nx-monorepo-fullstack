@@ -105,6 +105,27 @@ describe('toProblemDetails', () => {
     expect(problem.detail).toBe('Too Many Requests');
   });
 
+  it('publishes types under the base URL the deployment configured', () => {
+    const problem = toProblemDetails(new NotFoundException('gone'), {
+      ...context,
+      typeBaseUrl: 'https://errors.acme.test',
+    });
+
+    // This used to be read from `process.env` at import time, which measured
+    // as never seeing `.env` at all: the variable was validated, reached
+    // `AppConfig`, and every problem document still pointed at the example
+    // domain. A client following the link got somebody else's website.
+    expect(problem.type).toBe('https://errors.acme.test/not-found');
+  });
+
+  it('falls back for a caller with no configuration at all', () => {
+    // A unit test, or a consumer that has not decided yet. It must produce a
+    // usable document rather than `undefined/not-found`.
+    expect(toProblemDetails(new NotFoundException('gone'), context).type).toBe(
+      'https://errors.example.com/not-found',
+    );
+  });
+
   it('uses the problem+json media type', () => {
     expect(PROBLEM_CONTENT_TYPE).toBe('application/problem+json');
   });

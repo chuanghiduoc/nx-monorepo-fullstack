@@ -151,14 +151,175 @@ model IdempotencyRecord {
   completedAt DateTime? @map("completed_at") @db.Timestamptz(3)
 
   @@unique([scopeType, scopeId, route, idempotencyKey])
+  /// The retention sweep finds finished records by this.
   @@index([completedAt])
+  /// And abandoned ones by this: a record whose process died mid-claim keeps
+  /// completed_at NULL forever, so a sweep that only looked at completed_at
+  /// would leak exactly the rows nobody is coming back for.
+  @@index([leaseUntil])
   @@map("idempotency_records")
+}
+
+/// class: SYSTEM — belongs to no tenant; reached through grants, not policies.
+///
+/// An event that happened, written in the same transaction as the thing that
+/// happened.
+///
+/// That is the whole mechanism: there is no "did the event get sent" failure
+/// mode, because the event and the aggregate commit or roll back together. A
+/// relay reads rows from here afterwards and hands them to the queue, which is
+/// the part that can fail — and it can fail as often as it likes, because the
+/// row is still here.
+///
+/// Grants rather than a policy, and narrow ones: app_user may only INSERT, so
+/// the surface that writes events cannot read another tenant's, delete one
+/// before the relay sees it, or mark one delivered.
+model OutboxEvent {
+  eventId String @id @default(dbgenerated("uuidv7()")) @map("event_id") @db.Uuid
+
+  /// What changed, and which one. `aggregate_version` is the aggregate's
+  /// optimistic-concurrency version *after* the change — nullable, because
+  /// most aggregates in this schema do not carry one.
+  aggregateType    String  @map("aggregate_type") @db.VarChar(64)
+  aggregateId      String  @map("aggregate_id") @db.Uuid
+  aggregateVersion Int?    @map("aggregate_version")
+  eventType        String  @map("event_type") @db.VarChar(128)
+
+  /// Data, never content. A payload outlives the row it describes by a
+  /// retention window, and forever if it dies, so it carries what an audit
+  /// trail needs and not what a person wrote.
+  payload Json
+
+  /// Who the work belongs to. NULL means the system raised it for itself;
+  /// there is no third case, because append() refuses a transaction that
+  /// knows a user but not an organization.
+  tenantId String? @map("tenant_id") @db.Uuid
+  actorId  String? @map("actor_id") @db.Uuid
+
+  /// The trace the request that caused this event was in, as a W3C
+  /// `traceparent`.
+  ///
+  /// Without it a trace stops at the outbox: the request commits a row, the
+  /// relay picks it up in a different process minutes later, and what a person
+  /// sees is two unrelated pictures of one thing. Measured that way first —
+  /// `api → queue → worker` joined across the *queue* and not across this.
+  ///
+  /// Null for anything a request did not cause, and for rows written before
+  /// this column existed.
+  traceParent String? @map("trace_parent") @db.VarChar(64)
+
+  /// PENDING, PROCESSING, ENQUEUED or DEAD.
+  status String @default("PENDING") @db.VarChar(16)
+
+  /// When it happened, and when it reached the queue. `enqueued_at` is written
+  /// by exactly one statement, which is what lets the sweep trust it.
+  occurredAt DateTime  @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  enqueuedAt DateTime? @map("enqueued_at") @db.Timestamptz(3)
+
+  /// The claim. `locked_at` is both the lease clock and the fencing token: a
+  /// relay whose lease expired must not be able to write over the work of the
+  /// one that took its rows.
+  lockedAt    DateTime? @map("locked_at") @db.Timestamptz(3)
+  availableAt DateTime  @default(now()) @map("available_at") @db.Timestamptz(3)
+  attempts    Int       @default(0)
+  lastError   String?   @map("last_error")
+
+  /// The pending claim, ordered. `event_id` is in the index because `now()` is
+  /// transaction-stable: two events appended together share an `available_at`,
+  /// and that is the case this table most exists for.
+  @@index([status, availableAt, eventId])
+  /// The stale reclaim and the attempt-ceiling transition. Every row in one
+  /// claim batch shares a `locked_at` by construction, so the tiebreak matters
+  /// more here, not less.
+  @@index([status, lockedAt, eventId])
+  /// The sweep.
+  @@index([status, enqueuedAt])
+  @@map("outbox_events")
+}
+
+/// class: SYSTEM — belongs to no tenant; reached through grants, not policies.
+///
+/// What happened, kept.
+///
+/// Written by a consumer of the outbox, never by the API — `app_user` holds no
+/// privilege here at all, so an injection through a request cannot read another
+/// tenant's trail, cannot add a line to it, and cannot remove one.
+///
+/// `event_id` is UNIQUE because a trail with two rows for one event is a
+/// corrupted trail. `processed_events` is the mechanism that prevents it; this
+/// is the constraint that would notice the day the mechanism is wrong.
+model AuditRecord {
+  id      String @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  /// The outbox event this records. Also the correlation id: there is no trace
+  /// context in this system to carry, and inventing one would put a fabricated
+  /// trace on every row.
+  eventId String @unique @map("event_id") @db.Uuid
+
+  eventType        String  @map("event_type") @db.VarChar(128)
+  aggregateType    String  @map("aggregate_type") @db.VarChar(64)
+  aggregateId      String  @map("aggregate_id") @db.Uuid
+  aggregateVersion Int?    @map("aggregate_version")
+
+  /// Bare columns, deliberately: no foreign key to organization or user.
+  /// RESTRICT would make deleting an organization impossible forever, because
+  /// the trail is never swept; CASCADE would destroy the audit trail when a
+  /// tenant is deleted, which is the one thing an audit record must survive.
+  /// NULL means the system acted for itself.
+  tenantId String? @map("tenant_id") @db.Uuid
+  actorId  String? @map("actor_id") @db.Uuid
+
+  /// When it happened, and when this row was written. The first comes from the
+  /// outbox row, not from the queue: an envelope's timestamp is when the relay
+  /// enqueued, which is neither the same moment nor stable across a re-delivery.
+  occurredAt DateTime @map("occurred_at") @db.Timestamptz(3)
+  recordedAt DateTime @default(now()) @map("recorded_at") @db.Timestamptz(3)
+
+  /// The event's payload as it arrived. Safe to keep because a payload is
+  /// metadata and never content — the trail records that a note of a certain
+  /// size was written, not what it said.
+  detail Json
+
+  /// No index for a sweep, because there is no sweep. When there is one, it
+  /// needs none: `id` is uuidv7 and PostgreSQL orders uuid bytewise, so the
+  /// primary key is already time-ordered. Measured on 200 000 rows,
+  /// `WHERE id < uuidv7(...)` is an index-only scan at 772 buffers where the
+  /// same predicate on recorded_at is a sequential scan at 8 334.
+  @@map("audit_records")
+}
+
+/// class: SYSTEM — belongs to no tenant; reached through grants, not policies.
+///
+/// What a consumer has already done.
+///
+/// This is the exactly-once guarantee, and the queue's job-id deduplication is
+/// not: that expires with the completed job. A consumer writes this row inside
+/// the same transaction as the work the event caused, so a second delivery
+/// finds it and does nothing.
+///
+/// It is correct only for a consumer whose whole effect is a write to this
+/// database. One that sends an email or calls a webhook cannot put that effect
+/// in this transaction, and gets at-least-once with no deduplication.
+model ProcessedEvent {
+  /// Two consumers of one event are two deliveries, not one, so the consumer
+  /// is part of the key. Within each consumer the uuidv7 event id is
+  /// time-ordered, which is why a composite key here does not fragment the
+  /// index the way a random one would.
+  consumer String @db.VarChar(64)
+  eventId  String @map("event_id") @db.Uuid
+
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz(3)
+
+  @@id([consumer, eventId])
+  /// Its own sweep. Without this the largest table in the system is a
+  /// sequential scan, hourly, forever.
+  @@index([processedAt])
+  @@map("processed_events")
 }
 
 /// ---------------------------------------------------------------------------
 /// better-auth (generated by @better-auth/cli, then given the workspace
 /// conventions: snake_case columns, database-generated uuidv7 ids,
-/// TIMESTAMPTZ(3)).
+/// TIMESTAMPTZ(3), and the expiry indexes the retention sweep reads).
 ///
 /// A user must be able to list every organization they belong to *before* any
 /// organization is active, and better-auth's adapter runs outside our
@@ -174,6 +335,15 @@ model IdempotencyRecord {
 /// class: AUTH — no tenant policy; isolation is the auth library's own.
 model User {
   id               String       @id @default(dbgenerated("uuidv7()")) @db.Uuid
+
+  /// When this person asked to be forgotten.
+  ///
+  /// Soft first, and the grace window is the feature rather than caution: an
+  /// erasure cannot be undone, and a mistaken one with no window is a support
+  /// ticket nobody can answer. better-auth neither writes nor reads this
+  /// column — it is ours, and the erasure job is the only thing that acts on
+  /// it.
+  deletedAt        DateTime?    @map("deleted_at") @db.Timestamptz(3)
   name             String
   email            String
   emailVerified    Boolean      @default(false) @map("email_verified")
@@ -211,6 +381,9 @@ model Session {
 
   @@unique([token])
   @@index([userId])
+  /// The retention sweep deletes by expiry. Without this it reads the whole
+  /// table and sorts it, on a schedule, forever.
+  @@index([expiresAt])
   @@map("session")
 }
 
@@ -252,12 +425,18 @@ model Verification {
   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([identifier])
+  /// Swept by expiry, like session.
+  @@index([expiresAt])
   @@map("verification")
 }
 
 /// class: AUTH — no tenant policy; isolation is the auth library's own.
 model Organization {
   id                String             @id @default(dbgenerated("uuidv7()")) @db.Uuid
+
+  /// When this organization asked to be forgotten. Same shape as the user's,
+  /// and the same grace window.
+  deletedAt         DateTime?          @map("deleted_at") @db.Timestamptz(3)
   name              String
   slug              String
   logo              String?
@@ -364,4 +543,335 @@ model Apikey {
   @@index([referenceId])
   @@index([key])
   @@map("apikey")
+}
+
+/// class: TENANT_OWNED — an organization's usage of one entitlement, in one
+/// window.
+///
+/// TENANT_OWNED rather than SYSTEM, and that is a correction rather than a
+/// preference. `consume` needs INSERT, SELECT and UPDATE here — SELECT because
+/// an `ON CONFLICT` target is an inference specification, which reads the
+/// table — and a SYSTEM table carries no policy at all, so those rights would
+/// reach every tenant's row from the process that faces the internet. The
+/// sweeper that returns expired units still sees everything, through a second
+/// policy that names `worker_user`.
+///
+/// There is no `limit` column. The ceiling is an argument to the statement,
+/// which enforces it on every write; storing it made lowering a plan's limit
+/// below current usage fail with a constraint violation, which is to say it
+/// made downgrading impossible for exactly the tenants who do it.
+model OrgQuotaCounter {
+  orgId       String   @map("org_id") @db.Uuid
+  entitlement String   @db.VarChar(64)
+  /// The start of the window this row counts, in UTC, computed from the
+  /// entitlement's window kind — never passed in by a caller. Two callers
+  /// rounding differently would split one window in two and hand out the
+  /// limit twice.
+  windowStart DateTime @map("window_start") @db.Timestamptz(3)
+
+  used BigInt @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([orgId, entitlement, windowStart])
+  @@map("org_quota_counters")
+}
+
+/// class: TENANT_OWNED — units held for work that outlives its request.
+///
+/// The units are taken from the counter when the reservation is created, so a
+/// reservation never has to be consulted to know what is available. `commit`
+/// only closes it; `release` and the expiry sweep are what give units back.
+///
+/// It carries its own `window_start` because a reservation can outlive the
+/// window it was taken from — a job that started on the 31st and failed on the
+/// 1st must refund the month it charged, not the month it finished in.
+model QuotaReservation {
+  id          String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  entitlement String   @db.VarChar(64)
+  windowStart DateTime @map("window_start") @db.Timestamptz(3)
+
+  amount BigInt
+
+  /// RESERVED, COMMITTED, RELEASED or EXPIRED. The state machine is what makes
+  /// `release` idempotent: it moves a row only from RESERVED, so a retry
+  /// refunds once and a second call reports that it changed nothing.
+  state String @default("RESERVED") @db.VarChar(16)
+
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  closedAt  DateTime? @map("closed_at") @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  /// The sweep, and the only index here: overdue reservations still holding
+  /// units. It deliberately does not lead with `org_id`, the way a
+  /// tenant-owned index normally does, because the sweep runs under the policy
+  /// that ignores the tenant and would not use it. Every other access is by
+  /// primary key.
+  @@index([state, expiresAt])
+  @@map("quota_reservations")
+}
+
+/// class: GLOBAL — one row per flag, the same for everyone.
+///
+/// No policy, because there is nothing tenant-specific to isolate: this is the
+/// default every organization gets when it has not overridden the flag.
+/// `app_user` may read it and nothing else — a flag the application can
+/// rewrite is a flag an injection can rewrite.
+model FeatureFlag {
+  key String @id @db.VarChar(128)
+
+  /// The value, whatever its type. Stored as jsonb rather than as four
+  /// nullable columns so a flag can change from a boolean to a variant string
+  /// without a migration — which is the change flags exist to make cheap.
+  ///
+  /// A value whose type does not match what the caller asked for is not an
+  /// error the caller has to handle: it resolves to the default with an
+  /// explicit TYPE_MISMATCH reason.
+  value Json
+
+  /// What this flag is for, in the table rather than only in a ticket. A flag
+  /// nobody can explain is a flag nobody dares delete.
+  description String @db.VarChar(512)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("feature_flags")
+}
+
+/// class: TENANT_OWNED — one organization's answer for one flag.
+///
+/// Read fresh on every evaluation rather than cached per tenant, which is a
+/// deliberate difference from the global table. Turning a flag on for one
+/// customer is what happens during an incident, and taking effect on the next
+/// request rather than at the end of a cache window is the whole value of it.
+/// The read is a primary-key lookup inside a transaction the request had
+/// already opened.
+model FlagOverride {
+  orgId String @map("org_id") @db.Uuid
+  key   String @db.VarChar(128)
+
+  value Json
+
+  /// Why this organization is different. An override with no reason outlives
+  /// whoever set it and nobody ever dares remove it.
+  reason String @db.VarChar(512)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([orgId, key])
+  @@map("flag_overrides")
+}
+
+/// class: TENANT_OWNED — where one organization wants its events sent.
+///
+/// The secret is the reason this table has a column-level grant. `app_user`
+/// may insert an endpoint and read every column of it **except** `secret`,
+/// which means a route can create one and return the secret in that single
+/// response and no route can ever produce it again — the same shape an API key
+/// has, for the same reason: a secret a request can read is a secret an
+/// injection can read.
+///
+/// `worker_user` reads it, because signing a delivery needs the value. Hashing
+/// is not available: a signature is computed, not compared.
+model WebhookEndpoint {
+  id    String @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  orgId String @map("org_id") @db.Uuid
+
+  /// Where to send. Validated at creation *and* again before every delivery:
+  /// the address a name resolves to is not a property of the string, and it
+  /// can change between the two.
+  url String @db.VarChar(2048)
+
+  /// The HMAC key, generated by the application and never shown again.
+  secret String @db.VarChar(128)
+
+  /// Which event types this endpoint wants. Empty means all of them, which is
+  /// the useful default for a first endpoint and the wrong one for a busy
+  /// integration.
+  eventTypes String[] @map("event_types")
+
+  /// Off without being deleted. A delivery that has been failing for a week is
+  /// switched off by a person, and the endpoint has to still be there for them
+  /// to look at.
+  enabled Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  /// The dispatcher's read: this tenant's enabled endpoints.
+  @@index([orgId, enabled])
+  @@map("webhook_endpoints")
+}
+
+/// class: TENANT_OWNED — one row per attempt, not per delivery.
+///
+/// The question somebody asks is "why did this not arrive", and the answer is
+/// the sequence — 503, 503, timeout. A row per delivery overwrites exactly the
+/// history that answers it.
+model WebhookDelivery {
+  id         String @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  orgId      String @map("org_id") @db.Uuid
+  endpointId String @map("endpoint_id") @db.Uuid
+
+  /// The event this attempt was carrying. No foreign key: the outbox row is
+  /// swept after its retention window and this record outlives it.
+  eventId   String @map("event_id") @db.Uuid
+  eventType String @map("event_type") @db.VarChar(128)
+
+  attempt Int
+
+  /// What happened. `status` is null when nothing answered — a timeout, a
+  /// refused connection, an address that failed validation — and `error` says
+  /// which.
+  status Int?
+  error  String? @db.VarChar(512)
+
+  /// How long the request took, for the endpoint that is up and slow rather
+  /// than down.
+  durationMs Int @map("duration_ms")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  /// Reading one endpoint's recent attempts, which is the only query.
+  @@index([orgId, endpointId, createdAt(sort: Desc)])
+  /// The retention sweep.
+  @@index([createdAt])
+  @@map("webhook_deliveries")
+}
+
+/// class: TENANT_OWNED — a file an organization uploaded.
+///
+/// **The record owns the object, never the other way round.** An object with
+/// no record is rubbish to be swept; a record with no object is a `pending`
+/// upload that never happened. Neither is a file, and the cleanup can tell
+/// them apart because the key is derived from the record's own id.
+model StoredFile {
+  id    String @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  orgId String @map("org_id") @db.Uuid
+
+  /// Where the object lives, in whichever driver stored it. Derived from the
+  /// id rather than from the name: two people uploading `invoice.pdf` must not
+  /// collide, and a name is a caller's string.
+  ///
+  /// Unique, because two records pointing at one object would make deleting
+  /// either of them break the other.
+  objectKey String @unique @map("object_key") @db.VarChar(512)
+
+  /// What the caller called it. Displayed, never used to build a path.
+  fileName String @map("file_name") @db.VarChar(255)
+
+  /// What the caller *said* it was. Kept because a mismatch is the reason a
+  /// file is rejected, and the reason has to name both types.
+  declaredType String @map("declared_type") @db.VarChar(255)
+
+  /// What the bytes actually are, read from the object by the worker. Null
+  /// until something has looked.
+  detectedType String? @map("detected_type") @db.VarChar(255)
+
+  /// What the object weighs, from the store rather than from the caller.
+  sizeBytes BigInt? @map("size_bytes")
+
+  /// PENDING, UPLOADED, SCANNING, READY, REJECTED or QUARANTINED.
+  ///
+  /// Only the worker moves it past PENDING. The API creates the record and
+  /// accepts a "the upload finished" call; everything after that reads the
+  /// object, and a request that read a fifty-megabyte upload to sniff its type
+  /// would hold a connection for as long as that took.
+  status String @default("PENDING") @db.VarChar(16)
+
+  /// Why it ended where it did. Set for REJECTED and QUARANTINED, which are
+  /// terminal: a file nobody can explain the rejection of is a support ticket.
+  reason String? @db.VarChar(512)
+
+  /// How many times the scan has been tried. A scan that keeps timing out ends
+  /// QUARANTINED rather than READY — guessing in the other direction is the
+  /// failure that matters.
+  scanAttempts Int @default(0) @map("scan_attempts")
+
+  /// Who uploaded it. No foreign key to `user`: erasure deletes people and a
+  /// cascade here would delete the organization's files with them.
+  uploadedBy String? @map("uploaded_by") @db.Uuid
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  /// When the object was confirmed present in the store.
+  uploadedAt DateTime? @map("uploaded_at") @db.Timestamptz(3)
+
+  /// Listing an organization's files, newest first.
+  @@index([orgId, createdAt(sort: Desc), id(sort: Desc)])
+  /// The worker's queue of work, and the sweep of abandoned uploads.
+  @@index([status, createdAt])
+  @@map("stored_files")
+}
+
+/// class: TENANT_OWNED — every row belongs to exactly one organization.
+///
+/// Something a person put in so the assistant can answer from it. The text
+/// lives in the chunks; this is the thing they came from, and what a listing
+/// shows.
+model AiDocument {
+  id    String @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  orgId String @map("org_id") @db.Uuid
+
+  title String @db.VarChar(255)
+
+  /// Where it came from — a URL, a file name, whatever the caller knows.
+  /// Displayed with an answer so a reader can go and check it.
+  source String? @db.VarChar(1024)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  chunks AiChunk[]
+
+  /// Listing an organization's documents, newest first.
+  @@index([orgId, createdAt(sort: Desc), id(sort: Desc)])
+  @@map("ai_documents")
+}
+
+/// class: TENANT_OWNED — every row belongs to exactly one organization.
+///
+/// A piece of a document and the vector that stands for it.
+///
+/// `embedding` is `Unsupported`, so Prisma Client can neither read nor write
+/// it and every query that ranks by distance is `$queryRaw`. That is the
+/// honest state of affairs: Prisma has no vector type, and a `Float[]` would
+/// type-check while losing the index — the worst of both.
+///
+/// **The dimension is part of the schema, not a setting.** `vector(1536)` is
+/// fixed in the column, and every embedding model has its own — 1536, 1024,
+/// 768. Changing the model is therefore a migration plus a re-embed of
+/// everything already stored, and the number here is the one
+/// `text-embedding-3-small` produces.
+model AiChunk {
+  id    String @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  orgId String @map("org_id") @db.Uuid
+
+  documentId String @map("document_id") @db.Uuid
+
+  /// Where in the document this piece came from, counting from zero.
+  ordinal Int
+
+  content String @db.Text
+
+  embedding Unsupported("vector(1536)")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  /// Cascade, because a chunk is wholly owned by its document: it has no
+  /// meaning without the text it was cut from, and leaving orphans would leave
+  /// a search returning passages nobody can trace.
+  document AiDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  /// One chunk per position. A re-ingest that wrote the same ordinal twice
+  /// would return the same passage twice as though two sources agreed.
+  @@unique([documentId, ordinal])
+  /// Row-level security adds `org_id` to every plan, so every index leads with it.
+  @@index([orgId, documentId, ordinal])
+  @@map("ai_chunks")
 }

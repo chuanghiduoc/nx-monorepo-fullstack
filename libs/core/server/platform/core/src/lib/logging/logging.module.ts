@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 import pretty from 'pino-pretty';
 
-import { AppConfig } from '../config/config.module.js';
+import { BaseConfig } from '../config/config.module.js';
 import { REDACTED_PATHS, REDACTION_CENSOR } from './redaction.js';
 
 /**
@@ -19,8 +19,11 @@ import { REDACTED_PATHS, REDACTION_CENSOR } from './redaction.js';
 @Module({
   imports: [
     LoggerModule.forRootAsync({
-      inject: [AppConfig],
-      useFactory: (config: AppConfig) => ({
+      // The base rather than the API's: this module runs in the worker too,
+      // and injecting the API's configuration there would promise keys that
+      // process never validated.
+      inject: [BaseConfig],
+      useFactory: (config: BaseConfig) => ({
         // A destination stream, not a transport: pino transports run in a worker
         // thread that resolves its entry by file path, which does not survive
         // webpack bundling (the bundle looks for dist/lib/worker.js).

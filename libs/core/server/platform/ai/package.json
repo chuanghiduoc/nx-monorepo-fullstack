@@ -1,0 +1,28 @@
+{
+  "name": "@workspace/core-server-ai",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@workspace/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "catalog:",
+    "@ai-sdk/openai": "catalog:",
+    "@nestjs/common": "catalog:",
+    "@workspace/core-server-core": "workspace:*",
+    "@workspace/core-server-data-access-db": "workspace:*",
+    "@workspace/core-server-observability": "workspace:*",
+    "ai": "catalog:",
+    "tslib": "catalog:"
+  }
+}

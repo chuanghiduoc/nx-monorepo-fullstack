@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { UNTRUSTING_API_URL } from './global-setup.js';
+
 const API_URL = process.env['API_URL'] ?? 'http://localhost:3000';
 // better-auth refuses a state-changing call with no Origin (MISSING_OR_NULL_ORIGIN),
 // which is its own CSRF protection and separate from our origin-check guard.
@@ -345,6 +347,19 @@ describe('the client address behind a proxy', () => {
     const { ip } = (await who.json()) as { ip: string };
 
     expect(ip).toBe('203.0.113.99');
+  });
+
+  it('ignores a forwarded address from a hop it was not told to trust', async () => {
+    // The direction that actually protects anything. The main instance trusts
+    // loopback, so on it this header is always honoured; this one trusts a
+    // single address these requests can never come from.
+    const who = await fetch(`${UNTRUSTING_API_URL}/api/whoami`, {
+      headers: { 'x-forwarded-for': '203.0.113.99' },
+    });
+    const { ip } = (await who.json()) as { ip: string };
+
+    expect(ip).not.toBe('203.0.113.99');
+    expect(ip).toMatch(/^(127\.0\.0\.1|::1|::ffff:127\.0\.0\.1)$/);
   });
 
   it('is what every per-caller decision uses', async () => {

@@ -1,0 +1,9 @@
+{
+  "name": "core-server-flags",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/core/server/platform/flags/src",
+  "projectType": "library",
+  "tags": ["scope:core", "platform:node", "type:data-access"],
+  "// targets": "to see all targets run: nx show project core-server-flags --web",
+  "targets": {}
+}

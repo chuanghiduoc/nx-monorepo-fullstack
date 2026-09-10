@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { validator } from './config.module.js';
 import { envSchema } from './env.schema.js';
 
 const validEnv = {
@@ -116,5 +117,55 @@ describe('the authentication secret', () => {
 
     expect(result.success).toBe(false);
     expect(JSON.stringify(result.error?.issues)).toContain('at least 32');
+  });
+});
+
+describe('an empty value is an absent one', () => {
+  it('starts with an optional variable set to nothing', () => {
+    // There is no way to say "leave this unset" in a Compose `environment:`
+    // map — `${VAR:-}` sets it to the empty string — and a URL schema reads
+    // that as present and invalid. Measured: `pnpm prod:up` refused to start
+    // with `S3_ENDPOINT: Invalid URL` on a stack that had deliberately
+    // configured no object store at all.
+    const parse = validator(envSchema);
+
+    expect(() =>
+      parse({ ...validEnv, REALTIME_REDIS_URL: '', S3_ENDPOINT: '' }),
+    ).not.toThrow();
+  });
+
+  it('still refuses a variable that is required and absent', () => {
+    const parse = validator(envSchema);
+
+    // The negative control: dropping empty values must not turn a missing
+    // required variable into a passing one.
+    expect(() => parse({ ...validEnv, DATABASE_URL: '' })).toThrow(
+      /DATABASE_URL/,
+    );
+  });
+
+  it('leaves a variable that was actually given alone', () => {
+    const parse = validator(envSchema);
+
+    const parsed = parse({ ...validEnv, S3_BUCKET: 'uploads' }) as {
+      S3_BUCKET?: string;
+    };
+
+    expect(parsed.S3_BUCKET).toBe('uploads');
+  });
+});
+
+describe('the environment agrees with itself', () => {
+  it('takes an empty variable out of process.env as well', () => {
+    // `ConfigService.get` falls back to `process.env` for anything the
+    // validated object does not hold, so filtering only the copy fixed
+    // nothing: measured, the realtime bus still read its URL as `''`, fell
+    // past its `??` fallback, and opened four connections to a Redis that
+    // does not exist.
+    process.env['S3_ENDPOINT'] = '';
+
+    validator(envSchema)({ ...validEnv, S3_ENDPOINT: '' });
+
+    expect('S3_ENDPOINT' in process.env).toBe(false);
   });
 });

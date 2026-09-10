@@ -1,7 +1,7 @@
+import { CURSOR_MAX_LENGTH } from '@workspace/shared-contracts';
 import { describe, expect, it } from 'vitest';
 
 import {
-  CURSOR_MAX_LENGTH,
   decodeCursor,
   encodeCursor,
   hashPaginationFilter,

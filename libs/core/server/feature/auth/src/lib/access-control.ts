@@ -29,6 +29,8 @@ export const owner = ac.newRole({
   invitation: ['create', 'cancel'],
   apiKey: ['create', 'read', 'update', 'delete'],
   note: ['create', 'read', 'update', 'delete'],
+  webhook: ['create', 'read', 'update', 'delete'],
+  file: ['create', 'read', 'delete'],
 });
 
 /** Runs the organization day to day; cannot delete it. */
@@ -38,12 +40,19 @@ export const admin = ac.newRole({
   invitation: ['create', 'cancel'],
   apiKey: ['create', 'read', 'update', 'delete'],
   note: ['create', 'read', 'update', 'delete'],
+  webhook: ['create', 'read', 'update', 'delete'],
+  file: ['create', 'read', 'delete'],
 });
 
 /** Does the work, changes nothing about the organization itself. */
 export const member = ac.newRole({
   apiKey: ['read'],
   note: ['create', 'read', 'update', 'delete'],
+  // Read only: seeing where the organization's events go is useful when a
+  // delivery fails, and an endpoint's secret is not readable by anyone.
+  webhook: ['read'],
+  // Uploading is ordinary work, which is what a member does.
+  file: ['create', 'read', 'delete'],
 });
 
 export const roles = { owner, admin, member };

@@ -28,21 +28,6 @@
       "path": "./apps/core/api-e2e"
     },
     {
-      "path": "./libs\\core\\server\\platform\\core"
-    },
-    {
-      "path": "./libs\\core\\server\\platform\\data-access-db"
-    },
-    {
-      "path": "./libs\\core\\server\\platform\\authz"
-    },
-    {
-      "path": "./libs\\core\\server\\platform\\testing"
-    },
-    {
-      "path": "./libs\\core\\server\\feature\\auth"
-    },
-    {
       "path": "./libs/core/server/platform/data-access-db"
     },
     {
@@ -59,6 +44,45 @@
     },
     {
       "path": "./libs/core/server/feature/notes"
+    },
+    {
+      "path": "./libs/shared/contracts"
+    },
+    {
+      "path": "./libs/core/server/platform/queue"
+    },
+    {
+      "path": "./apps/core/worker"
+    },
+    {
+      "path": "./libs/core/server/platform/events"
+    },
+    {
+      "path": "./libs/core/server/platform/flags"
+    },
+    {
+      "path": "./libs/core/server/platform/webhooks"
+    },
+    {
+      "path": "./libs/core/server/feature/privacy"
+    },
+    {
+      "path": "./libs/core/server/platform/storage"
+    },
+    {
+      "path": "./libs/core/server/platform/realtime"
+    },
+    {
+      "path": "./libs/core/server/feature/realtime"
+    },
+    {
+      "path": "./libs/core/server/platform/ai"
+    },
+    {
+      "path": "./libs/core/server/feature/ai"
+    },
+    {
+      "path": "./libs/core/server/platform/observability"
     }
   ],
   "compilerOptions": {}

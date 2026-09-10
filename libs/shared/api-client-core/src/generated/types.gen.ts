@@ -4,6 +4,42 @@ export type ClientOptions = {
     baseUrl: string;
 };
 
+export type AiDocumentListDto = {
+    items: Array<{
+        id: string;
+        title: string;
+        /**
+         * Where it came from; null when the caller did not say.
+         */
+        source: string | null;
+        /**
+         * How many passages the document was cut into.
+         */
+        chunkCount: number;
+        createdAt: string;
+    }>;
+};
+
+export type IngestDocumentDto = {
+    title: string;
+    source?: string;
+    text: string;
+};
+
+export type AiDocumentDto = {
+    id: string;
+    title: string;
+    /**
+     * Where it came from; null when the caller did not say.
+     */
+    source: string | null;
+    /**
+     * How many passages the document was cut into.
+     */
+    chunkCount: number;
+    createdAt: string;
+};
+
 export type NotePageDto = {
     items: Array<{
         id: string;
@@ -34,6 +70,142 @@ export type UpdateNoteDto = {
     title?: string;
     body?: string;
     version: number;
+};
+
+export type ErasureStatusDto = {
+    erasureRequestedAt: string | null;
+    erasesAt: string | null;
+};
+
+export type ErasureRequestedDto = {
+    erasureRequestedAt: string;
+    erasesAt: string;
+    graceDays: number;
+};
+
+export type WebhookListDto = {
+    items: Array<{
+        id: string;
+        url: string;
+        eventTypes: Array<string>;
+        enabled: boolean;
+        createdAt: string;
+    }>;
+};
+
+export type CreateWebhookDto = {
+    url: string;
+    eventTypes?: Array<string>;
+};
+
+export type CreatedWebhookDto = {
+    id: string;
+    url: string;
+    eventTypes: Array<string>;
+    enabled: boolean;
+    createdAt: string;
+    secret: string;
+};
+
+export type UpdateWebhookDto = {
+    url?: string;
+    eventTypes?: Array<string>;
+    enabled?: boolean;
+};
+
+export type FileListDto = {
+    items: Array<{
+        id: string;
+        fileName: string;
+        declaredType: string;
+        /**
+         * What the bytes actually are; null until the scanner has looked.
+         */
+        detectedType: string | null;
+        /**
+         * What the store reported, never what the caller claimed.
+         */
+        sizeBytes: number | null;
+        status: 'PENDING' | 'UPLOADED' | 'SCANNING' | 'READY' | 'REJECTED' | 'QUARANTINED';
+        /**
+         * Why a rejected or quarantined file ended there.
+         */
+        reason: string | null;
+        createdAt: string;
+    }>;
+};
+
+export type RequestUploadDto = {
+    fileName: string;
+    contentType: string;
+    shape?: 'put' | 'post' | 'multipart';
+    partCount?: number;
+};
+
+export type UploadTicketDto = {
+    file: {
+        id: string;
+        fileName: string;
+        declaredType: string;
+        /**
+         * What the bytes actually are; null until the scanner has looked.
+         */
+        detectedType: string | null;
+        /**
+         * What the store reported, never what the caller claimed.
+         */
+        sizeBytes: number | null;
+        status: 'PENDING' | 'UPLOADED' | 'SCANNING' | 'READY' | 'REJECTED' | 'QUARANTINED';
+        /**
+         * Why a rejected or quarantined file ended there.
+         */
+        reason: string | null;
+        createdAt: string;
+    };
+    shape: 'put' | 'post' | 'multipart';
+    url?: string;
+    fields?: {
+        [key: string]: string;
+    };
+    uploadId?: string;
+    parts?: Array<{
+        partNumber: number;
+        url: string;
+    }>;
+    expiresAt: string;
+};
+
+export type CompleteUploadDto = {
+    uploadId?: string;
+    parts?: Array<{
+        partNumber: number;
+        etag: string;
+    }>;
+};
+
+export type FileDto = {
+    id: string;
+    fileName: string;
+    declaredType: string;
+    /**
+     * What the bytes actually are; null until the scanner has looked.
+     */
+    detectedType: string | null;
+    /**
+     * What the store reported, never what the caller claimed.
+     */
+    sizeBytes: number | null;
+    status: 'PENDING' | 'UPLOADED' | 'SCANNING' | 'READY' | 'REJECTED' | 'QUARANTINED';
+    /**
+     * Why a rejected or quarantined file ended there.
+     */
+    reason: string | null;
+    createdAt: string;
+};
+
+export type DownloadDto = {
+    url: string;
+    expiresAt: string;
 };
 
 export type DemoItemPageDto = {
@@ -76,6 +248,82 @@ export type WhoamiControllerWhoamiData = {
 };
 
 export type WhoamiControllerWhoamiResponses = {
+    200: unknown;
+};
+
+export type RealtimeControllerStreamData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Comma-separated event names; absent means every event.
+         */
+        names?: string;
+    };
+    url: '/api/v1/realtime/stream';
+};
+
+export type RealtimeControllerStreamResponses = {
+    /**
+     * A text/event-stream that stays open. Each event carries the event name as its type and a JSON body. A "ping" event arrives on an idle stream and means nothing but "still here".
+     */
+    200: unknown;
+};
+
+export type AiControllerListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ai/documents';
+};
+
+export type AiControllerListResponses = {
+    200: AiDocumentListDto;
+};
+
+export type AiControllerListResponse = AiControllerListResponses[keyof AiControllerListResponses];
+
+export type AiControllerIngestData = {
+    body: IngestDocumentDto;
+    path?: never;
+    query?: never;
+    url: '/api/v1/ai/documents';
+};
+
+export type AiControllerIngestResponses = {
+    201: AiDocumentDto;
+};
+
+export type AiControllerIngestResponse = AiControllerIngestResponses[keyof AiControllerIngestResponses];
+
+export type AiControllerRemoveData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/ai/documents/{id}';
+};
+
+export type AiControllerRemoveResponses = {
+    204: void;
+};
+
+export type AiControllerRemoveResponse = AiControllerRemoveResponses[keyof AiControllerRemoveResponses];
+
+export type AiControllerAskData = {
+    body?: never;
+    path?: never;
+    query: {
+        question: string;
+    };
+    url: '/api/v1/ai/ask';
+};
+
+export type AiControllerAskResponses = {
+    /**
+     * A text/event-stream carrying one "citations" event, then a "delta" event per piece of text, then one "done" event with the token counts.
+     */
     200: unknown;
 };
 
@@ -152,6 +400,172 @@ export type NotesControllerUpdateResponses = {
 };
 
 export type NotesControllerUpdateResponse = NotesControllerUpdateResponses[keyof NotesControllerUpdateResponses];
+
+export type PrivacyControllerCancelData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/erasure';
+};
+
+export type PrivacyControllerCancelResponses = {
+    200: ErasureStatusDto;
+};
+
+export type PrivacyControllerCancelResponse = PrivacyControllerCancelResponses[keyof PrivacyControllerCancelResponses];
+
+export type PrivacyControllerStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/erasure';
+};
+
+export type PrivacyControllerStatusResponses = {
+    200: ErasureStatusDto;
+};
+
+export type PrivacyControllerStatusResponse = PrivacyControllerStatusResponses[keyof PrivacyControllerStatusResponses];
+
+export type PrivacyControllerRequestData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/me/erasure';
+};
+
+export type PrivacyControllerRequestResponses = {
+    200: ErasureRequestedDto;
+};
+
+export type PrivacyControllerRequestResponse = PrivacyControllerRequestResponses[keyof PrivacyControllerRequestResponses];
+
+export type WebhooksControllerListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/webhooks';
+};
+
+export type WebhooksControllerListResponses = {
+    200: WebhookListDto;
+};
+
+export type WebhooksControllerListResponse = WebhooksControllerListResponses[keyof WebhooksControllerListResponses];
+
+export type WebhooksControllerCreateData = {
+    body: CreateWebhookDto;
+    path?: never;
+    query?: never;
+    url: '/api/v1/webhooks';
+};
+
+export type WebhooksControllerCreateResponses = {
+    201: CreatedWebhookDto;
+};
+
+export type WebhooksControllerCreateResponse = WebhooksControllerCreateResponses[keyof WebhooksControllerCreateResponses];
+
+export type WebhooksControllerRemoveData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/webhooks/{id}';
+};
+
+export type WebhooksControllerRemoveResponses = {
+    204: void;
+};
+
+export type WebhooksControllerRemoveResponse = WebhooksControllerRemoveResponses[keyof WebhooksControllerRemoveResponses];
+
+export type WebhooksControllerUpdateData = {
+    body: UpdateWebhookDto;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/webhooks/{id}';
+};
+
+export type WebhooksControllerUpdateResponses = {
+    204: void;
+};
+
+export type WebhooksControllerUpdateResponse = WebhooksControllerUpdateResponses[keyof WebhooksControllerUpdateResponses];
+
+export type FilesControllerListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/files';
+};
+
+export type FilesControllerListResponses = {
+    200: FileListDto;
+};
+
+export type FilesControllerListResponse = FilesControllerListResponses[keyof FilesControllerListResponses];
+
+export type FilesControllerRequestUploadData = {
+    body: RequestUploadDto;
+    path?: never;
+    query?: never;
+    url: '/api/v1/files';
+};
+
+export type FilesControllerRequestUploadResponses = {
+    201: UploadTicketDto;
+};
+
+export type FilesControllerRequestUploadResponse = FilesControllerRequestUploadResponses[keyof FilesControllerRequestUploadResponses];
+
+export type FilesControllerCompleteData = {
+    body: CompleteUploadDto;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/files/{id}/complete';
+};
+
+export type FilesControllerCompleteResponses = {
+    200: FileDto;
+};
+
+export type FilesControllerCompleteResponse = FilesControllerCompleteResponses[keyof FilesControllerCompleteResponses];
+
+export type FilesControllerDownloadData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/files/{id}/download';
+};
+
+export type FilesControllerDownloadResponses = {
+    200: DownloadDto;
+};
+
+export type FilesControllerDownloadResponse = FilesControllerDownloadResponses[keyof FilesControllerDownloadResponses];
+
+export type FilesControllerRemoveData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/files/{id}';
+};
+
+export type FilesControllerRemoveResponses = {
+    204: void;
+};
+
+export type FilesControllerRemoveResponse = FilesControllerRemoveResponses[keyof FilesControllerRemoveResponses];
 
 export type DemoItemsControllerListData = {
     body?: never;

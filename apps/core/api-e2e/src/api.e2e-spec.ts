@@ -261,11 +261,24 @@ describe('rate limiting', () => {
   // that the window can be exhausted without sending a hundred requests.
   const LIMIT = throttleLimit;
 
+  /**
+   * An address of this suite's own.
+   *
+   * The counter is keyed on the client address, and `TRUSTED_PROXIES` is
+   * loopback in this rig — so a forwarded address is believed, and exhausting
+   * one costs nobody else anything. Sending these from the real loopback
+   * address left every other suite rate-limited for the rest of the window:
+   * measured, `auth.e2e-spec` failed with 429 on a request that had nothing to
+   * do with this test, and which one broke depended on the order the files
+   * happened to run in.
+   */
+  const OWN_ADDRESS = { 'x-forwarded-for': '203.0.113.7' };
+
   it('answers with a problem document once the window is exhausted', async () => {
     let limited: Response | undefined;
 
     for (let attempt = 0; attempt <= LIMIT + 1; attempt += 1) {
-      const response = await fetch(`${API_URL}/api`);
+      const response = await fetch(`${API_URL}/api`, { headers: OWN_ADDRESS });
       if (response.status === 429) {
         limited = response;
         break;
@@ -279,11 +292,22 @@ describe('rate limiting', () => {
   });
 
   it('tells the client when to come back', async () => {
-    const response = await fetch(`${API_URL}/api`);
+    const response = await fetch(`${API_URL}/api`, { headers: OWN_ADDRESS });
 
     // Still limited from the previous test; the window has not elapsed.
     expect(response.status).toBe(429);
     expect(Number(response.headers.get('retry-after'))).toBeGreaterThan(0);
+  });
+
+  it('leaves everybody else’s window alone', async () => {
+    // The property that makes the two above safe to run beside anything: a
+    // different address has its own counter, and this suite exhausting one
+    // must not be able to fail an unrelated test.
+    const response = await fetch(`${API_URL}/api`, {
+      headers: { 'x-forwarded-for': '203.0.113.8' },
+    });
+
+    expect(response.status).toBe(200);
   });
 });
 

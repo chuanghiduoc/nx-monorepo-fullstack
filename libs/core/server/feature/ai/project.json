@@ -1,0 +1,9 @@
+{
+  "name": "core-server-feature-ai",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/core/server/feature/ai/src",
+  "projectType": "library",
+  "tags": ["scope:core", "platform:node", "type:feature"],
+  "// targets": "to see all targets run: nx show project core-server-feature-ai --web",
+  "targets": {}
+}

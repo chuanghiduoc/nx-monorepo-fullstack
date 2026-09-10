@@ -23,6 +23,18 @@
           "--port=4200"
         ]
       }
+    },
+    "build": {
+      "//": "Not cached. `output: standalone` copies the runtime dependency tree into .next/standalone/node_modules, and under pnpm that tree is symlinks \u2014 about thirty of them. Restoring them needs a privilege Windows does not grant an ordinary account, so a cache hit fails the build outright with \"A required privilege is not held by the client\" on a machine where the build itself works. Caching it and dropping the symlinks from the outputs would be worse: the restore would then succeed and leave an image-shaped directory that cannot start.",
+      "cache": false
+    },
+    "docker:build": {
+      "//": "Declared rather than inferred, for the reason written out in core-api: the build context is the workspace root. The browser origin is inlined at build time, so it is a build argument with a local default rather than something read at runtime.",
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{workspaceRoot}",
+        "command": "docker build -f apps/core/web/Dockerfile -t apps-core-web --build-arg NEXT_PUBLIC_API_ORIGIN=${NEXT_PUBLIC_API_ORIGIN:-http://localhost:8080} ."
+      }
     }
   }
 }

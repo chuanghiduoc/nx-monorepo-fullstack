@@ -1,0 +1,132 @@
+{
+  "auth": {
+    "signIn": {
+      "title": "Sign in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "noAccount": "No account yet?",
+      "signUpLink": "Create one",
+      "failed": "That email and password do not match.",
+      "subtitle": "Sign in to continue.",
+      "submitting": "Signing in…"
+    },
+    "signUp": {
+      "title": "Create an account",
+      "name": "Name",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Create account",
+      "hasAccount": "Already have an account?",
+      "signInLink": "Sign in",
+      "failed": "Could not create the account. That email may already be in use.",
+      "subtitle": "Create an account to get started.",
+      "submitting": "Creating…"
+    },
+    "twoFactor": {
+      "title": "Two-factor authentication",
+      "hint": "Enter the six-digit code from your authenticator app.",
+      "code": "Code",
+      "submit": "Confirm",
+      "failed": "That code is wrong or has expired.",
+      "backupTitle": "Use a backup code",
+      "backupHint": "Enter one of the codes you saved when you turned this on.",
+      "backupCode": "Backup code",
+      "backupFailed": "That backup code is wrong or has already been used.",
+      "useBackupCode": "Lost the device? Use a backup code",
+      "useCode": "Back to the code from your application"
+    },
+    "signOut": "Sign out",
+    "signOutFailed": "Could not sign out. Try again.",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
+  },
+  "organizations": {
+    "title": "Organizations",
+    "current": "Working in",
+    "switch": "Switch",
+    "none": "You do not belong to an organization yet.",
+    "create": "Create an organization",
+    "name": "Name",
+    "slug": "Identifier",
+    "submit": "Create",
+    "createFailed": "Could not create the organization. That identifier may be taken.",
+    "loading": "Loading…",
+    "loadFailed": "Could not load your organizations.",
+    "switchFailed": "Could not switch organization.",
+    "switchTo": "Switch to {name}",
+    "choose": "Choose an organization"
+  },
+  "devices": {
+    "title": "Sessions",
+    "current": "This session",
+    "revoke": "Revoke",
+    "empty": "No sessions.",
+    "unknown": "Unknown device",
+    "failed": "Could not load the list of sessions.",
+    "loading": "Loading…",
+    "revokeFailed": "Could not revoke that session.",
+    "revokeNamed": "Revoke {device}"
+  },
+  "notes": {
+    "title": "Notes",
+    "empty": "No notes yet.",
+    "create": "Add a note",
+    "noteTitle": "Title",
+    "body": "Body",
+    "submit": "Save",
+    "needsOrganization": "Choose an organization before viewing notes.",
+    "delete": "Delete note",
+    "saveFailed": "Could not save the note.",
+    "deleteFailed": "Could not delete the note.",
+    "loading": "Loading…",
+    "loadFailed": "Could not load notes.",
+    "deleteNamed": "Delete note {title}",
+    "loadMore": "Show more"
+  },
+  "impersonation": {
+    "banner": "You are acting as {name}. Everything you do is recorded.",
+    "stop": "Stop",
+    "stopFailed": "Could not stop. Try again."
+  },
+  "common": {
+    "language": "Language",
+    "loading": "Loading…",
+    "error": "Something went wrong."
+  },
+  "security": {
+    "title": "Security",
+    "enabled": "Two-factor authentication is on.",
+    "disabled": "Two-factor authentication is off.",
+    "confirmPassword": "Confirm your password",
+    "turnOn": "Turn on two-factor authentication",
+    "turnOff": "Turn off two-factor authentication",
+    "failed": "That did not work. Check the password and try again.",
+    "enrolTitle": "Add this to your authenticator",
+    "enrolHint": "Scan or paste the address below into your authenticator application.",
+    "backupTitle": "Backup codes",
+    "backupHint": "Keep these somewhere safe. Each works once, for when you lose the device.",
+    "confirmCode": "Code from the application",
+    "finish": "Finish",
+    "codeRejected": "That code is wrong. Try again with the newest one."
+  },
+  "validation": {
+    "required": "This is required.",
+    "invalid": "That value is not valid.",
+    "email": "That is not a valid email address.",
+    "tooSmall": "Use at least {minimum} characters.",
+    "tooBig": "Use at most {maximum} characters.",
+    "pattern": "That is not the right format."
+  },
+  "home": {
+    "title": "Platform",
+    "description": "An internal application. Sign in to continue.",
+    "signIn": "Sign in",
+    "signUp": "Create an account"
+  },
+  "theme": {
+    "light": "Light theme",
+    "dark": "Dark theme",
+    "system": "Follow the system"
+  }
+}

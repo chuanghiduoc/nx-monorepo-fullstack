@@ -21,9 +21,11 @@
     "@workspace/core-server-authz": "workspace:*",
     "@workspace/core-server-core": "workspace:*",
     "@workspace/core-server-data-access-db": "workspace:*",
+    "@workspace/core-server-events": "workspace:*",
+    "@workspace/core-server-realtime": "workspace:*",
+    "@workspace/shared-contracts": "workspace:*",
     "fastify": "catalog:",
     "nestjs-zod": "catalog:",
-    "tslib": "catalog:",
-    "zod": "catalog:"
+    "tslib": "catalog:"
   }
 }

@@ -1,0 +1,409 @@
+name: nx-monorepo-fullstack-prod
+
+# The production shape, runnable locally.
+#
+#   cp .env.example .env.prod   # then edit it
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up --build
+#
+# Everything reaches the outside world through one edge on port 8080, which is
+# what makes the session cookie work: the browser sets it for the origin the
+# API answered on, and the web application reads the same cookie. Serve them
+# from two origins and a signed-in person is redirected back to sign in
+# forever, with nothing in any log to explain it.
+#
+# This is not a deployment. It has no TLS, its secrets come from a file, and
+# its database is a container. It exists so the artifacts that ship can be run
+# and tested the way they will run, before they ship.
+
+services:
+  postgres:
+    # PostgreSQL 18.6 with pgvector, not `postgres:18-alpine`: measured, the
+    # Alpine image has no `vector` extension at all, and the AI schema creates
+    # one. Same server version, Debian base, larger image.
+    image: pgvector/pgvector:pg18
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+    volumes:
+      # postgres:18+ expects a single mount at /var/lib/postgresql and places
+      # the cluster in a versioned subdirectory, so pg_upgrade --link can work.
+      - pgdata:/var/lib/postgresql
+      # The migration creates the roles it needs as NOLOGIN. Granting them a
+      # password is an operator's job, done once; this is the local stand-in
+      # for that step, and the only reason the file is here.
+      - ./tools/postgres/10-dev-logins.sh:/docker-entrypoint-initdb.d/10-dev-logins.sh:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-app}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      # Without a start period every probe during initialisation counts against
+      # `retries`, and a first start — initdb, the init script, then a restart —
+      # takes longer than ten of them on a cold machine. The container is then
+      # marked unhealthy and everything that waits on it aborts, on a database
+      # that goes on to become healthy seconds later.
+      start_period: 60s
+    # Capabilities are kept: the official entrypoints chown the data directory
+    # and drop privileges, which needs CHOWN, SETUID and SETGID. Dropping them
+    # makes the container fail to initialise, which is a worse trade than the
+    # capability. `no-new-privileges` still applies.
+    security_opt: ['no-new-privileges:true']
+    restart: unless-stopped
+
+  # Queue, quota, rate limiting, locks. BullMQ requires noeviction: evicting a
+  # key here would silently drop a job.
+  redis-critical:
+    image: redis:8-alpine
+    command: redis-server --maxmemory-policy noeviction --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # Capabilities are kept: the official entrypoints chown the data directory
+    # and drop privileges, which needs CHOWN, SETUID and SETGID. Dropping them
+    # makes the container fail to initialise, which is a worse trade than the
+    # capability. `no-new-privileges` still applies.
+    security_opt: ['no-new-privileges:true']
+    restart: unless-stopped
+
+  # Disposable cache. Separate from the one above precisely so that filling it
+  # cannot evict a job.
+  redis-cache:
+    image: redis:8-alpine
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # Capabilities are kept: the official entrypoints chown the data directory
+    # and drop privileges, which needs CHOWN, SETUID and SETGID. Dropping them
+    # makes the container fail to initialise, which is a worse trade than the
+    # capability. `no-new-privileges` still applies.
+    security_opt: ['no-new-privileges:true']
+    restart: unless-stopped
+
+  # A one-shot job, not a service. It connects as the owner; the API's own role
+  # has no DDL, which is what makes a row-level policy something the API cannot
+  # switch off. Nothing that serves traffic starts until this has succeeded.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/core/api/Dockerfile
+      target: migrate
+    environment:
+      MIGRATION_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-app}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/core/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      # app_user, never the owner: the service runs with the rights that make
+      # its policies mean something.
+      DATABASE_URL: postgresql://app_user:${APP_USER_PASSWORD:-app_user}@postgres:5432/${POSTGRES_DB:-app}
+      REDIS_CRITICAL_URL: redis://redis-critical:6379
+      REDIS_CACHE_URL: redis://redis-cache:6379
+      DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in the env file}
+      # The public origin, which is the edge — not this container's address.
+      BETTER_AUTH_URL: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      CORS_ORIGINS: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      # Only the edge may report a client's address. Anything else claiming to
+      # be a proxy is ignored, which is what makes the rate limit and the
+      # per-organization allowlist worth having.
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Left to the schema's default unless the env file says otherwise. A
+      # deployment wants the default; a single-address test rig does not.
+      THROTTLE_LIMIT: ${THROTTLE_LIMIT:-100}
+      THROTTLE_TTL_MS: ${THROTTLE_TTL_MS:-60000}
+      AUTH_CREDENTIAL_MAX_ATTEMPTS: ${AUTH_CREDENTIAL_MAX_ATTEMPTS:-10}
+      AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-300}
+      SESSION_MAX_AGE_SECONDS: ${SESSION_MAX_AGE_SECONDS:-604800}
+      SESSION_UPDATE_AGE_SECONDS: ${SESSION_UPDATE_AGE_SECONDS:-86400}
+      CORS_MAX_AGE_SECONDS: ${CORS_MAX_AGE_SECONDS:-600}
+      PROBLEM_TYPE_BASE_URL: ${PROBLEM_TYPE_BASE_URL:-https://errors.example.com}
+      # --- Files -----------------------------------------------------------
+      #
+      # The `local` driver, and that is a decision this file has to explain.
+      #
+      # A presigned S3 URL is signed for a **hostname**, and the browser and the
+      # API have to agree on it. On one host they cannot: the API knows the
+      # store as `minio:9000` on its own network and a browser knows it as
+      # `localhost:9000`, and a URL signed for either is refused when used from
+      # the other. Publishing the port does not fix it; routing it through the
+      # edge does not either, because SigV4 signs the `Host` header.
+      #
+      # So this stack stores files itself, behind the same edge, with real
+      # signed URLs the API verifies. What that costs is stated rather than
+      # hidden: **one API replica**, because the objects live on its disk.
+      #
+      # A real deployment sets `STORAGE_DRIVER=s3` and points `S3_*` at a
+      # managed store, whose hostname is public and the same from both sides.
+      # The driver is the same either way — that is what the storage suite
+      # proves by running one set of assertions against both.
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      STORAGE_LOCAL_ROOT: /var/lib/app/storage
+      STORAGE_PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      STORAGE_SIGNING_SECRET: ${STORAGE_SIGNING_SECRET:?set STORAGE_SIGNING_SECRET in the env file}
+      STORAGE_MAX_UPLOAD_BYTES: ${STORAGE_MAX_UPLOAD_BYTES:-52428800}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      # --- Observability ---------------------------------------------------
+      #
+      # Unset means nothing is traced, and that is a supported state: every
+      # request still carries an id and that id is still in every log line.
+      # What is lost is the join across processes.
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      # --- Realtime --------------------------------------------------------
+      #
+      # Unset means the queue's instance, which every process already has:
+      # Pub/Sub stores nothing, so it does not violate that instance's
+      # noeviction. Point it elsewhere when the volume is real.
+      REALTIME_REDIS_URL: ${REALTIME_REDIS_URL:-}
+      REALTIME_CHANNEL: ${REALTIME_CHANNEL:-realtime}
+      # --- The assistant ---------------------------------------------------
+      #
+      # `none` unless a key is provided. A stack that refused to start without
+      # one would be a stack nobody can bring up to look at.
+      AI_PROVIDER: ${AI_PROVIDER:-none}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_MODEL_FAST: ${AI_MODEL_FAST:-claude-haiku-4-5}
+      AI_MODEL_SMART: ${AI_MODEL_SMART:-claude-sonnet-4-5}
+      AI_EMBEDDING_MODEL: ${AI_EMBEDDING_MODEL:-text-embedding-3-small}
+      AI_EMBEDDING_API_KEY: ${AI_EMBEDDING_API_KEY:-}
+      AI_EMBEDDING_BASE_URL: ${AI_EMBEDDING_BASE_URL:-}
+      AI_MONTHLY_TOKEN_LIMIT: ${AI_MONTHLY_TOKEN_LIMIT:-1000000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis-critical:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # How long the container is given to finish what it is doing before it is
+    # killed. Compose's default is ten seconds, which is a request in flight
+    # plus a connection pool closing — too close to be a deadline.
+    stop_grace_period: 30s
+    # Nothing this image does needs a Linux capability: Node binds a port
+    # above 1024 and the process already runs as `node`. Dropping them all is
+    # the cheap half of least privilege, and `no-new-privileges` is what stops
+    # a setuid binary inside the image undoing it.
+    cap_drop: ['ALL']
+    security_opt: ['no-new-privileges:true']
+    # The image is immutable at runtime. Anything that must be written goes to
+    # a tmpfs, which is also where it belongs: it does not survive a restart
+    # and it must not.
+    #
+    # The file store is the exception, and it is a volume rather than a tmpfs
+    # for exactly that reason: an upload has to survive a restart.
+    read_only: true
+    tmpfs: ['/tmp']
+    volumes:
+      - filestore:/var/lib/app/storage
+    restart: unless-stopped
+
+  # The worker. No port, no route, no controller: a worker that can serve a
+  # request is an API with a confusing name, and the two would then have to be
+  # deployed, scaled and secured as one thing.
+  worker:
+    build:
+      context: .
+      dockerfile: apps/core/worker/Dockerfile
+    environment:
+      NODE_ENV: production
+      # worker_user, not app_user. The two roles differ, and a single variable
+      # shared with the API would mean whichever one the file held is the role
+      # both connect as.
+      WORKER_DATABASE_URL: postgresql://worker_user:${WORKER_USER_PASSWORD:-worker_user}@postgres:5432/${POSTGRES_DB:-app}
+      # The erasure job's own role — the only one that may delete a person or
+      # edit an audit record. Unset by default, and that is the switch: without
+      # it the worker registers no erasure schedule, requests to be forgotten
+      # are recorded and nothing acts on them. Set `ERASURE_USER_PASSWORD` in
+      # `.env.prod` to turn it on, after granting the role a login.
+      ERASURE_DATABASE_URL: ${ERASURE_DATABASE_URL:-}
+      # The queue's Redis, the one that must never evict. There is deliberately
+      # no cache URL here: the worker has nothing to cache.
+      REDIS_CRITICAL_URL: redis://redis-critical:6379
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+      # Raising the concurrency without raising this is refused at boot: the
+      # consumers would want more connections than the pool holds, and running
+      # out arrives as a transaction timeout rather than anything naming a pool.
+      WORKER_DATABASE_POOL_MAX: ${WORKER_DATABASE_POOL_MAX:-20}
+      RETENTION_SWEEP_INTERVAL_MINUTES: ${RETENTION_SWEEP_INTERVAL_MINUTES:-60}
+      IDEMPOTENCY_RETENTION_HOURS: ${IDEMPOTENCY_RETENTION_HOURS:-24}
+      # Left at the image's own value unless a deployment says otherwise; the
+      # health check in that image reads the same variable.
+      WORKER_HEARTBEAT_INTERVAL_MS: ${WORKER_HEARTBEAT_INTERVAL_MS:-10000}
+      # The relay. Left at the schema's defaults unless the env file says
+      # otherwise; the sweep settings are the ones to raise first if the
+      # outbox grows, and OUTBOX_BATCH / OUTBOX_POLL_MS is what they must beat.
+      OUTBOX_POLL_MS: ${OUTBOX_POLL_MS:-1000}
+      OUTBOX_BATCH: ${OUTBOX_BATCH:-100}
+      OUTBOX_LEASE_MS: ${OUTBOX_LEASE_MS:-60000}
+      OUTBOX_ENQUEUE_TIMEOUT_MS: ${OUTBOX_ENQUEUE_TIMEOUT_MS:-10000}
+      OUTBOX_RECLAIM_MS: ${OUTBOX_RECLAIM_MS:-30000}
+      OUTBOX_SWEEP_EVERY_MS: ${OUTBOX_SWEEP_EVERY_MS:-60000}
+      OUTBOX_SWEEP_BATCHES: ${OUTBOX_SWEEP_BATCHES:-10}
+      OUTBOX_MAX_ATTEMPTS: ${OUTBOX_MAX_ATTEMPTS:-10}
+      OUTBOX_RETENTION_HOURS: ${OUTBOX_RETENTION_HOURS:-168}
+      # The worker reads objects to check them, so it needs the same store the
+      # API writes them to — and, on the `local` driver, the same volume. Two
+      # services pointed at different stores is a scan that never finds the file
+      # it was asked about.
+      # --- Files -----------------------------------------------------------
+      #
+      # The `local` driver, and that is a decision this file has to explain.
+      #
+      # A presigned S3 URL is signed for a **hostname**, and the browser and the
+      # API have to agree on it. On one host they cannot: the API knows the
+      # store as `minio:9000` on its own network and a browser knows it as
+      # `localhost:9000`, and a URL signed for either is refused when used from
+      # the other. Publishing the port does not fix it; routing it through the
+      # edge does not either, because SigV4 signs the `Host` header.
+      #
+      # So this stack stores files itself, behind the same edge, with real
+      # signed URLs the API verifies. What that costs is stated rather than
+      # hidden: **one API replica**, because the objects live on its disk.
+      #
+      # A real deployment sets `STORAGE_DRIVER=s3` and points `S3_*` at a
+      # managed store, whose hostname is public and the same from both sides.
+      # The driver is the same either way — that is what the storage suite
+      # proves by running one set of assertions against both.
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      STORAGE_LOCAL_ROOT: /var/lib/app/storage
+      STORAGE_PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      STORAGE_SIGNING_SECRET: ${STORAGE_SIGNING_SECRET:?set STORAGE_SIGNING_SECRET in the env file}
+      STORAGE_MAX_UPLOAD_BYTES: ${STORAGE_MAX_UPLOAD_BYTES:-52428800}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      FILE_SCAN_INTERVAL_MINUTES: ${FILE_SCAN_INTERVAL_MINUTES:-1}
+      STORAGE_ABANDONED_UPLOAD_MINUTES: ${STORAGE_ABANDONED_UPLOAD_MINUTES:-60}
+      # --- Observability ---------------------------------------------------
+      #
+      # Unset means nothing is traced, and that is a supported state: every
+      # request still carries an id and that id is still in every log line.
+      # What is lost is the join across processes.
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      # The worker publishes a scan's verdict; it never subscribes.
+      REALTIME_REDIS_URL: ${REALTIME_REDIS_URL:-}
+      REALTIME_CHANNEL: ${REALTIME_CHANNEL:-realtime}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis-critical:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # Longer than the API's, because what is in flight here is a job rather
+    # than a request: the drain waits for it to finish, and the only way to
+    # impose a shorter deadline is to abandon a transaction half-done.
+    stop_grace_period: 60s
+    # Nothing this image does needs a Linux capability: Node binds a port
+    # above 1024 and the process already runs as `node`. Dropping them all is
+    # the cheap half of least privilege, and `no-new-privileges` is what stops
+    # a setuid binary inside the image undoing it.
+    cap_drop: ['ALL']
+    security_opt: ['no-new-privileges:true']
+    # The image is immutable at runtime. Anything that must be written goes to
+    # a tmpfs, which is also where it belongs: it does not survive a restart
+    # and it must not.
+    #
+    # The same file store the API writes to: the scan reads the object to decide
+    # what it is, so it needs the bytes and not only the record.
+    read_only: true
+    tmpfs: ['/tmp']
+    volumes:
+      - filestore:/var/lib/app/storage
+    restart: unless-stopped
+
+  web:
+    profiles: ['web']
+    build:
+      context: .
+      dockerfile: apps/core/web/Dockerfile
+      args:
+        # Inlined into the browser bundle at build time, so it is a build
+        # argument rather than an environment variable. Supplying it at start
+        # would be too late and the bundle would point at localhost.
+        NEXT_PUBLIC_API_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
+        NEXT_PUBLIC_DEFAULT_LOCALE: ${DEFAULT_LOCALE:-vi}
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 4200
+      APP_TIME_ZONE: ${APP_TIME_ZONE:-Asia/Ho_Chi_Minh}
+    depends_on:
+      api:
+        condition: service_healthy
+    stop_grace_period: 30s
+    # Nothing this image does needs a Linux capability: Node binds a port
+    # above 1024 and the process already runs as `node`. Dropping them all is
+    # the cheap half of least privilege, and `no-new-privileges` is what stops
+    # a setuid binary inside the image undoing it.
+    cap_drop: ['ALL']
+    security_opt: ['no-new-privileges:true']
+    # The image is immutable at runtime. Anything that must be written goes to
+    # a tmpfs, which is also where it belongs: it does not survive a restart
+    # and it must not.
+    read_only: true
+    tmpfs: ['/tmp']
+    restart: unless-stopped
+
+  edge:
+    profiles: ['web']
+    image: caddy:2-alpine
+    ports:
+      - '127.0.0.1:8080:8080'
+    volumes:
+      - ./tools/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    # Caddy keeps exactly one capability, and finding out which one took a
+    # container that would not start: the official image runs
+    # `setcap cap_net_bind_service=+ep` on the binary, and with an empty
+    # bounding set the kernel refuses the exec outright —
+    # `exec /usr/bin/caddy: operation not permitted`, on a loop, with nothing
+    # naming capabilities. It is granted rather than dropped because the image
+    # asks for it, not because port 8080 needs it.
+    #
+    # Not read-only: it writes certificates and its own state to the volume
+    # mounted above, which is the one thing here that must survive a restart.
+    cap_drop: ['ALL']
+    cap_add: ['NET_BIND_SERVICE']
+    security_opt: ['no-new-privileges:true']
+    restart: unless-stopped
+
+volumes:
+  # Where the `local` storage driver keeps its objects, shared by the API that
+  # writes them and the worker that reads them to check what they are.
+  filestore:
+  pgdata:
+  redisdata:
+  caddydata:

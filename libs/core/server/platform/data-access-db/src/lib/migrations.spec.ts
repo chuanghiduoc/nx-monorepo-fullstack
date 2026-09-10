@@ -34,6 +34,22 @@ const DIFF_EMPTY = 0;
 const DIFF_FOUND = 2;
 
 /**
+ * The one thing the database has that `schema.prisma` cannot say.
+ *
+ * Prisma has no way to declare an HNSW index — there is no `type: Hnsw`, and
+ * the operator class is pgvector's — so `migrate diff` reports it as something
+ * to drop, forever. The assertion below is exact rather than relaxed: any
+ * *other* difference is still a failure, which is what the drift check is for.
+ *
+ * A model edited without a migration still fails here. Only this one index is
+ * forgiven, and only in this exact form.
+ */
+const UNEXPRESSIBLE_IN_THE_SCHEMA = [
+  '-- DropIndex',
+  'DROP INDEX "ai_chunks_embedding_hnsw";',
+].join('\n');
+
+/**
  * The migration history is only trustworthy if it can be replayed from
  * nothing, matches the schema when it has been, and can be walked back one
  * step at a time. Each of those is a command against a real PostgreSQL, not a
@@ -59,6 +75,11 @@ describe('migration history', () => {
       DATABASE_URL: database.migrationUri,
       SHADOW_DATABASE_URL: await database.createDatabase(SHADOW_DATABASE),
     };
+    // The configuration prefers this over DATABASE_URL when it is set, and a
+    // developer's own file sets it to their local database — which the task
+    // runner loads into every task. Left in place, this suite would replay
+    // migration history against that database instead of the container.
+    delete env['MIGRATION_DATABASE_URL'];
     staging = mkdtempSync(join(tmpdir(), 'migration-history-'));
   }, POSTGRES_START_TIMEOUT_MS);
 
@@ -124,18 +145,19 @@ describe('migration history', () => {
 
       prisma(['migrate', 'deploy']);
 
-      // Drift check: the migrated database is exactly what schema.prisma
-      // describes. A model edit without a migration fails here.
-      expect(
-        prisma([
-          'migrate',
-          'diff',
-          '--from-config-datasource',
-          '--to-schema',
-          'prisma/schema.prisma',
-          '--exit-code',
-        ]).status,
-      ).toBe(DIFF_EMPTY);
+      // Drift check: the migrated database is what schema.prisma describes,
+      // apart from the one index the schema language cannot express. A model
+      // edit without a migration fails here.
+      const drift = prisma([
+        'migrate',
+        'diff',
+        '--from-config-datasource',
+        '--to-schema',
+        'prisma/schema.prisma',
+        '--script',
+      ]).stdout;
+
+      expect(withoutPreamble(drift)).toBe(UNEXPRESSIBLE_IN_THE_SCHEMA);
 
       const fullSchema = prisma([
         'migrate',
@@ -156,9 +178,9 @@ describe('migration history', () => {
           '--file',
           join(MIGRATIONS_DIR, name, 'down.sql'),
         ]);
-        // Prisma has no command that forgets a *successfully* applied migration
-        // (`migrate resolve --rolled-back` is for failed ones), so the history
-        // row is removed directly. See.
+        // Prisma has no command that forgets a *successfully* applied
+        // migration — `migrate resolve --rolled-back` is for ones that failed
+        // — so the history row is removed directly.
         prisma(['db', 'execute', '--file', writeForget(name)]);
 
         expect(
@@ -182,6 +204,20 @@ describe('migration history', () => {
     },
     SUITE_TIMEOUT_MS,
   );
+
+  /**
+   * The diff script without the config line Prisma prints before it.
+   *
+   * `prisma.config.ts` makes every command announce that it loaded, on stdout,
+   * so the script is never the first thing in the output.
+   */
+  function withoutPreamble(output: string): string {
+    return output
+      .split(/\r?\n/)
+      .filter((line) => !line.startsWith('Loaded Prisma config'))
+      .join('\n')
+      .trim();
+  }
 
   function writeForget(name: string): string {
     const file = join(staging, `forget-${name}.sql`);

@@ -3,16 +3,13 @@ import { createHash } from 'node:crypto';
 import { BadRequestException } from '@nestjs/common';
 import { z } from 'zod';
 
+import {
+  CURSOR_MAX_LENGTH,
+  DEFAULT_PAGE_LIMIT,
+  MAX_PAGE_LIMIT,
+} from '@workspace/shared-contracts';
+
 import { canonicalJson } from '../serialisation/canonical-json.js';
-
-export const DEFAULT_PAGE_LIMIT = 20;
-export const MAX_PAGE_LIMIT = 100;
-
-/**
- * A cursor never needs to be long. Capping the length means a hostile client
- * cannot make us base64-decode and JSON-parse megabytes per request.
- */
-export const CURSOR_MAX_LENGTH = 512;
 
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
 

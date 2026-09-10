@@ -16,9 +16,11 @@
     }
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "catalog:",
     "@faker-js/faker": "catalog:",
     "@testcontainers/postgresql": "catalog:",
     "fishery": "catalog:",
+    "testcontainers": "catalog:",
     "tslib": "catalog:"
   },
   "devDependencies": {

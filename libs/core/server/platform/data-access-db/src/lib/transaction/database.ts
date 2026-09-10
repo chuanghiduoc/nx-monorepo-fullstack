@@ -12,6 +12,7 @@ import {
 } from '@workspace/core-server-core';
 import { TENANT_SCOPED_DELEGATES } from '../tenancy/tenant-scoped-models.js';
 import { guardTenantModels } from '../tenancy/tenant-guard.js';
+import { annotateDatabaseFailure } from './failure.js';
 import {
   activeTransaction,
   runInTransaction,
@@ -98,6 +99,25 @@ export class Database {
     return this.withTenantTransaction(context.tenant, work, options);
   }
 
+  /**
+   * The context of the transaction already open here, if there is one.
+   *
+   * `undefined` means none is open — distinct from a system transaction, which
+   * answers `{ kind: 'system' }`, and the distinction is the point: a caller
+   * choosing which kind to open needs to know whether to open one at all.
+   *
+   * Reading the tenant from the transaction rather than from an argument is
+   * what `OutboxRepository.append` and `QuotaRepository` already do inside
+   * this library, for the reason stated there: the caller passing it is the
+   * place to get it wrong, and the transaction already knows. This exposes the
+   * same fact to the one component outside the library that has to choose —
+   * feature flags, whose override table is behind a policy, so which
+   * transaction is open *is* the answer rather than an implementation detail.
+   */
+  currentTransactionContext(): TenantContext | undefined {
+    return activeTransaction()?.context;
+  }
+
   /** Global work (relays, schedulers, idempotency): no tenant GUC is set. */
   withSystemTransaction<T>(
     work: () => Promise<T>,
@@ -173,19 +193,31 @@ export class Database {
       return work();
     }
 
-    return this.prisma.$transaction(
-      async (client) => {
-        await applyTenantGucs(client, context);
-        return runInTransaction({ client, context }, work);
-      },
-      {
-        timeout: options.timeoutMs,
-        maxWait: options.maxWaitMs,
-        isolationLevel: options.isolation
-          ? ISOLATION[options.isolation]
-          : undefined,
-      },
-    );
+    try {
+      return await this.prisma.$transaction(
+        async (client) => {
+          await applyTenantGucs(client, context);
+          return runInTransaction({ client, context }, work);
+        },
+        {
+          timeout: options.timeoutMs,
+          maxWait: options.maxWaitMs,
+          isolationLevel: options.isolation
+            ? ISOLATION[options.isolation]
+            : undefined,
+        },
+      );
+    } catch (failure) {
+      // The one place every repository passes through, including the ones that
+      // reach the transaction client directly — they still run inside this
+      // callback. Nesting does not annotate twice: a joined transaction
+      // returned above, before this try.
+      //
+      // Without it a database failure reaches the queue as "nobody knows",
+      // which is five attempts and then a permanent dead letter — so a
+      // database that was merely restarting buried every job in flight.
+      throw annotateDatabaseFailure(failure);
+    }
   }
 }
 

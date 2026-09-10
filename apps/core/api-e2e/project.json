@@ -23,7 +23,9 @@
       "options": {
         "cwd": "apps/core/api-e2e",
         "command": "vitest run --config vitest.e2e.config.mts"
-      }
+      },
+      "// parallelism": "Both end-to-end suites start the API on port 3000 and share one Redis, so two of them at once collide on the port and on the rate-limit counters each clears at startup. Running alone is a requirement, not a tuning choice.",
+      "parallelism": false
     }
   },
   "implicitDependencies": [

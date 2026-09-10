@@ -31,7 +31,7 @@ describe('Database', () => {
 
   beforeAll(async () => {
     postgres = await startPostgres();
-    prisma = new PrismaService();
+    prisma = new PrismaService('DATABASE_URL', 'DATABASE_POOL_MAX');
     await prisma.$connect();
     db = new Database(prisma);
   }, POSTGRES_START_TIMEOUT_MS);
@@ -158,9 +158,10 @@ describe('Database', () => {
 
   describe('the root client', () => {
     it('throws when touched while a transaction is active', async () => {
-      // The invariant the spec demands, enforced by the runtime rather than by
-      // convention: a query that bypasses the transaction would run on another
-      // connection, outside the GUCs, and RLS would return nothing.
+      // The invariant this library exists to hold, enforced at runtime rather
+      // than by convention: a query that bypassed the transaction would run on
+      // another connection, outside the settings, and the policy would return
+      // nothing.
       await db.withTenantTransaction(org, async () => {
         expect(() => prisma.demoItem).toThrow(/root database client/i);
         expect(() => prisma.$queryRaw`SELECT 1`).toThrow(

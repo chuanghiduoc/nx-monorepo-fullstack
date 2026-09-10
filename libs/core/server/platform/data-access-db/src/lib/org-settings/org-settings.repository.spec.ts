@@ -32,7 +32,7 @@ describe('organization settings', () => {
 
   beforeAll(async () => {
     postgres = await startPostgres();
-    prisma = new PrismaService();
+    prisma = new PrismaService('DATABASE_URL', 'DATABASE_POOL_MAX');
     await prisma.$connect();
     db = new Database(prisma);
     settings = new OrgSettingsRepository(db);

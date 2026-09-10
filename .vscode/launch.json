@@ -6,23 +6,34 @@
       "request": "launch",
       "name": "Debug core-api with Nx",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "exec",
-        "nx",
-        "serve",
-        "core-api"
-      ],
+      "runtimeArgs": ["exec", "nx", "serve", "core-api"],
       "env": {
         "NODE_OPTIONS": "--inspect=9230"
       },
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
       "outFiles": [
         "${workspaceFolder}/apps/core/api/dist/**/*.(m|c|)js",
+        "!**/node_modules/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug core-worker with Nx",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["exec", "nx", "serve", "core-worker"],
+      "env": {
+        "NODE_OPTIONS": "--inspect=9231"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/apps/core/worker/dist/**/*.(m|c|)js",
         "!**/node_modules/**"
       ]
     }

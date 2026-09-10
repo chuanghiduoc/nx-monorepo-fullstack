@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   Logger,
   type OnModuleDestroy,
@@ -8,11 +9,18 @@ import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PrismaClient } from '../generated/prisma/client.js';
 import { activeTransaction } from './transaction/transaction-context.js';
+import {
+  DATABASE_POOL_VARIABLE,
+  DATABASE_URL_VARIABLE,
+} from './database.tokens.js';
 
 /**
  * Members that stay reachable while a transaction is active: lifecycle,
  * opening the transaction itself, and what Nest inspects on every provider.
  */
+/** What `pg` would use anyway, so a process without the variable is unchanged. */
+const DEFAULT_POOL_MAX = 10;
+
 const ALLOWED_DURING_TRANSACTION = new Set([
   '$connect',
   '$disconnect',
@@ -50,15 +58,29 @@ export class PrismaService
 {
   private readonly logger = new Logger(PrismaService.name);
 
-  constructor() {
-    const connectionString = process.env['DATABASE_URL'];
+  private readonly variable: string;
+
+  constructor(
+    @Inject(DATABASE_URL_VARIABLE) variable: string,
+    @Inject(DATABASE_POOL_VARIABLE) poolVariable: string,
+  ) {
+    const connectionString = process.env[variable];
 
     if (!connectionString) {
       // Failing here beats failing on the first query in a request.
-      throw new Error('DATABASE_URL is required to create the database client');
+      throw new Error(`${variable} is required to create the database client`);
     }
 
-    super({ adapter: new PrismaPg({ connectionString }) });
+    // Stated rather than inherited. `pg` defaults to ten connections and says
+    // so nowhere, while the worker's concurrency setting permits a hundred —
+    // so raising that to clear a backlog silently exhausts the pool, and pool
+    // exhaustion arrives as a transaction timeout rather than as anything that
+    // names a pool.
+    const max = Number(process.env[poolVariable] ?? DEFAULT_POOL_MAX);
+
+    super({ adapter: new PrismaPg({ connectionString, max }) });
+
+    this.variable = variable;
 
     return guardRootClient(this);
   }
@@ -92,7 +114,7 @@ export class PrismaService
     if (role?.isSuper || role?.bypasses) {
       throw new Error(
         `The database connection uses "${role.name}", which row-level security cannot bind ` +
-          '(superuser or BYPASSRLS). Point DATABASE_URL at app_user. ' +
+          `(superuser or BYPASSRLS). Point ${this.variable} at a role that is neither. ` +
           'If the role has no login, the database volume predates the roles migration: ' +
           'run `docker compose down -v` and start again.',
       );

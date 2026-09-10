@@ -40,7 +40,7 @@ describe('the tenant guard', () => {
 
   beforeAll(async () => {
     postgres = await startPostgres();
-    prisma = new PrismaService();
+    prisma = new PrismaService('DATABASE_URL', 'DATABASE_POOL_MAX');
     await prisma.$connect();
     db = new Database(prisma);
   }, POSTGRES_START_TIMEOUT_MS);
@@ -118,7 +118,19 @@ describe('model classes', () => {
   it('derives the scoped delegates from the classes, not from a list', () => {
     const scoped = tenantScopedDelegates();
 
-    expect([...scoped].sort()).toEqual(['bookmark', 'note', 'orgSetting']);
+    expect([...scoped].sort()).toEqual([
+      'aiChunk',
+      'aiDocument',
+      'bookmark',
+      'flagOverride',
+      'note',
+      'orgQuotaCounter',
+      'orgSetting',
+      'quotaReservation',
+      'storedFile',
+      'webhookDelivery',
+      'webhookEndpoint',
+    ]);
     expect(TENANT_SCOPED_CLASSES).toEqual(['TENANT_OWNED', 'TENANT_OPTIONAL']);
   });
 

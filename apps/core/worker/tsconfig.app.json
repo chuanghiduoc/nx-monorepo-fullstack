@@ -1,0 +1,64 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "out-tsc/app",
+    "types": ["node"],
+    "rootDir": "src",
+    "tsBuildInfoFile": "out-tsc/app/tsconfig.tsbuildinfo",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "target": "es2021",
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "eslint.config.js",
+    "eslint.config.cjs",
+    "eslint.config.mjs",
+    "vite.config.ts",
+    "vite.config.mts",
+    "vitest.config.ts",
+    "vitest.config.mts",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.tsx",
+    "src/**/*.test.js",
+    "src/**/*.spec.js",
+    "src/**/*.test.jsx",
+    "src/**/*.spec.jsx"
+  ],
+  "references": [
+    {
+      "path": "../../../libs/core/server/platform/webhooks/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/platform/storage/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/platform/realtime/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/platform/queue/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/platform/observability/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/platform/flags/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/platform/data-access-db/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/platform/core/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/platform/testing/tsconfig.lib.json"
+    }
+  ]
+}

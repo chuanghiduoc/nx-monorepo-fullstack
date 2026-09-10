@@ -44,7 +44,13 @@ export function readModelClasses(schemaPath = SCHEMA): Map<string, ModelClass> {
 
   // A model is preceded by its documentation comments; the class line is the
   // one that starts `/// class:`.
-  const pattern = /((?:^\/\/\/.*\n)+)^model\s+(\w+)\s*\{/gm;
+  //
+  // `\r?\n` rather than `\n`: JavaScript counts a carriage return as a line
+  // terminator, so `.` stops before it and a pattern ending in `\n` matches
+  // nothing at all in a CRLF file — which is what the Prisma formatter writes
+  // on Windows. Every model was then reported as unclassified, which reads
+  // like a schema problem and is not one.
+  const pattern = /((?:^\/\/\/.*\r?\n)+)^model\s+(\w+)\s*\{/gm;
   const declared = new Set<string>();
 
   for (const [, comments, model] of schema.matchAll(pattern)) {
@@ -75,6 +81,30 @@ export function readModelClasses(schemaPath = SCHEMA): Map<string, ModelClass> {
   }
 
   return classes;
+}
+
+/**
+ * The database table each model maps to, by model name.
+ *
+ * `@@map` is what the migrations and every raw statement use, and it is the
+ * only name a `pg_policies` row knows — so anything comparing the schema's
+ * intent against the database's reality has to go through this.
+ */
+export function readTableNames(schemaPath = SCHEMA): Map<string, string> {
+  const schema = readFileSync(schemaPath, 'utf8');
+  const tables = new Map<string, string>();
+
+  // `[\s\S]*?` rather than `.*?`: the body spans lines, and `.` does not.
+  const pattern = /^model\s+(\w+)\s*\{([\s\S]*?)^\}/gm;
+
+  for (const [, model, body] of schema.matchAll(pattern)) {
+    const mapped = body.match(/@@map\("([^"]+)"\)/);
+    // A model with no `@@map` is stored under its own name, which is what
+    // Prisma does and what a migration would then have written.
+    tables.set(model, mapped?.[1] ?? model);
+  }
+
+  return tables;
 }
 
 /**

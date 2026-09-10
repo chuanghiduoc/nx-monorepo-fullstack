@@ -26,6 +26,19 @@ const DEFAULT_RETRY_AFTER_SECONDS = 60;
 @Catch()
 export class ProblemDetailsFilter implements ExceptionFilter {
   private readonly logger = new Logger(ProblemDetailsFilter.name);
+  private readonly typeBaseUrl: string | undefined;
+
+  /**
+   * Takes the base URL rather than reading it.
+   *
+   * It is registered with `new` in `main.ts`, where the validated
+   * configuration is already in hand — so this is one argument at one call
+   * site, against a `process.env` read at import time that measured as never
+   * seeing `.env` at all.
+   */
+  constructor(typeBaseUrl?: string) {
+    this.typeBaseUrl = typeBaseUrl;
+  }
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const http = host.switchToHttp();
@@ -35,6 +48,9 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     const problem = toProblemDetails(exception, {
       instance: request.url,
       traceId: String(request.id),
+      ...(this.typeBaseUrl === undefined
+        ? {}
+        : { typeBaseUrl: this.typeBaseUrl }),
     });
 
     this.log(exception, problem);

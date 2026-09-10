@@ -5,19 +5,41 @@
   "sourceRoot": "apps/core/web-e2e/src",
   "tags": [
     "scope:core",
-    "platform:web",
+    "platform:e2e",
     "type:app"
   ],
   "implicitDependencies": [
-    "core-web"
+    "core-web",
+    "core-api"
   ],
   "// targets": "to see all targets run: nx show project core-web-e2e --web",
   "targets": {
     "e2e": {
-      "dependsOn": []
+      "dependsOn": [
+        {
+          "projects": [
+            "core-api",
+            "core-web"
+          ],
+          "target": "build"
+        }
+      ],
+      "// parallelism": "Both end-to-end suites start the API on port 3000 and share one Redis, so two of them at once collide on the port and on the rate-limit counters each clears at startup. Running alone is a requirement, not a tuning choice.",
+      "parallelism": false
     },
     "e2e-ci": {
-      "dependsOn": []
+      "dependsOn": [
+        {
+          "projects": [
+            "core-api",
+            "core-web"
+          ],
+          "target": "build"
+        }
+      ],
+      "// parallelism": "Both end-to-end suites start the API on port 3000 and share one Redis, so two of them at once collide on the port and on the rate-limit counters each clears at startup. Running alone is a requirement, not a tuning choice.",
+      "parallelism": false
     }
-  }
+  },
+  "// tags": "This suite drives a browser and starts the Node service it talks to, so it belongs to neither platform. Its own tag keeps the browser/server rule meaning what it says for everything else."
 }

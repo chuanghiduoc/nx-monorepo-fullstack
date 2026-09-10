@@ -1,0 +1,84 @@
+# One origin in front of both services.
+#
+# This is not a convenience. The browser's session cookie is set for whatever
+# origin the API answered on, and the web application reads that cookie to
+# decide whether somebody is signed in — so if the two are served from
+# different sites, a signed-in person is redirected back to sign in forever,
+# with nothing in any log to say why.
+#
+# Locally the two differ only by port, which cookies ignore, so the mistake
+# does not appear until a real deployment. Putting the edge in the production
+# compose file is how it stays impossible.
+
+{
+	# No automatic certificates: this file describes the shape, and a real
+	# deployment supplies its own hostname and TLS. Turning it on here would
+	# make the compose file reach the internet in order to start.
+	auto_https off
+	admin off
+}
+
+:8080 {
+	# The API keeps its `/api` prefix; nothing is rewritten, so a path in a log
+	# is the path the service saw.
+	#
+	# `reverse_proxy` sets X-Forwarded-For, -Proto and -Host itself. The API
+	# believes them only from the hops named in TRUSTED_PROXIES, which is this
+	# network — so the rate limit and the per-organization allowlist see the
+	# caller rather than the edge, and a caller cannot name its own address.
+	# Both patterns, because `/api/*` does not match `/api` itself and `/api` is
+	# the service's own readiness route — without it a health check reaches the
+	# web application and is answered 404 by something that is perfectly well.
+	# A named matcher, because `handle` takes exactly one.
+	# The scrape, closed. It is first because `handle` blocks are tried in order,
+	# and everything below would otherwise pass it through to the API.
+	#
+	# **404, not 403.** A 403 confirms the route exists, which is half of what an
+	# attacker wanted from asking. The numbers are not the secret; the shape is —
+	# an unauthenticated endpoint enumerating every route and every queue is a
+	# map of the service handed to whoever asks for it.
+	#
+	# Inside this network it stays open: a scraper is a machine with no session,
+	# and giving it a credential to manage is a credential to leak.
+	@metrics path /api/metrics /api/metrics/*
+	handle @metrics {
+		respond 404
+	}
+
+	# Realtime next, because `handle` blocks are tried in order and this is the
+	# more specific of the two remaining. Both live under `/api`, like everything else the
+	# service answers — one prefix rule is easier to keep true than two.
+	#
+	# `flush_interval -1` disables response buffering. Without it the proxy
+	# collects the stream and hands it over when it ends, which for a response
+	# that never ends means never: a progress bar that arrives all at once at
+	# the end is the same as no progress bar. Caddy upgrades WebSocket
+	# connections here without being told to.
+	@realtime path /api/realtime/*
+	handle @realtime {
+		reverse_proxy api:3000 {
+			flush_interval -1
+		}
+	}
+
+	@api path /api /api/*
+	handle @api {
+		reverse_proxy api:3000
+	}
+
+	handle {
+		reverse_proxy web:4200
+	}
+
+	# Everything except the streams. `encode` is applied to the site rather than
+	# to a `handle` block, so a matcher is the only way to keep a compressor off
+	# a response that has not finished — and a buffered stream is a stream that
+	# arrives once, at the end.
+	@compressible not path /api/realtime/*
+	encode @compressible gzip zstd
+
+	log {
+		output stdout
+		format json
+	}
+}

@@ -1,5 +1,11 @@
 {
   "name": "core-web-e2e",
   "version": "0.0.1",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@better-auth/utils": "catalog:",
+    "@nx/devkit": "catalog:",
+    "@nx/playwright": "catalog:",
+    "@playwright/test": "catalog:"
+  }
 }

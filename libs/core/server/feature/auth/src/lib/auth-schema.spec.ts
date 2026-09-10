@@ -4,7 +4,10 @@ import { join } from 'node:path';
 import { getAuthTables } from 'better-auth/db';
 import { describe, expect, it } from 'vitest';
 
-import { authOptions } from './auth.options.js';
+import {
+  SCHEMA_GENERATION_TUNING,
+  authOptionsFor,
+} from './auth.options.js';
 
 const SCHEMA_PATH = join(
   import.meta.dirname,
@@ -29,7 +32,10 @@ const SCHEMA_PATH = join(
  * migration is missing.
  */
 describe('the Prisma schema matches what better-auth expects', () => {
-  const tables = getAuthTables(authOptions as never) as Record<
+  // The tables come from the plugin list, which no tuning value touches.
+  const tables = getAuthTables(
+    authOptionsFor(SCHEMA_GENERATION_TUNING) as never,
+  ) as Record<
     string,
     { modelName?: string; fields: Record<string, { fieldName?: string }> }
   >;

@@ -132,12 +132,53 @@ export class NoteRepository {
    * Deleting something already gone is success, not failure: a client that
    * retries a delete it never saw the answer to must not be told the resource
    * vanished mysteriously.
+   *
+   * It returns what it deleted, or `null` when there was nothing. The caller
+   * needs that to decide whether anything happened worth recording — after the
+   * row is gone there is nowhere else to read its version or its size from,
+   * and an audit trail that cannot describe what was deleted is not one.
    */
-  remove(id: string): Promise<void> {
+  remove(id: string): Promise<Note | null> {
     return this.db.withRequestTransaction(async () => {
-      await this.db.tenant().note.deleteMany({ where: { id } });
+      try {
+        // One statement, not a read then a delete. Read-then-delete lets two
+        // concurrent requests both see the row and both report a deletion —
+        // measured on PostgreSQL 18 at READ COMMITTED, the second `DELETE`
+        // affects nothing and the caller is told it removed a note anyway. Two
+        // `note.deleted` events with different ids follow, and consumer
+        // deduplication keys on the event id, so it cannot absorb them.
+        //
+        // It also fixes what the row *says*: a delete racing an update would
+        // otherwise report the version it read rather than the version it
+        // deleted, and a last-write-wins projection would then discard the
+        // deletion as stale.
+        return toDomain(await this.db.tenant().note.delete({ where: { id } }));
+      } catch (failure) {
+        if (isMissingRecord(failure)) {
+          // Deleting something already gone is success, not failure: a client
+          // that retries a delete it never saw the answer to must not be told
+          // the resource vanished mysteriously.
+          return null;
+        }
+
+        throw failure;
+      }
     });
   }
+}
+
+/**
+ * Prisma's "the record to delete does not exist" — code P2025.
+ *
+ * Matched on the code rather than the class so this file does not import the
+ * generated error types into a signature; the code is documented and stable.
+ */
+function isMissingRecord(failure: unknown): boolean {
+  return (
+    typeof failure === 'object' &&
+    failure !== null &&
+    (failure as { code?: unknown }).code === 'P2025'
+  );
 }
 
 function toDomain(row: {

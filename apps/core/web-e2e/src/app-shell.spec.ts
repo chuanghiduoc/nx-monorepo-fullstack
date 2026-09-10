@@ -1,21 +1,32 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
-test.describe('core-web shell', () => {
-  test('renders the application heading', async ({ page }) => {
-    await page.goto('/');
+import { useLanguage } from './support/accounts';
 
-    await expect(page.getByTestId('app-heading')).toHaveText('core-web');
+test.describe('the front page', () => {
+  test.beforeEach(async ({ page }) => {
+    await useLanguage(page, 'en');
   });
 
-  test('renders a component from the shared design system', async ({ page }) => {
+  test('names the application and offers the way in', async ({ page }) => {
     await page.goto('/');
 
-    const button = page.getByRole('button', { name: 'Shared design system' });
+    await expect(page.getByTestId('app-heading')).toHaveText('Platform');
+    await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
+  });
 
-    await expect(button).toBeVisible();
-    // Proves Tailwind processed the design-system sources, not just that the
-    // component rendered: the utility classes only exist if @source picked the
-    // library up.
-    await expect(button).toHaveClass(/inline-flex/);
+  test('styles its controls from the shared design system', async ({ page }) => {
+    await page.goto('/sign-in');
+
+    // Not merely that the component rendered: these utility classes only
+    // exist in the stylesheet if Tailwind picked up the library's sources,
+    // which it does through an `@source` line that is easy to lose.
+    const submit = page.getByRole('button', { name: 'Sign in' });
+
+    await expect(submit).toBeVisible();
+    await expect(submit).toHaveClass(/inline-flex/);
+    await expect(page.getByLabel('Email', { exact: true })).toHaveAttribute(
+      'data-slot',
+      'input',
+    );
   });
 });

@@ -6,7 +6,15 @@
 
 /** Prisma delegates whose rows belong to a tenant. */
 export const TENANT_SCOPED_DELEGATES: ReadonlySet<string> = new Set([
+  'aiChunk',
+  'aiDocument',
   'bookmark',
+  'flagOverride',
   'note',
+  'orgQuotaCounter',
   'orgSetting',
+  'quotaReservation',
+  'storedFile',
+  'webhookDelivery',
+  'webhookEndpoint',
 ]);

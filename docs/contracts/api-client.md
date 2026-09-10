@@ -7,8 +7,9 @@ frontend has not caught up with is a compile error, not a runtime surprise.
 ## The chain
 
 ```
-Zod schema (apps/core/api/src/**/**.dto.ts)
-  -> nestjs-zod + @nestjs/swagger        core-api:openapi
+Zod schema (libs/shared/contracts/src/lib/**)
+  -> createZodDto in a *.dto.ts           the API's request and response classes
+  -> nestjs-zod + @nestjs/swagger         core-api:openapi
   -> apps/core/api/openapi.json          (committed)
   -> @hey-api/openapi-ts                 shared-api-client-core:generate
   -> libs/shared/api-client-core/src/generated  (committed)
@@ -24,16 +25,16 @@ there is no ordering to remember.
 
 ## Proven, not assumed
 
-Renaming `title` to `label` in `demoItemSchema` and regenerating makes
-`core-web` fail to typecheck:
+Renaming `title` to `label` in `noteSchema` and regenerating makes `core-web`
+fail to typecheck:
 
 ```
-src/app/demo-items/page.tsx:33:19 - error TS2339: Property 'title' does not
-exist on type '{ id: string; label: string; createdAt: string; updatedAt: string; }'.
+src/app/(app)/notes/notes-panel.tsx:141:26 - error TS2339: Property 'title' does
+not exist on type '{ id: string; label: string; body: string; ... }'.
 ```
 
-That is the whole point of the chain, and it is the reason at least one page
-consumes the client for real.
+That is the whole point of the chain, and it is the reason the notes page
+consumes the client for real rather than fetching by hand.
 
 ## Drift
 
@@ -41,13 +42,23 @@ CI regenerates both artifacts and runs `git diff --exit-code` on them. A commit
 that changes a DTO without regenerating fails there — otherwise the frontend
 would keep typechecking against a contract the API no longer serves.
 
-## Base URL
+## Base URL and credentials
 
 `libs/shared/api-client-core/src/client-config.ts` exports `createClientConfig`,
 the generator's own initialisation hook (`runtimeConfigPath`). Every consumer
 gets the base URL without having to call `setConfig`, because a caller who
 forgot would silently issue a relative request against whatever host is serving
-the page. It reads `API_URL` and falls back to `http://localhost:3000`.
+the page.
+
+It reads `NEXT_PUBLIC_API_ORIGIN` first, then `API_URL`, then falls back to
+`http://localhost:3000`. The public name comes first because a browser bundle
+only carries variables the framework inlined; on the server both are readable,
+and `API_URL` may name an address only the server can reach.
+
+Every request carries `credentials: 'include'`, because the session is a cookie
+and the browser omits it on a cross-origin call otherwise. Without that line
+every request arrives anonymous and the API answers 403 — a failure that reads
+as broken authorisation rather than a missing option.
 
 The path is written as `./src/client-config.js`: the generator copies the string
 into the emitted import verbatim, and a `.ts` extension there is a TS5097 error
@@ -69,6 +80,15 @@ nestjs-zod leaves behind and fails the build naming the property, so the next
 occurrence is a red build rather than a wrong contract. Found by reading the
 generated types during the Phase 2 gate, not by a test — which is why there is
 one now.
+
+## The other half of the contract
+
+The generated client covers the *shape of the wire*. It does not tell a form
+what to accept before anything is sent. That comes from
+`@workspace/shared-contracts`, which holds the Zod schemas themselves: the API
+wraps each in `createZodDto`, and the browser hands the same schema to
+`zodResolver`. A field whose limit changes changes in both at once, so a form
+can no longer accept what the service will reject.
 
 ## Rules
 

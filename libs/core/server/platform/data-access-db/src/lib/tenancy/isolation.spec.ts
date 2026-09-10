@@ -36,7 +36,7 @@ describe('tenant isolation', () => {
 
   beforeAll(async () => {
     postgres = await startPostgres();
-    prisma = new PrismaService();
+    prisma = new PrismaService('DATABASE_URL', 'DATABASE_POOL_MAX');
     await prisma.$connect();
     db = new Database(prisma);
   }, POSTGRES_START_TIMEOUT_MS);

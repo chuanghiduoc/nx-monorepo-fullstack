@@ -1,0 +1,9 @@
+{
+  "name": "core-server-events",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/core/server/platform/events/src",
+  "projectType": "library",
+  "tags": ["scope:core", "platform:node", "type:util"],
+  "// targets": "to see all targets run: nx show project core-server-events --web",
+  "targets": {}
+}

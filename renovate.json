@@ -9,7 +9,7 @@
       "enabled": false
     },
     {
-      "description": "NestJS majors are pinned to the line supported by the installed @nx/nest generators (spec §3).",
+      "description": "NestJS majors are pinned to the line supported by the installed @nx/nest generators.",
       "matchPackageNames": ["@nestjs/**"],
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true

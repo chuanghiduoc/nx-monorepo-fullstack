@@ -1,0 +1,27 @@
+# Everything the build produces or the host leaves behind. Copying these in
+# would both slow the build and let a host artefact end up in an image.
+node_modules
+**/node_modules
+dist
+**/dist
+out-tsc
+**/out-tsc
+.next
+**/.next
+test-output
+**/test-output
+.nx
+coverage
+
+# Local configuration and secrets. The template is tracked; the file that
+# holds real values must never reach an image.
+.env
+.env.*
+!.env.example
+
+.git
+.github
+.claude
+.vscode
+.idea
+**/*.log

@@ -32,7 +32,31 @@
   ],
   "references": [
     {
+      "path": "../../../libs/core/server/platform/queue/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/shared/contracts/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/platform/realtime/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/platform/observability/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/platform/flags/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/feature/realtime/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/feature/privacy/tsconfig.lib.json"
+    },
+    {
       "path": "../../../libs/core/server/feature/notes/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/feature/ai/tsconfig.lib.json"
     },
     {
       "path": "../../../libs/core/server/platform/data-access-db/tsconfig.lib.json"
@@ -42,6 +66,9 @@
     },
     {
       "path": "../../../libs/core/server/platform/authz/tsconfig.lib.json"
+    },
+    {
+      "path": "../../../libs/core/server/platform/ai/tsconfig.lib.json"
     },
     {
       "path": "../../../libs/core/server/platform/testing/tsconfig.lib.json"

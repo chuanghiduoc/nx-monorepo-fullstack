@@ -56,6 +56,13 @@ GUCs are set with `set_config(name, value, true)`: **transaction-local**, gone
 at COMMIT or ROLLBACK. A pooled connection never carries one tenant's identity
 into the next request, which is what makes PgBouncer transaction mode safe.
 
+That is not left as an assertion. `pgbouncer.spec.ts` runs the same code
+against a real PgBouncer in transaction mode, configured with **one** server
+connection so every transaction is handed the same one — sharing is what makes
+a leak observable, and a pool large enough to give each client its own would
+hide it. Measured the other way too: changing `set_config(..., true)` to the
+session form turns that suite red, along with three other tests.
+
 ## Structural enforcement
 
 - `PrismaService` (the root client) is not exported from the library. Feature
@@ -67,6 +74,22 @@ into the next request, which is what makes PgBouncer transaction mode safe.
 - Repositories open their own short transaction when none is active
   (`DemoItemRepository` is the reference), so a caller never has to remember
   and a query never lands on the root client.
+
+**Three repositories are the exception, for one reason.** `OutboxRepository`,
+`ProcessedEventRepository` and `AuditRepository` all refuse to open a
+transaction of their own and throw when there is none, because each writes a
+row that is only meaningful committed together with something else:
+
+- an event committed separately from the aggregate it describes is precisely
+  the failure the outbox exists to remove;
+- a consumer's claim on an event committed separately from the work it records
+  leaves an event claimed and undone, which no retry ever fixes;
+- an audit record committed separately from that claim leaves the trail
+  disagreeing with itself.
+
+A later change that "fixed" any of them to match the convention above would
+silently break atomicity, which is why it is written down here rather than only
+in the code.
 
 ## What tenancy added on top
 

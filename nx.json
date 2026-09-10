@@ -1,7 +1,10 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "default": [
+      "{projectRoot}/**/*",
+      "sharedGlobals"
+    ],
     "production": [
       "default",
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
@@ -87,24 +90,40 @@
         "buildDepsTargetName": "build-deps",
         "watchDepsTargetName": "watch-deps"
       }
+    },
+    {
+      "plugin": "@nx/docker",
+      "options": {
+        "buildTarget": "docker:build",
+        "runTarget": "docker:run"
+      }
     }
   ],
   "analytics": false,
   "targetDefaults": {
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": [
+        "^build"
+      ]
     },
     "@nx/js:tsc": {
       "cache": true,
-      "dependsOn": ["^build"],
-      "inputs": ["production", "^production"]
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
+      ]
     },
     "typecheck": {
       "inputs": [
         "default",
         "^default",
         {
-          "externalDependencies": ["typescript"]
+          "externalDependencies": [
+            "typescript"
+          ]
         }
       ]
     }
@@ -114,6 +133,12 @@
       "application": {
         "style": "css",
         "linter": "eslint"
+      },
+      "page": {
+        "style": "none"
+      },
+      "component": {
+        "style": "none"
       }
     },
     "@nx/js:library": {
@@ -129,17 +154,25 @@
     "@nx/react": {
       "library": {
         "unitTestRunner": "vitest"
+      },
+      "component": {
+        "style": "none"
       }
     }
   },
   "release": {
-    "projects": ["core-api", "core-web"],
+    "projects": [
+      "core-api",
+      "core-web"
+    ],
     "projectsRelationship": "fixed",
     "version": {
       "conventionalCommits": true,
       "fallbackCurrentVersionResolver": "disk"
     },
     "changelog": {
+      "//": "A workspace that has never been tagged has no previous tag to diff against, and `nx release` refuses rather than guessing. Measured: `nx release --dry-run` failed with 'Unable to determine the previous git tag'. This tells it where the first changelog starts, so the first release needs no special flag and the command in the release runbook is the same one every time after it.",
+      "automaticFromRef": true,
       "workspaceChangelog": {
         "createRelease": false
       }

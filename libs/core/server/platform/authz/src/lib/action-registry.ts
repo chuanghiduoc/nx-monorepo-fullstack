@@ -10,13 +10,20 @@
  * changes. Bump it in the same commit that changes the actions.
  */
 export const ACTION_REGISTRY = {
-  version: 1,
+  version: 3,
   resources: {
     organization: ['update', 'delete'],
     member: ['create', 'update', 'delete'],
     invitation: ['create', 'cancel'],
     apiKey: ['create', 'read', 'update', 'delete'],
     note: ['create', 'read', 'update', 'delete'],
+    // An endpoint carries a secret and receives every event the organization
+    // raises, so managing one is an administrative act rather than an
+    // ordinary member's.
+    webhook: ['create', 'read', 'update', 'delete'],
+    // Uploading and downloading. No `update`: a file's bytes are not editable
+    // and its state belongs to the worker, so there is no verb for it.
+    file: ['create', 'read', 'delete'],
   },
 } as const;
 

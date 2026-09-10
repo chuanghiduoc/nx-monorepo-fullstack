@@ -77,8 +77,19 @@ export class IdempotencyInterceptor implements NestInterceptor {
   private readonly logger = new Logger(IdempotencyInterceptor.name);
   private readonly store: IdempotencyBackend;
 
-  constructor(store: IdempotencyBackend) {
+  /**
+   * Counts a conflict, if anything is counting.
+   *
+   * Optional and injected rather than imported: this library is below the one
+   * that owns the registry, and a metric nobody is collecting must not be a
+   * reason this interceptor cannot be constructed — the suites build it with
+   * one argument.
+   */
+  private readonly onConflict: ((route: string) => void) | undefined;
+
+  constructor(store: IdempotencyBackend, onConflict?: (route: string) => void) {
     this.store = store;
+    this.onConflict = onConflict;
   }
 
   async intercept(
@@ -111,6 +122,10 @@ export class IdempotencyInterceptor implements NestInterceptor {
     const claim = await this.store.claim(identity);
 
     if (claim.outcome === 'request-mismatch') {
+      // A client reusing a key with a different body is a client that thinks
+      // it is retrying and is not. Worth a number, because it is a bug in
+      // somebody's integration and nothing else reports it.
+      this.onConflict?.(routeTemplateOf(context));
       throw new UnprocessableEntityException(
         'This idempotency key was used with a different request',
       );
@@ -118,6 +133,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
 
     if (claim.outcome === 'in-progress') {
       reply.header('retry-after', RETRY_AFTER_SECONDS);
+      this.onConflict?.(routeTemplateOf(context));
       throw new ConflictException(
         'A request with this idempotency key is still being processed',
       );
@@ -220,4 +236,19 @@ function statusOf(error: unknown): number {
 
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * The route template this request matched, for a metric label.
+ *
+ * The template and never the URL: a path with an id in it would be one time
+ * series per id, which is how a metrics backend is destroyed by an application
+ * that meant well.
+ */
+function routeTemplateOf(context: ExecutionContext): string {
+  const request = context.switchToHttp().getRequest<{
+    routeOptions?: { url?: string };
+  }>();
+
+  return request.routeOptions?.url ?? 'unmatched';
 }

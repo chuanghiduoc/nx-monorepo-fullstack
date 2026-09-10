@@ -26,7 +26,7 @@ afterAll(() => database.stop());
   binds table owners and has never bound superusers or `BYPASSRLS` roles, so a
   suite running as one would report isolation it does not have. Measured
   before the change: a `FORCE` policy admitting one tenant returned both rows
-  (ADR-0003). `migrationUri` is the owner connection, for migrations and for
+  (recorded in the architecture decisions). `migrationUri` is the owner connection, for migrations and for
   setup a policy would otherwise block.
 - **Every migration applied** with `prisma migrate deploy` — the command a
   deployment runs. A test never sees a schema that differs from production's,
@@ -37,6 +37,20 @@ afterAll(() => database.stop());
   workspace lock (observed: two of three suites failing at random).
 - **`createDatabase(name)`** for a sibling database in the same container —
   the migration suite uses it as Prisma's shadow database.
+- **A shared network on request.** `startPostgres({ network, networkAlias })`
+  joins a Testcontainers network so another container can reach the database
+  by name. `startPgBouncer` uses it to put a real pooler in front, which is
+  how the transaction-mode claim is checked rather than assumed.
+- **An environment with no other database in it.** The migration subprocess is
+  given an environment with `MIGRATION_DATABASE_URL` and `SHADOW_DATABASE_URL`
+  *deleted*, not merely overridden. The Prisma configuration prefers
+  `MIGRATION_DATABASE_URL` when it is set, and the task runner loads the
+  developer's `.env` into every task — so inheriting the ambient environment
+  pointed `migrate deploy` at their own database while the container stayed
+  empty. The suite then failed on a role that had never been created, and the
+  real database had migrations applied to it by a test run. Deleting the keys
+  rather than blanking them matters: an empty string is still a value the
+  configuration would prefer.
 
 Every suite that claims to prove tenant isolation opens with
 `rls-harness.spec.ts`: `current_user` is neither a superuser nor a `BYPASSRLS`

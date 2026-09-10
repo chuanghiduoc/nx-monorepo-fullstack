@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen.js';
-import { appControllerGetData, demoItemsControllerCreate, demoItemsControllerList, notesControllerCreate, notesControllerFind, notesControllerList, notesControllerRemove, notesControllerUpdate, type Options, whoamiControllerWhoami } from '../sdk.gen.js';
-import type { AppControllerGetDataData, DemoItemsControllerCreateData, DemoItemsControllerCreateResponse, DemoItemsControllerListData, DemoItemsControllerListResponse, NotesControllerCreateData, NotesControllerCreateResponse, NotesControllerFindData, NotesControllerFindResponse, NotesControllerListData, NotesControllerListResponse, NotesControllerRemoveData, NotesControllerRemoveResponse, NotesControllerUpdateData, NotesControllerUpdateResponse, WhoamiControllerWhoamiData } from '../types.gen.js';
+import { aiControllerAsk, aiControllerIngest, aiControllerList, aiControllerRemove, appControllerGetData, demoItemsControllerCreate, demoItemsControllerList, filesControllerComplete, filesControllerDownload, filesControllerList, filesControllerRemove, filesControllerRequestUpload, notesControllerCreate, notesControllerFind, notesControllerList, notesControllerRemove, notesControllerUpdate, type Options, privacyControllerCancel, privacyControllerRequest, privacyControllerStatus, realtimeControllerStream, webhooksControllerCreate, webhooksControllerList, webhooksControllerRemove, webhooksControllerUpdate, whoamiControllerWhoami } from '../sdk.gen.js';
+import type { AiControllerAskData, AiControllerIngestData, AiControllerIngestResponse, AiControllerListData, AiControllerListResponse, AiControllerRemoveData, AiControllerRemoveResponse, AppControllerGetDataData, DemoItemsControllerCreateData, DemoItemsControllerCreateResponse, DemoItemsControllerListData, DemoItemsControllerListResponse, FilesControllerCompleteData, FilesControllerCompleteResponse, FilesControllerDownloadData, FilesControllerDownloadResponse, FilesControllerListData, FilesControllerListResponse, FilesControllerRemoveData, FilesControllerRemoveResponse, FilesControllerRequestUploadData, FilesControllerRequestUploadResponse, NotesControllerCreateData, NotesControllerCreateResponse, NotesControllerFindData, NotesControllerFindResponse, NotesControllerListData, NotesControllerListResponse, NotesControllerRemoveData, NotesControllerRemoveResponse, NotesControllerUpdateData, NotesControllerUpdateResponse, PrivacyControllerCancelData, PrivacyControllerCancelResponse, PrivacyControllerRequestData, PrivacyControllerRequestResponse, PrivacyControllerStatusData, PrivacyControllerStatusResponse, RealtimeControllerStreamData, WebhooksControllerCreateData, WebhooksControllerCreateResponse, WebhooksControllerListData, WebhooksControllerListResponse, WebhooksControllerRemoveData, WebhooksControllerRemoveResponse, WebhooksControllerUpdateData, WebhooksControllerUpdateResponse, WhoamiControllerWhoamiData } from '../types.gen.js';
 
 export type QueryKey<TOptions extends Options> = [
     Pick<TOptions, 'baseUrl' | 'body' | 'headers' | 'path' | 'query'> & {
@@ -67,6 +67,79 @@ export const whoamiControllerWhoamiOptions = (options?: Options<WhoamiController
         return data;
     },
     queryKey: whoamiControllerWhoamiQueryKey(options)
+});
+
+export const realtimeControllerStreamQueryKey = (options?: Options<RealtimeControllerStreamData>) => createQueryKey('realtimeControllerStream', options);
+
+export const realtimeControllerStreamOptions = (options?: Options<RealtimeControllerStreamData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof realtimeControllerStreamQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await realtimeControllerStream({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: realtimeControllerStreamQueryKey(options)
+});
+
+export const aiControllerListQueryKey = (options?: Options<AiControllerListData>) => createQueryKey('aiControllerList', options);
+
+export const aiControllerListOptions = (options?: Options<AiControllerListData>) => queryOptions<AiControllerListResponse, DefaultError, AiControllerListResponse, ReturnType<typeof aiControllerListQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await aiControllerList({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: aiControllerListQueryKey(options)
+});
+
+export const aiControllerIngestMutation = (options?: Partial<Options<AiControllerIngestData>>): UseMutationOptions<AiControllerIngestResponse, DefaultError, Options<AiControllerIngestData>> => {
+    const mutationOptions: UseMutationOptions<AiControllerIngestResponse, DefaultError, Options<AiControllerIngestData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await aiControllerIngest({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const aiControllerRemoveMutation = (options?: Partial<Options<AiControllerRemoveData>>): UseMutationOptions<AiControllerRemoveResponse, DefaultError, Options<AiControllerRemoveData>> => {
+    const mutationOptions: UseMutationOptions<AiControllerRemoveResponse, DefaultError, Options<AiControllerRemoveData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await aiControllerRemove({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const aiControllerAskQueryKey = (options: Options<AiControllerAskData>) => createQueryKey('aiControllerAsk', options);
+
+export const aiControllerAskOptions = (options: Options<AiControllerAskData>) => queryOptions<unknown, DefaultError, unknown, ReturnType<typeof aiControllerAskQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await aiControllerAsk({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: aiControllerAskQueryKey(options)
 });
 
 export const notesControllerListQueryKey = (options?: Options<NotesControllerListData>) => createQueryKey('notesControllerList', options);
@@ -187,6 +260,178 @@ export const notesControllerUpdateMutation = (options?: Partial<Options<NotesCon
     const mutationOptions: UseMutationOptions<NotesControllerUpdateResponse, DefaultError, Options<NotesControllerUpdateData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await notesControllerUpdate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const privacyControllerCancelMutation = (options?: Partial<Options<PrivacyControllerCancelData>>): UseMutationOptions<PrivacyControllerCancelResponse, DefaultError, Options<PrivacyControllerCancelData>> => {
+    const mutationOptions: UseMutationOptions<PrivacyControllerCancelResponse, DefaultError, Options<PrivacyControllerCancelData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await privacyControllerCancel({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const privacyControllerStatusQueryKey = (options?: Options<PrivacyControllerStatusData>) => createQueryKey('privacyControllerStatus', options);
+
+export const privacyControllerStatusOptions = (options?: Options<PrivacyControllerStatusData>) => queryOptions<PrivacyControllerStatusResponse, DefaultError, PrivacyControllerStatusResponse, ReturnType<typeof privacyControllerStatusQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await privacyControllerStatus({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: privacyControllerStatusQueryKey(options)
+});
+
+export const privacyControllerRequestMutation = (options?: Partial<Options<PrivacyControllerRequestData>>): UseMutationOptions<PrivacyControllerRequestResponse, DefaultError, Options<PrivacyControllerRequestData>> => {
+    const mutationOptions: UseMutationOptions<PrivacyControllerRequestResponse, DefaultError, Options<PrivacyControllerRequestData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await privacyControllerRequest({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const webhooksControllerListQueryKey = (options?: Options<WebhooksControllerListData>) => createQueryKey('webhooksControllerList', options);
+
+export const webhooksControllerListOptions = (options?: Options<WebhooksControllerListData>) => queryOptions<WebhooksControllerListResponse, DefaultError, WebhooksControllerListResponse, ReturnType<typeof webhooksControllerListQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await webhooksControllerList({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: webhooksControllerListQueryKey(options)
+});
+
+export const webhooksControllerCreateMutation = (options?: Partial<Options<WebhooksControllerCreateData>>): UseMutationOptions<WebhooksControllerCreateResponse, DefaultError, Options<WebhooksControllerCreateData>> => {
+    const mutationOptions: UseMutationOptions<WebhooksControllerCreateResponse, DefaultError, Options<WebhooksControllerCreateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await webhooksControllerCreate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const webhooksControllerRemoveMutation = (options?: Partial<Options<WebhooksControllerRemoveData>>): UseMutationOptions<WebhooksControllerRemoveResponse, DefaultError, Options<WebhooksControllerRemoveData>> => {
+    const mutationOptions: UseMutationOptions<WebhooksControllerRemoveResponse, DefaultError, Options<WebhooksControllerRemoveData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await webhooksControllerRemove({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const webhooksControllerUpdateMutation = (options?: Partial<Options<WebhooksControllerUpdateData>>): UseMutationOptions<WebhooksControllerUpdateResponse, DefaultError, Options<WebhooksControllerUpdateData>> => {
+    const mutationOptions: UseMutationOptions<WebhooksControllerUpdateResponse, DefaultError, Options<WebhooksControllerUpdateData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await webhooksControllerUpdate({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const filesControllerListQueryKey = (options?: Options<FilesControllerListData>) => createQueryKey('filesControllerList', options);
+
+export const filesControllerListOptions = (options?: Options<FilesControllerListData>) => queryOptions<FilesControllerListResponse, DefaultError, FilesControllerListResponse, ReturnType<typeof filesControllerListQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await filesControllerList({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: filesControllerListQueryKey(options)
+});
+
+export const filesControllerRequestUploadMutation = (options?: Partial<Options<FilesControllerRequestUploadData>>): UseMutationOptions<FilesControllerRequestUploadResponse, DefaultError, Options<FilesControllerRequestUploadData>> => {
+    const mutationOptions: UseMutationOptions<FilesControllerRequestUploadResponse, DefaultError, Options<FilesControllerRequestUploadData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await filesControllerRequestUpload({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const filesControllerCompleteMutation = (options?: Partial<Options<FilesControllerCompleteData>>): UseMutationOptions<FilesControllerCompleteResponse, DefaultError, Options<FilesControllerCompleteData>> => {
+    const mutationOptions: UseMutationOptions<FilesControllerCompleteResponse, DefaultError, Options<FilesControllerCompleteData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await filesControllerComplete({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const filesControllerDownloadQueryKey = (options: Options<FilesControllerDownloadData>) => createQueryKey('filesControllerDownload', options);
+
+export const filesControllerDownloadOptions = (options: Options<FilesControllerDownloadData>) => queryOptions<FilesControllerDownloadResponse, DefaultError, FilesControllerDownloadResponse, ReturnType<typeof filesControllerDownloadQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await filesControllerDownload({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: filesControllerDownloadQueryKey(options)
+});
+
+export const filesControllerRemoveMutation = (options?: Partial<Options<FilesControllerRemoveData>>): UseMutationOptions<FilesControllerRemoveResponse, DefaultError, Options<FilesControllerRemoveData>> => {
+    const mutationOptions: UseMutationOptions<FilesControllerRemoveResponse, DefaultError, Options<FilesControllerRemoveData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await filesControllerRemove({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

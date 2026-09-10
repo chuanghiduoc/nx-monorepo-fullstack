@@ -1,0 +1,9 @@
+{
+  "name": "core-server-webhooks",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/core/server/platform/webhooks/src",
+  "projectType": "library",
+  "tags": ["scope:core", "platform:node", "type:data-access"],
+  "// targets": "to see all targets run: nx show project core-server-webhooks --web",
+  "targets": {}
+}

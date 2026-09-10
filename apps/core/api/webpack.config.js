@@ -5,11 +5,22 @@ const { join } = require('path');
 // NestJS resolves a number of optional integrations through lazy `require` calls
 // wrapped in try/catch. Webpack still analyses them statically and fails the build
 // for every one that is not installed, even though the runtime never loads them.
-// This project deliberately does not use any of them (validation is Zod-based per
-//), so they are excluded from the bundle. When a phase introduces one of
-// these — e.g. @nestjs/websockets for realtime — install it and remove it here.
+// This project deliberately uses none of them — validation is Zod-based — so they
+// are excluded from the bundle. When one is genuinely needed, install it and
+// remove it from this list: @nestjs/websockets left it when realtime arrived,
+// which is exactly the move this comment describes.
+//
+// `bufferutil` and `utf-8-validate` are on the list for a different reason.
+// They are native accelerators `ws` reaches for and works without — Socket.IO
+// brought them in, and without this every build prints two "module not found"
+// warnings for packages nothing is missing.
+//
+// `@valkey/valkey-glide` is the third kind: an alternative Redis client BullMQ
+// can use instead of ioredis. This workspace uses ioredis, and the queue's
+// connection is built by hand and handed in, so the other client is never
+// reached — but webpack analyses the import all the same.
 const UNUSED_OPTIONAL_INTEGRATIONS =
-  /^(class-validator|class-transformer\/storage|cache-manager|@fastify\/(static|view)|@nestjs\/(websockets|microservices)(\/.*)?|pg-native)$/;
+  /^(class-validator|class-transformer\/storage|cache-manager|@fastify\/(static|view)|@nestjs\/(microservices|platform-express)(\/.*)?|@valkey\/valkey-glide|pg-native|bufferutil|utf-8-validate)$/;
 
 module.exports = {
   // Dependencies ship.js without the.ts they were built from; source-map-loader
@@ -32,12 +43,17 @@ module.exports = {
       assets: ['./src/assets'],
       optimization: false,
       outputHashing: 'none',
-      // NestJS lazy-requires many optional peers (class-validator, microservices,
-      // websockets, @fastify/static...). Bundling them turns every unused optional
-      // into a build error, so dependencies stay external and are installed from the
-      // generated package.json at runtime — this is also what the Docker image needs.
-      externalDependencies: 'all',
-      generatePackageJson: true,
+      // Everything in one bundle, so the artifact runs with nothing beside it
+      // but a Node runtime: no install step in the image, nothing to resolve,
+      // and no way for the image's dependency tree to differ from the one the
+      // tests ran against. Proven by copying `dist` outside the workspace and
+      // starting it — it answers.
+      //
+      // This works because `IgnorePlugin` above already excludes the optional
+      // peers NestJS lazy-requires. Without that exclusion, bundling turns
+      // every unused optional into a build error, which is why this setting
+      // used to be `'all'`.
+      externalDependencies: 'none',
       sourceMap: true,
     }),
   ],

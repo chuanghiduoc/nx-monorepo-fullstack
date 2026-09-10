@@ -1,0 +1,132 @@
+{
+  "auth": {
+    "signIn": {
+      "title": "Đăng nhập",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "submit": "Đăng nhập",
+      "noAccount": "Chưa có tài khoản?",
+      "signUpLink": "Tạo tài khoản",
+      "failed": "Email hoặc mật khẩu không đúng.",
+      "subtitle": "Đăng nhập để tiếp tục.",
+      "submitting": "Đang đăng nhập…"
+    },
+    "signUp": {
+      "title": "Tạo tài khoản",
+      "name": "Họ tên",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "submit": "Tạo tài khoản",
+      "hasAccount": "Đã có tài khoản?",
+      "signInLink": "Đăng nhập",
+      "failed": "Không tạo được tài khoản. Có thể email đã được dùng.",
+      "subtitle": "Tạo tài khoản để bắt đầu.",
+      "submitting": "Đang tạo…"
+    },
+    "twoFactor": {
+      "title": "Xác thực hai bước",
+      "hint": "Nhập mã sáu chữ số từ ứng dụng xác thực.",
+      "code": "Mã xác thực",
+      "submit": "Xác nhận",
+      "failed": "Mã không đúng hoặc đã hết hạn.",
+      "backupTitle": "Dùng mã dự phòng",
+      "backupHint": "Nhập một trong các mã bạn đã lưu khi bật xác thực hai bước.",
+      "backupCode": "Mã dự phòng",
+      "backupFailed": "Mã dự phòng không đúng hoặc đã dùng rồi.",
+      "useBackupCode": "Mất thiết bị? Dùng mã dự phòng",
+      "useCode": "Quay lại nhập mã từ ứng dụng"
+    },
+    "signOut": "Đăng xuất",
+    "signOutFailed": "Không đăng xuất được. Thử lại.",
+    "showPassword": "Hiện mật khẩu",
+    "hidePassword": "Ẩn mật khẩu"
+  },
+  "organizations": {
+    "title": "Tổ chức",
+    "current": "Đang làm việc trong",
+    "switch": "Chuyển",
+    "none": "Bạn chưa thuộc tổ chức nào.",
+    "create": "Tạo tổ chức",
+    "name": "Tên tổ chức",
+    "slug": "Định danh",
+    "submit": "Tạo",
+    "createFailed": "Không tạo được tổ chức. Định danh có thể đã được dùng.",
+    "loading": "Đang tải…",
+    "loadFailed": "Không tải được danh sách tổ chức.",
+    "switchFailed": "Không chuyển được tổ chức.",
+    "switchTo": "Chuyển sang {name}",
+    "choose": "Chọn tổ chức"
+  },
+  "devices": {
+    "title": "Phiên đăng nhập",
+    "current": "Phiên hiện tại",
+    "revoke": "Thu hồi",
+    "empty": "Không có phiên nào.",
+    "unknown": "Thiết bị không xác định",
+    "failed": "Không tải được danh sách phiên.",
+    "loading": "Đang tải…",
+    "revokeFailed": "Không thu hồi được phiên.",
+    "revokeNamed": "Thu hồi {device}"
+  },
+  "notes": {
+    "title": "Ghi chú",
+    "empty": "Chưa có ghi chú nào.",
+    "create": "Thêm ghi chú",
+    "noteTitle": "Tiêu đề",
+    "body": "Nội dung",
+    "submit": "Lưu",
+    "needsOrganization": "Chọn một tổ chức trước khi xem ghi chú.",
+    "delete": "Xoá ghi chú",
+    "saveFailed": "Không lưu được ghi chú.",
+    "deleteFailed": "Không xoá được ghi chú.",
+    "loading": "Đang tải…",
+    "loadFailed": "Không tải được ghi chú.",
+    "deleteNamed": "Xoá ghi chú {title}",
+    "loadMore": "Xem thêm"
+  },
+  "impersonation": {
+    "banner": "Bạn đang thao tác với tư cách {name}. Mọi hành động đều được ghi lại.",
+    "stop": "Thoát chế độ này",
+    "stopFailed": "Không thoát được. Thử lại."
+  },
+  "common": {
+    "language": "Ngôn ngữ",
+    "loading": "Đang tải…",
+    "error": "Có lỗi xảy ra."
+  },
+  "security": {
+    "title": "Bảo mật",
+    "enabled": "Xác thực hai bước đang bật.",
+    "disabled": "Xác thực hai bước đang tắt.",
+    "confirmPassword": "Nhập lại mật khẩu",
+    "turnOn": "Bật xác thực hai bước",
+    "turnOff": "Tắt xác thực hai bước",
+    "failed": "Không thực hiện được. Kiểm tra lại mật khẩu.",
+    "enrolTitle": "Thêm vào ứng dụng xác thực",
+    "enrolHint": "Quét hoặc dán đường dẫn dưới đây vào ứng dụng xác thực của bạn.",
+    "backupTitle": "Mã dự phòng",
+    "backupHint": "Lưu ở nơi an toàn. Mỗi mã chỉ dùng được một lần khi bạn mất thiết bị.",
+    "confirmCode": "Mã từ ứng dụng",
+    "finish": "Hoàn tất",
+    "codeRejected": "Mã không đúng. Thử lại với mã mới nhất."
+  },
+  "validation": {
+    "required": "Bắt buộc nhập.",
+    "invalid": "Giá trị không hợp lệ.",
+    "email": "Địa chỉ email không hợp lệ.",
+    "tooSmall": "Cần ít nhất {minimum} ký tự.",
+    "tooBig": "Tối đa {maximum} ký tự.",
+    "pattern": "Định dạng không đúng."
+  },
+  "home": {
+    "title": "Nền tảng",
+    "description": "Ứng dụng nội bộ. Đăng nhập để tiếp tục.",
+    "signIn": "Đăng nhập",
+    "signUp": "Tạo tài khoản"
+  },
+  "theme": {
+    "light": "Giao diện sáng",
+    "dark": "Giao diện tối",
+    "system": "Theo hệ thống"
+  }
+}

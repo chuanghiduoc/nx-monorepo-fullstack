@@ -8,7 +8,11 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
@@ -18,13 +22,14 @@
         "name": "next"
       }
     ],
-    "paths": {
-      "@/*": ["./src/*"]
-    },
     "outDir": "out-tsc/app",
     "rootDir": "src",
     "tsBuildInfoFile": "out-tsc/app/tsconfig.tsbuildinfo",
-    "types": ["vitest/globals", "vitest/importMeta", "node"]
+    "types": [
+      "vitest/globals",
+      "vitest/importMeta",
+      "node"
+    ]
   },
   "include": [
     "src/**/*.ts",
@@ -50,6 +55,12 @@
   "references": [
     {
       "path": "../../../libs/shared/ui"
+    },
+    {
+      "path": "../../../libs/shared/i18n"
+    },
+    {
+      "path": "../../../libs/shared/contracts"
     },
     {
       "path": "../../../libs/shared/api-client-core"

@@ -24,7 +24,21 @@
   ],
   "webpack": false,
   "workspaces": {
+    ".": {
+      "entry": [
+        "tools/scripts/*.mjs"
+      ]
+    },
     "apps/core/api": {
+      "entry": [
+        "src/main.ts",
+        "webpack.config.js"
+      ],
+      "project": [
+        "src/**/*.ts"
+      ]
+    },
+    "apps/core/worker": {
       "entry": [
         "src/main.ts",
         "webpack.config.js"
@@ -55,6 +69,11 @@
     "libs/core/server/feature/auth": {
       "entry": [
         "src/lib/access-control.ts"
+      ]
+    },
+    "apps/core/web-e2e": {
+      "entry": [
+        "src/**/*.spec.ts"
       ]
     }
   },

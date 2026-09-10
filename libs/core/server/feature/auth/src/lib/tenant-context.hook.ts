@@ -58,12 +58,27 @@ export function mountTenantContext(
   });
 }
 
-async function resolvePrincipal(
+function resolvePrincipal(
   auth: Auth,
   request: FastifyRequest,
 ): Promise<RequestPrincipal | undefined> {
-  const headers = fromNodeHeaders(request.headers);
-  const apiKey = request.headers[API_KEY_HEADER];
+  return principalFromHeaders(auth, request.headers);
+}
+
+/**
+ * The same resolution, from headers alone.
+ *
+ * Exported because a WebSocket handshake never reaches the Fastify hook above —
+ * Socket.IO attaches to the raw HTTP server — and "who is this" must have one
+ * implementation. Two would agree on the day they were written and disagree by
+ * the time either was changed.
+ */
+export async function principalFromHeaders(
+  auth: Auth,
+  raw: Record<string, string | string[] | undefined>,
+): Promise<RequestPrincipal | undefined> {
+  const headers = fromNodeHeaders(raw);
+  const apiKey = raw[API_KEY_HEADER];
 
   if (typeof apiKey === 'string' && apiKey.length > 0) {
     return resolveApiKey(auth, apiKey, headers);

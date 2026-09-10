@@ -3,9 +3,19 @@ import { ZodError } from 'zod';
 
 export const PROBLEM_CONTENT_TYPE = 'application/problem+json';
 
-/** Where error types are published. Overridden per deployment. */
-const TYPE_BASE_URL =
-  process.env['PROBLEM_TYPE_BASE_URL'] ?? 'https://errors.example.com';
+/**
+ * Where error types are published when the caller does not say.
+ *
+ * It used to be read from `process.env` here, at import time, and that was
+ * wrong in a way nothing reported: measured on `@nestjs/config` 12,
+ * `ConfigModule.forRoot` is what loads `.env`, and it runs after every import
+ * in the application module has been evaluated. `PROBLEM_TYPE_BASE_URL` was
+ * validated, reached `AppConfig`, and never reached a single problem document.
+ *
+ * It is a parameter now, and this is only what a caller with no configuration
+ * gets — a unit test, or a library consumer that has not decided yet.
+ */
+const DEFAULT_TYPE_BASE_URL = 'https://errors.example.com';
 
 const GENERIC_SERVER_MESSAGE = 'An unexpected error occurred.';
 
@@ -36,6 +46,15 @@ export interface ProblemDetails {
 export interface ProblemContext {
   instance: string;
   traceId: string;
+  /**
+   * Where this deployment publishes its error types.
+   *
+   * Optional so a caller that does not care — most tests — need not say, and
+   * so adding it did not become an edit at every call site. The one caller
+   * that matters, the global filter, always passes what the configuration
+   * validated.
+   */
+  typeBaseUrl?: string;
 }
 
 const TITLES: Record<number, string> = {
@@ -49,9 +68,9 @@ const TITLES: Record<number, string> = {
   [HttpStatus.INTERNAL_SERVER_ERROR]: 'Internal Server Error',
 };
 
-function typeUrlFor(status: number): string {
+function typeUrlFor(status: number, base: string): string {
   const slug = (TITLES[status] ?? 'error').toLowerCase().replace(/\s+/g, '-');
-  return `${TYPE_BASE_URL}/${slug}`;
+  return `${base}/${slug}`;
 }
 
 interface CarriesZodError {
@@ -104,11 +123,12 @@ export function toProblemDetails(
   // Validation pipes wrap the ZodError in their own exception. Unwrapping by
   // shape rather than by class keeps this library independent of which pipe the
   // application chose, while still preserving field-level detail.
+  const base = context.typeBaseUrl ?? DEFAULT_TYPE_BASE_URL;
   const zodError = unwrapZodError(exception);
 
   if (zodError) {
     return {
-      type: typeUrlFor(HttpStatus.BAD_REQUEST),
+      type: typeUrlFor(HttpStatus.BAD_REQUEST, base),
       title: TITLES[HttpStatus.BAD_REQUEST],
       status: HttpStatus.BAD_REQUEST,
       detail: 'The request failed validation.',
@@ -125,7 +145,7 @@ export function toProblemDetails(
     const status = exception.getStatus();
 
     return {
-      type: typeUrlFor(status),
+      type: typeUrlFor(status, base),
       title: TITLES[status] ?? 'Error',
       status,
       detail: detailFrom(exception),
@@ -135,7 +155,7 @@ export function toProblemDetails(
   }
 
   return {
-    type: typeUrlFor(HttpStatus.INTERNAL_SERVER_ERROR),
+    type: typeUrlFor(HttpStatus.INTERNAL_SERVER_ERROR, base),
     title: TITLES[HttpStatus.INTERNAL_SERVER_ERROR],
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     detail: GENERIC_SERVER_MESSAGE,

@@ -5,6 +5,7 @@
   "type": "module",
   "devDependencies": {
     "ioredis": "catalog:",
+    "socket.io-client": "catalog:",
     "vitest": "catalog:"
   }
 }
