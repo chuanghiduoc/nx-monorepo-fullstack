@@ -19,9 +19,15 @@ pre-push:
 
     - name: gitleaks
       # Optional locally: CI always runs the full secret scan.
+      #
+      # Single quotes on purpose. On Windows lefthook hands the script to
+      # `sh.exe -c "<script>"`, so a double quote inside it closes that string
+      # early and the shell never sees `else`/`fi`. Keep the if/else too: an
+      # `&& ... || echo` one-liner would swallow the exit code that reports a
+      # secret and let the push through.
       run: |
         if command -v gitleaks >/dev/null 2>&1; then
           gitleaks git --pre-push --staged
         else
-          echo "gitleaks not installed locally — CI will run the secret scan"
+          echo 'gitleaks not installed locally - CI will run the secret scan'
         fi
