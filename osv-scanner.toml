@@ -1,0 +1,19 @@
+# What OSV-Scanner is told to pass over, and why. Everything else it finds is a
+# build failure — a scanner that cannot fail is decoration.
+#
+# The same two advisories are recorded for `pnpm audit` under `auditConfig` in
+# pnpm-workspace.yaml. Both lists exist because the two scanners read different
+# files; they are meant to say the same thing, so change them together.
+
+# `image-size` has no fixed release: both advisories read `<= 2.0.2` with no
+# patched version, so there is no version to move to. It is reachable only
+# through less's `image-size()` stylesheet function, which measures an image
+# file a `.less` file names — and this workspace contains no `.less` file. less
+# arrives under `@nx/webpack`, a devDependency that ships in no image.
+[[IgnoredVulns]]
+id = "GHSA-5p2g-fcmc-qvqq"
+reason = "image-size JXL/HEIF DoS: no patched release exists; unreachable, as the workspace has no .less file and less is a build-time devDependency"
+
+[[IgnoredVulns]]
+id = "GHSA-w3rx-r6r6-pgpr"
+reason = "image-size ICNS DoS: no patched release exists; unreachable, as the workspace has no .less file and less is a build-time devDependency"

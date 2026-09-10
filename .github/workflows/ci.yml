@@ -101,7 +101,11 @@ jobs:
       image: semgrep/semgrep
     steps:
       - uses: actions/checkout@v7
-      - run: semgrep ci --config auto --error
+      # No `--error`: that flag belongs to `semgrep scan`, and `semgrep ci`
+      # rejects it outright — the job failed on the flag rather than on any
+      # finding, which is the failure mode a security gate can least afford.
+      # `semgrep ci` already exits non-zero when it finds something blocking.
+      - run: semgrep ci --config auto
 
   # Reusable workflow published by the OSV-Scanner project. The standalone
   # action path used previously does not exist as a versioned reference.
@@ -112,5 +116,9 @@ jobs:
       security-events: write
     uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.0
     with:
+      # The config is named rather than left to discovery: it carries the
+      # ignores, and an ignore file that is silently not read turns the scan
+      # red for reasons nobody can see from the workflow.
       scan-args: |-
+        --config=osv-scanner.toml
         --lockfile=pnpm-lock.yaml

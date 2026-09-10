@@ -165,7 +165,10 @@ function baseEnvironment(port: string, baseUrl: string): NodeJS.ProcessEnv {
     STORAGE_DRIVER: 'local',
     STORAGE_PUBLIC_ORIGIN: baseUrl,
     STORAGE_LOCAL_ROOT: LOCAL_STORAGE_ROOT,
-    STORAGE_SIGNING_SECRET: 'an-e2e-signing-secret-that-is-long-enough',
+    // A literal this suite invents so the schema's length rule passes. The
+    // marker sits on the line rather than allowlisting the file, so a real key
+    // committed here later still stops the build.
+    STORAGE_SIGNING_SECRET: 'an-e2e-signing-secret-that-is-long-enough', // gitleaks:allow
     THROTTLE_LIMIT,
     THROTTLE_TTL_MS,
     // Every account this suite creates comes from one address, which is what

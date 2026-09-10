@@ -15,7 +15,23 @@ pre-commit:
 pre-push:
   jobs:
     - name: verify-affected
-      run: pnpm nx affected -t typecheck test build
+      # `nx affected` with no base defaults to `--base=main`, and on a push from
+      # main that is HEAD compared against itself: the affected set is empty and
+      # this job reported success without running a single task. It had never
+      # checked anything pushed from main.
+      #
+      # `@{push}` is what the remote holds for the branch being pushed, which is
+      # exactly the question — everything since it is what the push adds. It
+      # does not resolve on a branch with no upstream yet, so origin/main
+      # answers for a new branch, and a workspace with neither verifies all of
+      # itself rather than none of it.
+      run: |
+        base=$(git rev-parse --verify --quiet @{push} || git rev-parse --verify --quiet origin/main || true)
+        if [ -n "$base" ]; then
+          pnpm nx affected -t typecheck test build --base=$base
+        else
+          pnpm nx run-many -t typecheck test build
+        fi
 
     - name: gitleaks
       # Optional locally: CI always runs the full secret scan.

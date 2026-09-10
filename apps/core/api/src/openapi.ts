@@ -26,7 +26,13 @@ async function emit(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter(),
-    { logger: false },
+    // Preview mode builds the module graph without instantiating providers, so
+    // nothing here opens a connection. Without it the sentence above was only
+    // an intention: the constructors that dial Redis ran anyway, and emitting
+    // the contract failed wherever Redis was not already running — CI, where
+    // no service backs this step, being the case that found it. The document
+    // comes from decorator metadata on the classes, which needs no instances.
+    { logger: false, preview: true },
   );
   app.setGlobalPrefix('api');
 
