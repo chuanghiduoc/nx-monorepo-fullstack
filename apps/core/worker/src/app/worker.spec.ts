@@ -40,6 +40,28 @@ const POLL_MS = 100;
 // src/app -> src -> the application root, where tsconfig.app.json lives.
 const workerRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
+/**
+ * tsx itself, not `pnpm exec tsx`.
+ *
+ * `pnpm` forwards the signal but is not transparent to what comes back: it
+ * takes the SIGTERM too, dies by it, and the exit status the parent observes
+ * is pnpm's `null`/SIGTERM rather than the worker's 0. Measured on Linux,
+ * spawning the same script both ways: through pnpm, `code=null
+ * signal=SIGTERM`; directly, `code=0`. The suite could not see a clean stop
+ * even when there was one, and said so only on CI — the SIGTERM case is
+ * skipped on Windows, where this runs.
+ *
+ * The shim `exec`s node, so the child really is the worker. Which is what the
+ * comment on the suite already claimed: started the way a container starts it,
+ * where `tini` runs `node main.js` with nothing in between.
+ */
+const tsxBin = join(
+  workerRoot,
+  'node_modules',
+  '.bin',
+  process.platform === 'win32' ? 'tsx.CMD' : 'tsx',
+);
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function until(
@@ -123,8 +145,8 @@ describe('the worker process', () => {
   const start = (extra: Record<string, string> = {}): Replica => {
     const heartbeatFile = join(scratch, `heartbeat-${replicas.length}`);
     const child = spawn(
-      'pnpm',
-      ['exec', 'tsx', '--tsconfig', 'tsconfig.app.json', 'src/main.ts'],
+      tsxBin,
+      ['--tsconfig', 'tsconfig.app.json', 'src/main.ts'],
       {
         cwd: workerRoot,
         shell: process.platform === 'win32',
