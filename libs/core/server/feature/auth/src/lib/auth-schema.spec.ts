@@ -44,6 +44,10 @@ describe('the Prisma schema matches what better-auth expects', () => {
   /** Columns are declared as `@map("snake_case")`, or as the field name itself. */
   const columnsOf = (table: string): Set<string> => {
     const model = schema.match(
+      // `table` is a table name this suite reads out of better-auth's own
+      // schema definition, in a test that reads a file next to it. There is no
+      // request, and no input from outside this repository.
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
       new RegExp(`model \\w+ \\{[^}]*@@map\\("${table}"\\)[^}]*\\}`, 's'),
     );
 

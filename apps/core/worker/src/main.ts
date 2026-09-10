@@ -46,6 +46,11 @@ async function bootstrap(): Promise<void> {
       // just been emptied. It waits for the pass in flight, so no claim is
       // open when the database client disconnects.
       await app.get(OutboxRelay).stop();
+      // Said before the wait, not after it: the drain has no deadline, so
+      // between the signal and the next line a deploy watches a process that
+      // has gone quiet for as long as its longest job takes. This is the line
+      // that distinguishes that from one that has hung.
+      logger.log('Claiming has stopped; letting the job in flight finish.');
       // Then every job in flight completes, and no new one is started — still
       // while the database is connected, which is why this cannot be a Nest
       // shutdown hook.

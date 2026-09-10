@@ -37,6 +37,12 @@ export function mountBetterAuth(app: NestFastifyApplication, auth: Auth): void {
         reply.header(key, value);
       });
 
+      // The body is better-auth's own response, forwarded with the headers it
+      // set — its own content type included, so nothing here decides that a
+      // JSON answer is HTML. The API also replies under `nosniff` and a CSP of
+      // `default-src 'none'`, which is what would have to be undone before a
+      // forwarded byte could execute anywhere.
+      // nosemgrep: javascript.express.security.audit.xss.direct-response-write.direct-response-write
       return reply.send(response.body ? await response.text() : null);
     },
   });

@@ -131,6 +131,17 @@ auditConfig:
     - GHSA-5p2g-fcmc-qvqq
     # image-size: ICNS parser allows denial of service through an infinite loop
     - GHSA-w3rx-r6r6-pgpr
+# A transitive dependency resolved from a git URL or a tarball is one nobody
+# reviewed and no registry can revoke.
+blockExoticSubdeps: true
+# `minimumReleaseAge` and `trustPolicy` are the two settings this file still
+# does not set, and the exclusion list below reads as though the first of them
+# were already in force. Neither can be turned on against this lockfile:
+# `minimumReleaseAge: 10080` rejects forty-five entries as too new, and
+# `trustPolicy: no-downgrade` rejects six more — prisma and semver among
+# them — as possible takeovers. Both need the lockfile resolved again from
+# scratch, which is a decision about every dependency in the workspace rather
+# than a setting to add.
 minimumReleaseAgeExclude:
   - '@ai-sdk/gateway@4.0.75'
   - '@ai-sdk/openai@4.0.59'

@@ -73,6 +73,13 @@ FROM build AS migrate
 
 WORKDIR /workspace/libs/core/server/platform/data-access-db
 
+# Inherited from `build`, which runs as root because installing and compiling
+# needs to. Applying migrations does not: it reads a directory and talks to a
+# database. This is also the one image in the deployment that connects as the
+# owning role, so it is the last one to leave running as root — the runtime
+# image next door has dropped to `node` since it was written.
+USER node
+
 ENTRYPOINT ["pnpm", "exec", "prisma"]
 CMD ["migrate", "deploy"]
 

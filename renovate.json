@@ -4,20 +4,28 @@
   "postUpdateOptions": ["pnpmDedupe"],
   "packageRules": [
     {
+      "description": "Wait a week before proposing a newly published version. Most compromised releases are found and pulled within a day or two, and the window costs nothing here — nothing in this workspace needs a package the day it ships. Repeated on every rule below because a later rule that matches the same package would otherwise drop the wait without saying so.",
+      "matchPackageNames": ["*"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
       "description": "Nx packages are upgraded through `nx migrate`, which also runs code migrations. Renovate bumping them alone would skip those.",
       "matchPackageNames": ["nx", "@nx/**", "create-nx-workspace"],
-      "enabled": false
+      "enabled": false,
+      "minimumReleaseAge": "7 days"
     },
     {
       "description": "NestJS majors are pinned to the line supported by the installed @nx/nest generators.",
       "matchPackageNames": ["@nestjs/**"],
       "matchUpdateTypes": ["major"],
-      "dependencyDashboardApproval": true
+      "dependencyDashboardApproval": true,
+      "minimumReleaseAge": "7 days"
     },
     {
       "description": "Group lint/format tooling so one PR covers the whole toolchain.",
       "matchPackageNames": ["eslint", "eslint-**", "@eslint/**", "typescript-eslint", "prettier"],
-      "groupName": "lint and format toolchain"
+      "groupName": "lint and format toolchain",
+      "minimumReleaseAge": "7 days"
     }
   ]
 }

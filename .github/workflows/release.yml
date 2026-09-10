@@ -52,18 +52,18 @@ jobs:
             dockerfile: apps/core/web/Dockerfile
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.name }}
           tags: |
@@ -77,7 +77,7 @@ jobs:
       # one.
       - name: Build
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: ${{ matrix.dockerfile }}
@@ -95,7 +95,7 @@ jobs:
       # act on — failing on it would train people to pass `--skip`, which is how
       # a scanner stops being read.
       - name: Scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # v0.28.0
         with:
           image-ref: ${{ matrix.name }}:ci
           format: table
@@ -105,14 +105,14 @@ jobs:
           severity: 'HIGH,CRITICAL'
 
       - name: Bill of materials
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # v0.28.0
         with:
           image-ref: ${{ matrix.name }}:ci
           format: 'cyclonedx'
           output: 'sbom-${{ matrix.name }}.cdx.json'
 
       - name: Keep the bill of materials with the run
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: sbom-${{ matrix.name }}
           path: sbom-${{ matrix.name }}.cdx.json
@@ -122,7 +122,7 @@ jobs:
       - name: Push
         id: push
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: ${{ matrix.dockerfile }}
@@ -138,7 +138,7 @@ jobs:
       # it travels with what it describes.
       - name: Provenance
         if: steps.push.outcome == 'success'
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.name }}
           subject-digest: ${{ steps.push.outputs.digest }}
@@ -146,7 +146,7 @@ jobs:
 
       - name: Attach the bill of materials to the image
         if: steps.push.outcome == 'success'
-        uses: actions/attest-sbom@v2
+        uses: actions/attest-sbom@bd218ad0dbcb3e146bd073d1d9c6d78e08aa8a0b # v2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.name }}
           subject-digest: ${{ steps.push.outputs.digest }}
@@ -155,7 +155,7 @@ jobs:
 
       - name: Install cosign
         if: steps.push.outcome == 'success'
-        uses: sigstore/cosign-installer@v3
+        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
 
       # Keyless: the signature is bound to this workflow's identity, recorded in
       # a public transparency log, and verified with no key anybody had to keep

@@ -144,6 +144,11 @@ describe('the worker process', () => {
 
   const start = (extra: Record<string, string> = {}): Replica => {
     const heartbeatFile = join(scratch, `heartbeat-${replicas.length}`);
+    // The shell is Windows-only and unavoidable there: the shim is a `.CMD`,
+    // which Node will not execute without one. Both the command and its
+    // arguments are constants in this file — nothing here comes from outside
+    // the suite, so there is no string for anyone to inject into.
+    // nosemgrep: javascript.lang.security.audit.spawn-shell-true.spawn-shell-true
     const child = spawn(
       tsxBin,
       ['--tsconfig', 'tsconfig.app.json', 'src/main.ts'],
