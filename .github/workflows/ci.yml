@@ -62,6 +62,30 @@ jobs:
           git add --intent-to-add -- apps/core/api/openapi.json libs/shared/api-client-core/src/generated
           git diff --exit-code -- apps/core/api/openapi.json libs/shared/api-client-core/src/generated
 
+      # The e2e suites talk to a real database and a real Redis. Unlike the unit
+      # suites they start no container of their own — both read `localhost` and
+      # expect the stack to be there — so until this step existed every e2e run
+      # here failed on a refused connection, and no push had ever seen one pass.
+      #
+      # The developers' compose file rather than a `services:` block, because
+      # two of these cannot be expressed as one: the queue's Redis must run
+      # `--maxmemory-policy noeviction`, which the API asserts at boot and a
+      # service container has no way to pass a command to, and Postgres must be
+      # the pgvector image, since the AI schema creates a `vector` extension the
+      # stock image does not carry. Running the same file developers run also
+      # means there is one description of these services, not two that drift.
+      - name: Start the services the e2e suites talk to
+        run: docker compose up -d --wait postgres redis-critical redis-cache
+
+      # The suites connect as `app_user`, which the compose file's init script
+      # grants a login, and none of them applies migrations — so the schema has
+      # to be there before the first one runs. As the owner: DDL is deliberately
+      # outside what `app_user` may do.
+      - name: Apply migrations
+        env:
+          MIGRATION_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/app
+        run: pnpm exec nx run core-server-data-access-db:prisma-migrate-deploy
+
       # The atomized `test-ci` / `e2e-ci` targets split suites per file, but Nx
       # refuses to run them without Nx Cloud. Switch to them in the same commit
       # that enables `nx connect` (see docs/upgrades.md).
